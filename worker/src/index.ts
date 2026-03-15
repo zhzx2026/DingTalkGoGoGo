@@ -802,7 +802,7 @@ export default {
         response = await handleJobs(request, env);
       } else if (url.pathname.startsWith("/api/jobs/") && request.method === "GET") {
         response = await handleJobDetail(url.pathname.replace("/api/jobs/", ""), env);
-      } else if (url.pathname === "/api/files" && request.method === "GET") {
+      } else if (url.pathname === "/api/files" && (request.method === "GET" || request.method === "HEAD")) {
         response = await handleFileDownload(request, env);
       } else if (url.pathname.startsWith("/internal/jobs/")) {
         const parts = url.pathname.split("/").filter(Boolean);
