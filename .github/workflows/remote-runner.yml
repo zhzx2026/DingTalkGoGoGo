@@ -20,6 +20,7 @@ jobs:
       CONTROL_URL: ${{ secrets.GODINGTALK_CONTROL_URL }}
       INTERNAL_TOKEN: ${{ secrets.GODINGTALK_INTERNAL_TOKEN }}
       RELEASE_TAG: godingtalk-downloads
+      GH_TOKEN: ${{ github.token }}
     steps:
       - uses: actions/checkout@v4
 
