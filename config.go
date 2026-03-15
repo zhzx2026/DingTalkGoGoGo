@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"strconv"
+	"strings"
 )
 
 // Config 配置文件结构
@@ -18,23 +20,62 @@ type Config struct {
 	ChromeTimeout int `json:"chrome_timeout"`
 	// HTTP超时时间（秒）
 	HTTPTimeout int `json:"http_timeout"`
+	// HTTP 服务监听地址
+	ServerListen string `json:"server_listen"`
+	// HTTP 服务鉴权 Token
+	ServerAuthToken string `json:"server_auth_token"`
+	// 服务端最大并发任务数
+	ServerMaxConcurrentJobs int `json:"server_max_concurrent_jobs"`
+	// 对外访问基础 URL
+	PublicBaseURL string `json:"public_base_url"`
+	// 是否启用 CORS
+	ServerEnableCORS bool `json:"server_enable_cors"`
 }
 
 // getConfigDir 获取配置文件夹路径
 func getConfigDir() (string, error) {
-	exePath, err := os.Executable()
-	if err != nil {
-		return "", err
+	if dir := os.Getenv("GODINGTALK_CONFIG_DIR"); dir != "" {
+		if err := os.MkdirAll(dir, 0755); err != nil {
+			return "", err
+		}
+		return dir, nil
 	}
-	exeDir := filepath.Dir(exePath)
-	configDir := filepath.Join(exeDir, ".goDingtalkConfig")
-	
-	// 创建配置文件夹（如果不存在）
-	if err := os.MkdirAll(configDir, 0755); err != nil {
-		return "", err
+
+	candidates := make([]string, 0, 4)
+
+	if userConfigDir, err := os.UserConfigDir(); err == nil {
+		candidates = append(candidates, filepath.Join(userConfigDir, "GoDingtalk"))
 	}
-	
-	return configDir, nil
+
+	if homeDir, err := os.UserHomeDir(); err == nil {
+		candidates = append(candidates, filepath.Join(homeDir, ".goDingtalkConfig"))
+	}
+
+	if exePath, err := os.Executable(); err == nil {
+		candidates = append(candidates, filepath.Join(filepath.Dir(exePath), ".goDingtalkConfig"))
+	}
+
+	if cwd, err := os.Getwd(); err == nil {
+		candidates = append(candidates, filepath.Join(cwd, ".goDingtalkConfig"))
+	}
+
+	var lastErr error
+	for _, dir := range candidates {
+		if dir == "" {
+			continue
+		}
+		if err := os.MkdirAll(dir, 0755); err == nil {
+			return dir, nil
+		} else {
+			lastErr = err
+		}
+	}
+
+	if lastErr != nil {
+		return "", lastErr
+	}
+
+	return "", os.ErrPermission
 }
 
 // DefaultConfig 返回默认配置
@@ -44,13 +85,16 @@ func DefaultConfig() *Config {
 		// 如果获取配置文件夹失败，使用当前目录
 		configDir = "."
 	}
-	
+
 	return &Config{
-		ThreadCount:   10,
-		SaveDirectory: "video/",
-		CookiesFile:   filepath.Join(configDir, "cookies.json"),
-		ChromeTimeout: 20,
-		HTTPTimeout:   30,
+		ThreadCount:             10,
+		SaveDirectory:           "video/",
+		CookiesFile:             filepath.Join(configDir, "cookies.json"),
+		ChromeTimeout:           20,
+		HTTPTimeout:             30,
+		ServerListen:            ":8080",
+		ServerMaxConcurrentJobs: 1,
+		ServerEnableCORS:        true,
 	}
 }
 
@@ -99,4 +143,57 @@ func SaveConfig(path string, config *Config) error {
 	}
 
 	return os.WriteFile(path, data, 0644)
+}
+
+// ApplyEnvOverrides 用环境变量覆盖配置。
+func ApplyEnvOverrides(config *Config) {
+	if value := strings.TrimSpace(os.Getenv("GODINGTALK_THREAD_COUNT")); value != "" {
+		if parsed, err := strconv.Atoi(value); err == nil && parsed > 0 {
+			config.ThreadCount = parsed
+		}
+	}
+
+	if value := strings.TrimSpace(os.Getenv("GODINGTALK_SAVE_DIR")); value != "" {
+		config.SaveDirectory = value
+	}
+
+	if value := strings.TrimSpace(os.Getenv("GODINGTALK_COOKIES_FILE")); value != "" {
+		config.CookiesFile = value
+	}
+
+	if value := strings.TrimSpace(os.Getenv("GODINGTALK_CHROME_TIMEOUT")); value != "" {
+		if parsed, err := strconv.Atoi(value); err == nil && parsed > 0 {
+			config.ChromeTimeout = parsed
+		}
+	}
+
+	if value := strings.TrimSpace(os.Getenv("GODINGTALK_HTTP_TIMEOUT")); value != "" {
+		if parsed, err := strconv.Atoi(value); err == nil && parsed > 0 {
+			config.HTTPTimeout = parsed
+		}
+	}
+
+	if value := strings.TrimSpace(os.Getenv("GODINGTALK_SERVER_LISTEN")); value != "" {
+		config.ServerListen = value
+	}
+
+	if value := strings.TrimSpace(os.Getenv("GODINGTALK_SERVER_AUTH_TOKEN")); value != "" {
+		config.ServerAuthToken = value
+	}
+
+	if value := strings.TrimSpace(os.Getenv("GODINGTALK_SERVER_MAX_CONCURRENT_JOBS")); value != "" {
+		if parsed, err := strconv.Atoi(value); err == nil && parsed > 0 {
+			config.ServerMaxConcurrentJobs = parsed
+		}
+	}
+
+	if value := strings.TrimSpace(os.Getenv("GODINGTALK_PUBLIC_BASE_URL")); value != "" {
+		config.PublicBaseURL = strings.TrimRight(value, "/")
+	}
+
+	if value := strings.TrimSpace(os.Getenv("GODINGTALK_SERVER_ENABLE_CORS")); value != "" {
+		if parsed, err := strconv.ParseBool(value); err == nil {
+			config.ServerEnableCORS = parsed
+		}
+	}
 }

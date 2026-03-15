@@ -1,7 +1,12 @@
 {
   "thread_count": 10,
   "save_directory": "video/",
-  "cookies_file": "cookies.json",
+  "cookies_file": ".goDingtalkConfig/cookies.json",
   "chrome_timeout": 20,
-  "http_timeout": 30
+  "http_timeout": 30,
+  "server_listen": ":8080",
+  "server_auth_token": "",
+  "server_max_concurrent_jobs": 1,
+  "public_base_url": "",
+  "server_enable_cors": true
 }

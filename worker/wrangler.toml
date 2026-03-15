@@ -1,0 +1,8 @@
+name = "godingtalk-worker"
+main = "src/index.ts"
+compatibility_date = "2026-03-15"
+workers_dev = true
+
+[vars]
+ORIGIN_BASE_URL = "https://origin.godingtalk.example.com"
+CORS_ALLOW_ORIGIN = "*"

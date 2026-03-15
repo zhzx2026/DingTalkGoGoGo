@@ -1,0 +1,7 @@
+tunnel: 00000000-0000-0000-0000-000000000000
+credentials-file: /etc/cloudflared/credentials.json
+
+ingress:
+  - hostname: origin.godingtalk.example.com
+    service: http://godingtalk:8080
+  - service: http_status:404

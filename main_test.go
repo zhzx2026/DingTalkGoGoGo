@@ -2,6 +2,7 @@ package main
 
 import (
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 )
@@ -32,11 +33,24 @@ func TestDefaultConfig(t *testing.T) {
 	if config.HTTPTimeout != 30 {
 		t.Errorf("Default HTTPTimeout = %d, want 30", config.HTTPTimeout)
 	}
+
+	if config.ServerListen != ":8080" {
+		t.Errorf("Default ServerListen = %s, want :8080", config.ServerListen)
+	}
+
+	if config.ServerMaxConcurrentJobs != 1 {
+		t.Errorf("Default ServerMaxConcurrentJobs = %d, want 1", config.ServerMaxConcurrentJobs)
+	}
+
+	if !config.ServerEnableCORS {
+		t.Errorf("Default ServerEnableCORS = false, want true")
+	}
 }
 
 func TestLoadConfig(t *testing.T) {
 	// 测试加载不存在的配置文件，应该返回默认配置
-	config, err := LoadConfig("non_existent_config.json")
+	nonExistentPath := filepath.Join(t.TempDir(), "non_existent_config.json")
+	config, err := LoadConfig(nonExistentPath)
 	if err != nil {
 		t.Errorf("LoadConfig() error = %v", err)
 	}
@@ -135,6 +149,37 @@ func TestSaveConfig(t *testing.T) {
 
 	if loadedConfig.CookiesFile != testConfig.CookiesFile {
 		t.Errorf("Saved CookiesFile = %s, want %s", loadedConfig.CookiesFile, testConfig.CookiesFile)
+	}
+}
+
+func TestApplyEnvOverrides(t *testing.T) {
+	t.Setenv("GODINGTALK_SAVE_DIR", "/tmp/video")
+	t.Setenv("GODINGTALK_SERVER_LISTEN", ":9090")
+	t.Setenv("GODINGTALK_SERVER_AUTH_TOKEN", "secret")
+	t.Setenv("GODINGTALK_SERVER_MAX_CONCURRENT_JOBS", "3")
+	t.Setenv("GODINGTALK_PUBLIC_BASE_URL", "https://api.example.com/")
+
+	config := DefaultConfig()
+	ApplyEnvOverrides(config)
+
+	if config.SaveDirectory != "/tmp/video" {
+		t.Errorf("ApplyEnvOverrides() SaveDirectory = %s, want /tmp/video", config.SaveDirectory)
+	}
+
+	if config.ServerListen != ":9090" {
+		t.Errorf("ApplyEnvOverrides() ServerListen = %s, want :9090", config.ServerListen)
+	}
+
+	if config.ServerAuthToken != "secret" {
+		t.Errorf("ApplyEnvOverrides() ServerAuthToken = %s, want secret", config.ServerAuthToken)
+	}
+
+	if config.ServerMaxConcurrentJobs != 3 {
+		t.Errorf("ApplyEnvOverrides() ServerMaxConcurrentJobs = %d, want 3", config.ServerMaxConcurrentJobs)
+	}
+
+	if config.PublicBaseURL != "https://api.example.com" {
+		t.Errorf("ApplyEnvOverrides() PublicBaseURL = %s, want https://api.example.com", config.PublicBaseURL)
 	}
 }
 

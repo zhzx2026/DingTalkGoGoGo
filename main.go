@@ -29,7 +29,6 @@ var Version = "dev"
 // 全局HTTP客户端，在 main 中根据配置初始化
 var httpClient *http.Client
 
-
 // initHTTPClient 初始化全局HTTP客户端
 func initHTTPClient(timeout int) {
 	httpClient = &http.Client{
@@ -176,14 +175,14 @@ func M3u8Down(title, playbackUrl, saveDir string, Thread int) error {
 		os.RemoveAll(tempDir)
 		return fmt.Errorf("视频转换失败: %w", err)
 	}
-	
+
 	// 转换成功后清理临时文件夹
 	if err := os.RemoveAll(tempDir); err != nil {
 		fmt.Printf("警告: 删除临时文件夹失败: %v\n", err)
 	} else {
 		fmt.Println("临时文件夹清理完成")
 	}
-	
+
 	return nil
 }
 
@@ -284,7 +283,7 @@ func getLiveRoomPublicInfo(roomId, liveUuid, saveDir string, Thread int, config 
 	if err := M3u8Down(title, playbackUrl, saveDir, Thread); err != nil {
 		return title, err
 	}
-	
+
 	return title, nil
 }
 
@@ -307,7 +306,7 @@ func processURL(urlStr, saveDir string, Thread int, config *Config, videoListFil
 	}
 
 	title, err := getLiveRoomPublicInfo(roomId, liveUuid, saveDir, Thread, config)
-	
+
 	// 下载完成后立即追加标题到视频列表文件
 	if err == nil && videoListFile != "" && title != "" {
 		if appendErr := appendTitleToVideoListFile(videoListFile, title); appendErr != nil {
@@ -316,7 +315,7 @@ func processURL(urlStr, saveDir string, Thread int, config *Config, videoListFil
 			fmt.Printf("标题已添加到视频列表文件: %s\n", title)
 		}
 	}
-	
+
 	return title, err
 }
 
@@ -413,6 +412,11 @@ func main() {
 	// 命令行参数
 	versionFlag := flag.Bool("version", false, "显示版本号")
 	configFile := flag.String("config", "", "配置文件路径")
+	serveFlag := flag.Bool("serve", false, "以 HTTP 服务模式运行")
+	listenFlag := flag.String("listen", "", "HTTP 服务监听地址 (默认: :8080)")
+	authTokenFlag := flag.String("authToken", "", "HTTP 服务 Bearer Token")
+	publicBaseURLFlag := flag.String("publicBaseURL", "", "服务对外访问基础 URL，用于生成下载链接")
+	maxJobsFlag := flag.Int("maxJobs", 0, "HTTP 服务最大并发任务数")
 	loginFlag := flag.Bool("login", false, "强制重新登录获取Cookies")
 	urlFlag := flag.String("url", "", "需要下载的回放URL，格式为 -url \"https://n.dingtalk.com/dingding/live-room/index.html?roomId=XXXX&liveUuid=XXXX\"")
 	urlFile := flag.String("urlFile", "", "包含需要下载的回放URL的文件路径，格式为 -urlFile \"/path/to/file\"")
@@ -437,6 +441,7 @@ func main() {
 		fmt.Printf("警告: 加载配置文件失败: %v，使用默认配置\n", err)
 		config = DefaultConfig()
 	}
+	ApplyEnvOverrides(config)
 
 	// 命令行参数覆盖配置文件
 	if *Thread <= 0 {
@@ -454,9 +459,32 @@ func main() {
 	if *cookiesFile != "" {
 		config.CookiesFile = *cookiesFile
 	}
+	if *listenFlag != "" {
+		config.ServerListen = *listenFlag
+	}
+	if *authTokenFlag != "" {
+		config.ServerAuthToken = *authTokenFlag
+	}
+	if *publicBaseURLFlag != "" {
+		config.PublicBaseURL = strings.TrimRight(*publicBaseURLFlag, "/")
+	}
+	if *maxJobsFlag > 0 {
+		config.ServerMaxConcurrentJobs = *maxJobsFlag
+	}
 
 	// 初始化全局 HTTP 客户端
 	initHTTPClient(config.HTTPTimeout)
+
+	if *serveFlag {
+		if *saveDir != "" {
+			config.SaveDirectory = *saveDir
+		}
+		if err := runServer(config); err != nil {
+			fmt.Printf("错误: 启动服务失败: %v\n", err)
+			os.Exit(1)
+		}
+		return
+	}
 
 	// 参数验证
 	if *urlFlag == "" && *urlFile == "" && !*loginFlag {

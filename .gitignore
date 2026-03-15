@@ -40,3 +40,12 @@ downloads/
 
 # 临时文件
 *.tmp
+
+# 容器与 Worker 依赖
+build/
+worker/node_modules/
+.gocache/
+
+# Cloudflare Tunnel 凭据
+deploy/cloudflared/credentials.json
+deploy/cloudflared/config.yml
