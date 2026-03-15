@@ -352,10 +352,17 @@ async function getJob(env: Env, jobID: string): Promise<JobRecord | null> {
   return row ? parseJobRow(row) : null;
 }
 
-async function listJobs(env: Env, limit = 30): Promise<JobRecord[]> {
+async function listJobs(env: Env, limit = 5, windowMinutes = 20): Promise<JobRecord[]> {
+  const cutoff = new Date(Date.now() - (windowMinutes * 60 * 1000)).toISOString();
   const result = await env.DB
-    .prepare("SELECT * FROM jobs ORDER BY created_at DESC LIMIT ?1")
-    .bind(limit)
+    .prepare(
+      `SELECT *
+       FROM jobs
+       WHERE updated_at >= ?2
+       ORDER BY updated_at DESC
+       LIMIT ?1`,
+    )
+    .bind(limit, cutoff)
     .all<JobRow>();
   const rows = Array.isArray(result.results) ? result.results : [];
   return rows.map(parseJobRow);

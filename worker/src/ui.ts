@@ -842,11 +842,11 @@ export function renderApp(appOrigin: string): string {
             <div class="panel-header">
               <div>
                 <h2>任务列表</h2>
-                <p class="panel-subtitle">已完成任务会直接给网页下载链接。失败任务会保留错误信息，方便你重新跑。</p>
+                <p class="panel-subtitle">这里只显示最近 20 分钟内更新过的最新 5 条任务。已完成任务会直接给网页下载链接。</p>
               </div>
             </div>
             <div id="jobs" class="jobs">
-              <div class="empty">还没有任务。先上传 cookies，再贴一条回放链接试跑。</div>
+              <div class="empty">最近 20 分钟内还没有任务。先上传 cookies，再贴一条回放链接试跑。</div>
             </div>
           </article>
         </aside>
@@ -1093,7 +1093,7 @@ export function renderApp(appOrigin: string): string {
 
       function renderJobs(jobs) {
         if (!Array.isArray(jobs) || jobs.length === 0) {
-          elements.jobs.innerHTML = '<div class="empty">还没有任务。先上传 cookies，再贴一条回放链接试跑。</div>';
+          elements.jobs.innerHTML = '<div class="empty">最近 20 分钟内还没有任务。先上传 cookies，再贴一条回放链接试跑。</div>';
           return;
         }
 
