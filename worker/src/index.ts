@@ -9,6 +9,7 @@ interface Env {
   GITHUB_REPOSITORY?: string;
   GITHUB_WORKFLOW_FILE?: string;
   GITHUB_REF?: string;
+  GITHUB_RELEASE_TAG?: string;
   GITHUB_ACTIONS_TOKEN?: string;
 }
 
@@ -103,6 +104,7 @@ interface CompletePayload {
 }
 
 const DEFAULT_WORKFLOW_FILE = "remote-runner.yml";
+const DEFAULT_RELEASE_TAG = "godingtalk-downloads";
 const COOKIE_SETTING_KEY = "cookies_payload";
 const COOKIE_UPDATED_AT_KEY = "cookies_updated_at";
 
@@ -208,10 +210,70 @@ function jobFileDownloadURL(jobID: string, relativePath: string): string {
   return `/api/files?${params.toString()}`;
 }
 
+function sanitizeReleaseAssetPath(relativePath: string): string {
+  return relativePath.replace(/[\/ ]/g, "-");
+}
+
+function expectedReleaseAssetLabel(jobID: string, relativePath: string): string {
+  return `${jobID}-${sanitizeReleaseAssetPath(relativePath)}`;
+}
+
+async function resolveGitHubReleaseDownloadURL(
+  env: Env,
+  jobID: string,
+  relativePath: string,
+  fileName: string,
+): Promise<string | null> {
+  const repository = env.GITHUB_REPOSITORY?.trim();
+  if (!repository) {
+    return null;
+  }
+
+  const releaseTag = env.GITHUB_RELEASE_TAG?.trim() || DEFAULT_RELEASE_TAG;
+  const response = await fetch(
+    `https://api.github.com/repos/${repository}/releases/tags/${encodeURIComponent(releaseTag)}`,
+    {
+      headers: {
+        accept: "application/vnd.github+json",
+        "user-agent": "godingtalk-worker",
+      },
+    },
+  );
+
+  if (!response.ok) {
+    return null;
+  }
+
+  const payload = (await response.json()) as {
+    assets?: Array<{
+      name?: string;
+      label?: string | null;
+      browser_download_url?: string;
+    }>;
+  };
+
+  const expectedLabels = new Set<string>([
+    expectedReleaseAssetLabel(jobID, relativePath),
+    expectedReleaseAssetLabel(jobID, fileName),
+  ]);
+
+  const asset = payload.assets?.find((entry) => {
+    if (!entry.browser_download_url) {
+      return false;
+    }
+    if (entry.label && expectedLabels.has(entry.label)) {
+      return true;
+    }
+    return entry.name ? expectedLabels.has(entry.name) : false;
+  });
+
+  return asset?.browser_download_url || null;
+}
+
 function parseJobRow(row: JobRow): JobRecord {
   const files = parseJSON<JobFileRecord[]>(row.files_json, []).map((file) => ({
     ...file,
-    download_url: file.download_url || jobFileDownloadURL(row.id, file.relative_path),
+    download_url: jobFileDownloadURL(row.id, file.relative_path),
   }));
 
   return {
@@ -597,6 +659,12 @@ async function handleFileDownload(request: Request, env: Env): Promise<Response>
   const file = job.files.find((entry) => entry.relative_path === relativePath || entry.name === relativePath);
   if (!file) {
     return jsonResponse({ error: "file not found" }, { status: 404 });
+  }
+  if (!file.bucket_key) {
+    const releaseURL = await resolveGitHubReleaseDownloadURL(env, jobID, file.relative_path, file.name);
+    if (releaseURL) {
+      return Response.redirect(releaseURL, 302);
+    }
   }
   if (!file.bucket_key && file.download_url) {
     return Response.redirect(file.download_url, 302);

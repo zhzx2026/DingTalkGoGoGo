@@ -77,8 +77,10 @@ jobs:
             SAFE_RELATIVE_PATH="$(printf '%s' "${RELATIVE_PATH}" | tr '/ ' '--')"
             ASSET_NAME="${JOB_ID}-${SAFE_RELATIVE_PATH}"
             DOWNLOAD_URL="https://github.com/${GITHUB_REPOSITORY}/releases/download/${RELEASE_TAG}/${ASSET_NAME}"
+            UPLOAD_PATH="${RUNNER_TEMP}/${ASSET_NAME}"
 
-            gh release upload "${RELEASE_TAG}" "${LOCAL_PATH}#${ASSET_NAME}" --clobber
+            cp "${LOCAL_PATH}" "${UPLOAD_PATH}"
+            gh release upload "${RELEASE_TAG}" "${UPLOAD_PATH}#${NAME}" --clobber
 
             TMP_FILE="$(mktemp)"
             jq \
