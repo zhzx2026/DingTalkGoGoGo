@@ -1,5 +1,5 @@
 export function renderTampermonkeyScript(appOrigin: string): string {
-  const consoleURL = `${appOrigin.replace(/\/$/, "")}/`;
+  const consoleURL = `${appOrigin.replace(/\/$/, "")}/settings`;
   return `// ==UserScript==
 // @name         GoDingtalk Cookie Helper
 // @namespace    https://github.com/zhzx2026/DingTalkGoGoGo

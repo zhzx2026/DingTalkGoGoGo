@@ -9,7 +9,7 @@ on:
         type: string
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   run-job:
@@ -19,8 +19,11 @@ jobs:
       JOB_ID: ${{ inputs.job_id }}
       CONTROL_URL: ${{ secrets.GODINGTALK_CONTROL_URL }}
       INTERNAL_TOKEN: ${{ secrets.GODINGTALK_INTERNAL_TOKEN }}
-      RELEASE_TAG: godingtalk-downloads
-      GH_TOKEN: ${{ github.token }}
+      R2_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      R2_BUCKET: ${{ secrets.GODINGTALK_R2_BUCKET }}
+      AWS_ACCESS_KEY_ID: ${{ secrets.GODINGTALK_R2_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.GODINGTALK_R2_SECRET_ACCESS_KEY }}
+      AWS_DEFAULT_REGION: auto
     steps:
       - uses: actions/checkout@v4
 
@@ -36,14 +39,17 @@ jobs:
       - name: Build GoDingtalk
         run: go build -o GoDingtalk .
 
-      - name: Ensure download release exists
+      - name: Validate private storage configuration
         run: |
-          if ! gh release view "${RELEASE_TAG}" > /dev/null 2>&1; then
-            gh release create "${RELEASE_TAG}" \
-              --title "GoDingtalk Downloads" \
-              --notes "Public assets uploaded by the remote GitHub Actions download runner." \
-              --target "${GITHUB_SHA}"
+          if [ -z "${R2_BUCKET}" ]; then
+            echo "R2_BUCKET is empty, fallback to godingtalk-files"
+            echo "R2_BUCKET=godingtalk-files" >> "$GITHUB_ENV"
           fi
+          if [ -z "${R2_ACCOUNT_ID}" ] || [ -z "${AWS_ACCESS_KEY_ID}" ] || [ -z "${AWS_SECRET_ACCESS_KEY}" ]; then
+            echo "Missing Cloudflare R2 credentials. Please set CLOUDFLARE_ACCOUNT_ID, GODINGTALK_R2_ACCESS_KEY_ID, GODINGTALK_R2_SECRET_ACCESS_KEY."
+            exit 1
+          fi
+          echo "R2_ENDPOINT=https://${R2_ACCOUNT_ID}.r2.cloudflarestorage.com" >> "$GITHUB_ENV"
 
       - name: Run remote job
         id: remote_job
@@ -57,7 +63,7 @@ jobs:
             -saveDir "${RUNNER_TEMP}/godingtalk" \
             -resultFile "${RUNNER_TEMP}/job-result.json"
 
-      - name: Upload output files to GitHub Release
+      - name: Upload output files to private R2
         if: always()
         run: |
           RESULT_FILE="${RUNNER_TEMP}/job-result.json"
@@ -75,23 +81,22 @@ jobs:
             NAME="$(printf '%s' "${JSON}" | jq -r '.name')"
             SIZE_BYTES="$(printf '%s' "${JSON}" | jq -r '.size_bytes')"
             SAFE_RELATIVE_PATH="$(printf '%s' "${RELATIVE_PATH}" | tr '/ ' '--')"
-            ASSET_NAME="${JOB_ID}-${SAFE_RELATIVE_PATH}"
-            DOWNLOAD_URL="https://github.com/${GITHUB_REPOSITORY}/releases/download/${RELEASE_TAG}/${ASSET_NAME}"
-            UPLOAD_PATH="${RUNNER_TEMP}/${ASSET_NAME}"
+            OBJECT_KEY="${JOB_ID}/${SAFE_RELATIVE_PATH}"
 
-            cp "${LOCAL_PATH}" "${UPLOAD_PATH}"
-            gh release upload "${RELEASE_TAG}" "${UPLOAD_PATH}#${NAME}" --clobber
+            aws s3 cp "${LOCAL_PATH}" "s3://${R2_BUCKET}/${OBJECT_KEY}" \
+              --endpoint-url "${R2_ENDPOINT}" \
+              --no-progress
 
             TMP_FILE="$(mktemp)"
             jq \
               --arg name "${NAME}" \
               --arg relative_path "${RELATIVE_PATH}" \
-              --arg download_url "${DOWNLOAD_URL}" \
+              --arg bucket_key "${OBJECT_KEY}" \
               --argjson size_bytes "${SIZE_BYTES:-0}" \
               '. += [{
                 "name": $name,
                 "relative_path": $relative_path,
-                "download_url": $download_url,
+                "bucket_key": $bucket_key,
                 "size_bytes": $size_bytes
               }]' \
               "${UPLOAD_FILE}" > "${TMP_FILE}"

@@ -11,6 +11,9 @@ interface Env {
   GITHUB_REF?: string;
   GITHUB_RELEASE_TAG?: string;
   GITHUB_ACTIONS_TOKEN?: string;
+  AUTH_SALT?: string;
+  BOOTSTRAP_USERNAME?: string;
+  BOOTSTRAP_PASSWORD?: string;
 }
 
 interface JobFileRecord {
@@ -24,6 +27,7 @@ interface JobFileRecord {
 
 interface JobRow {
   id: string;
+  owner_user_id: string;
   status: string;
   stage: string;
   urls_json: string;
@@ -68,7 +72,6 @@ interface JobRecord {
 
 interface JobEventRow {
   id: number | string;
-  job_id: string;
   level: string;
   message: string;
   created_at: string;
@@ -118,10 +121,29 @@ interface CompletePayload {
   message?: string;
 }
 
+interface AuthPayload {
+  username?: string;
+  password?: string;
+}
+
+interface AuthUser {
+  id: string;
+  username: string;
+}
+
+interface UserRow {
+  id: string;
+  username: string;
+  password_hash: string;
+  created_at: string;
+}
+
 const DEFAULT_WORKFLOW_FILE = "remote-runner.yml";
 const DEFAULT_RELEASE_TAG = "godingtalk-downloads";
-const COOKIE_SETTING_KEY = "cookies_payload";
-const COOKIE_UPDATED_AT_KEY = "cookies_updated_at";
+const SESSION_COOKIE_NAME = "godingtalk_session";
+const SESSION_TTL_SECONDS = 60 * 60 * 24 * 14;
+const DEFAULT_THREAD = 100;
+const MAX_THREAD = 100;
 
 function jsonResponse(body: unknown, init?: ResponseInit): Response {
   const headers = new Headers(init?.headers);
@@ -179,8 +201,7 @@ function nowISO(): string {
 }
 
 function nextJobID(): string {
-  const random = crypto.randomUUID().split("-")[0];
-  return `job-${Date.now()}-${random}`;
+  return `job-${Date.now()}-${crypto.randomUUID().split("-")[0]}`;
 }
 
 function toNumber(value: number | string | null | undefined): number {
@@ -225,64 +246,199 @@ function jobFileDownloadURL(jobID: string, relativePath: string): string {
   return `/api/files?${params.toString()}`;
 }
 
-function sanitizeReleaseAssetPath(relativePath: string): string {
-  return relativePath.replace(/[\/ ]/g, "-");
-}
-
-function expectedReleaseAssetLabel(jobID: string, relativePath: string): string {
-  return `${jobID}-${sanitizeReleaseAssetPath(relativePath)}`;
-}
-
-async function resolveGitHubReleaseDownloadURL(
-  env: Env,
-  jobID: string,
-  relativePath: string,
-  fileName: string,
-): Promise<string | null> {
-  const repository = env.GITHUB_REPOSITORY?.trim();
-  if (!repository) {
-    return null;
-  }
-
-  const releaseTag = env.GITHUB_RELEASE_TAG?.trim() || DEFAULT_RELEASE_TAG;
-  const response = await fetch(
-    `https://api.github.com/repos/${repository}/releases/tags/${encodeURIComponent(releaseTag)}`,
-    {
-      headers: {
-        accept: "application/vnd.github+json",
-        "user-agent": "godingtalk-worker",
-      },
-    },
-  );
-
-  if (!response.ok) {
-    return null;
-  }
-
-  const payload = (await response.json()) as {
-    assets?: Array<{
-      name?: string;
-      label?: string | null;
-      browser_download_url?: string;
-    }>;
-  };
-
-  const expectedLabels = new Set<string>([
-    expectedReleaseAssetLabel(jobID, relativePath),
-    expectedReleaseAssetLabel(jobID, fileName),
-  ]);
-
-  const asset = payload.assets?.find((entry) => {
-    if (!entry.browser_download_url) {
-      return false;
+function parseCookieHeader(raw: string | null): Record<string, string> {
+  const source = raw || "";
+  const result: Record<string, string> = {};
+  source.split(";").forEach((entry) => {
+    const item = entry.trim();
+    if (!item) {
+      return;
     }
-    if (entry.label && expectedLabels.has(entry.label)) {
-      return true;
+    const index = item.indexOf("=");
+    if (index === -1) {
+      return;
     }
-    return entry.name ? expectedLabels.has(entry.name) : false;
+    const key = item.slice(0, index).trim();
+    const value = item.slice(index + 1).trim();
+    if (key) {
+      result[key] = value;
+    }
   });
+  return result;
+}
 
-  return asset?.browser_download_url || null;
+function getCookieValue(request: Request, name: string): string {
+  const cookies = parseCookieHeader(request.headers.get("cookie"));
+  return cookies[name] || "";
+}
+
+function sessionCookie(token: string, maxAgeSeconds: number): string {
+  return `${SESSION_COOKIE_NAME}=${token}; Path=/; Max-Age=${maxAgeSeconds}; HttpOnly; SameSite=Lax; Secure`;
+}
+
+function clearSessionCookie(): string {
+  return `${SESSION_COOKIE_NAME}=; Path=/; Max-Age=0; HttpOnly; SameSite=Lax; Secure`;
+}
+
+function authSalt(env: Env): string {
+  return env.AUTH_SALT?.trim() || "godingtalk-auth-salt-v1";
+}
+
+function clampThread(value: number): number {
+  return Math.min(MAX_THREAD, Math.max(1, value));
+}
+
+async function sha256Hex(input: string): Promise<string> {
+  const data = new TextEncoder().encode(input);
+  const hash = await crypto.subtle.digest("SHA-256", data);
+  const bytes = Array.from(new Uint8Array(hash));
+  return bytes.map((b) => b.toString(16).padStart(2, "0")).join("");
+}
+
+async function passwordHash(env: Env, username: string, password: string): Promise<string> {
+  return sha256Hex(`${authSalt(env)}:${username}:${password}`);
+}
+
+async function sessionTokenHash(env: Env, token: string): Promise<string> {
+  return sha256Hex(`${authSalt(env)}:session:${token}`);
+}
+
+async function requireInternalAuth(request: Request, env: Env): Promise<Response | null> {
+  const expected = env.INTERNAL_API_TOKEN?.trim();
+  if (!expected) {
+    return jsonResponse({ error: "INTERNAL_API_TOKEN is not configured" }, { status: 500 });
+  }
+  const token = request.headers.get("Authorization")?.replace(/^Bearer\s+/i, "").trim() || "";
+  if (token !== expected) {
+    return jsonResponse({ error: "missing or invalid internal token" }, { status: 401 });
+  }
+  return null;
+}
+
+async function listUsersCount(env: Env): Promise<number> {
+  const row = await env.DB.prepare("SELECT COUNT(*) AS c FROM users").first<{ c: number | string | null }>();
+  return toNumber(row?.c);
+}
+
+async function getUserByUsername(env: Env, username: string): Promise<UserRow | null> {
+  return env.DB
+    .prepare("SELECT id, username, password_hash, created_at FROM users WHERE username = ?1")
+    .bind(username)
+    .first<UserRow>();
+}
+
+async function getAuthUser(request: Request, env: Env): Promise<AuthUser | null> {
+  const token = getCookieValue(request, SESSION_COOKIE_NAME);
+  if (!token) {
+    return null;
+  }
+  const tokenHash = await sessionTokenHash(env, token);
+  const row = await env.DB
+    .prepare(
+      `SELECT users.id AS id, users.username AS username
+       FROM sessions
+       JOIN users ON users.id = sessions.user_id
+       WHERE sessions.token_hash = ?1
+         AND sessions.expires_at > ?2`,
+    )
+    .bind(tokenHash, nowISO())
+    .first<AuthUser>();
+  return row || null;
+}
+
+async function requireUserAuth(request: Request, env: Env): Promise<{ user: AuthUser | null; response: Response | null }> {
+  const user = await getAuthUser(request, env);
+  if (!user) {
+    return {
+      user: null,
+      response: jsonResponse({ error: "login required" }, { status: 401 }),
+    };
+  }
+  return { user, response: null };
+}
+
+async function createUser(env: Env, username: string, password: string): Promise<AuthUser> {
+  const normalized = username.trim();
+  const id = crypto.randomUUID();
+  await env.DB
+    .prepare(
+      `INSERT INTO users (id, username, password_hash, created_at)
+       VALUES (?1, ?2, ?3, ?4)`,
+    )
+    .bind(id, normalized, await passwordHash(env, normalized, password), nowISO())
+    .run();
+  return { id, username: normalized };
+}
+
+async function createSession(env: Env, userID: string): Promise<string> {
+  const token = `${crypto.randomUUID()}${crypto.randomUUID()}`;
+  const tokenHash = await sessionTokenHash(env, token);
+  const createdAt = Date.now();
+  const expiresAt = new Date(createdAt + (SESSION_TTL_SECONDS * 1000)).toISOString();
+  await env.DB
+    .prepare(
+      `INSERT INTO sessions (token_hash, user_id, created_at, expires_at)
+       VALUES (?1, ?2, ?3, ?4)`,
+    )
+    .bind(tokenHash, userID, new Date(createdAt).toISOString(), expiresAt)
+    .run();
+  return token;
+}
+
+async function dropSession(request: Request, env: Env): Promise<void> {
+  const token = getCookieValue(request, SESSION_COOKIE_NAME);
+  if (!token) {
+    return;
+  }
+  const tokenHash = await sessionTokenHash(env, token);
+  await env.DB
+    .prepare("DELETE FROM sessions WHERE token_hash = ?1")
+    .bind(tokenHash)
+    .run();
+}
+
+async function ensureBootstrapUser(env: Env): Promise<void> {
+  const username = env.BOOTSTRAP_USERNAME?.trim() || "";
+  const password = env.BOOTSTRAP_PASSWORD?.trim() || "";
+  if (!username || !password) {
+    return;
+  }
+  const usersCount = await listUsersCount(env);
+  if (usersCount > 0) {
+    return;
+  }
+  await createUser(env, username, password);
+}
+
+async function getUserCookieState(env: Env, userID: string): Promise<{
+  cookiesReady: boolean;
+  cookiesUpdatedAt: string | null;
+  cookies: Record<string, string>;
+}> {
+  const row = await env.DB
+    .prepare("SELECT cookies_json, updated_at FROM user_cookies WHERE user_id = ?1")
+    .bind(userID)
+    .first<{ cookies_json: string; updated_at: string }>();
+
+  const cookies = parseJSON<Record<string, string>>(row?.cookies_json, {});
+  return {
+    cookiesReady: typeof cookies.LV_PC_SESSION === "string" && cookies.LV_PC_SESSION.length > 0,
+    cookiesUpdatedAt: row?.updated_at || null,
+    cookies,
+  };
+}
+
+async function saveUserCookies(env: Env, userID: string, cookies: Record<string, string>): Promise<void> {
+  await env.DB
+    .prepare(
+      `INSERT INTO user_cookies (user_id, cookies_json, updated_at)
+       VALUES (?1, ?2, ?3)
+       ON CONFLICT(user_id) DO UPDATE SET
+         cookies_json = excluded.cookies_json,
+         updated_at = excluded.updated_at`,
+    )
+    .bind(userID, JSON.stringify(cookies), nowISO())
+    .run();
 }
 
 function parseJobRow(row: JobRow): JobRecord {
@@ -290,7 +446,6 @@ function parseJobRow(row: JobRow): JobRecord {
     ...file,
     download_url: jobFileDownloadURL(row.id, file.relative_path),
   }));
-
   return {
     id: row.id,
     status: row.status,
@@ -314,41 +469,6 @@ function parseJobRow(row: JobRow): JobRecord {
   };
 }
 
-async function requireInternalAuth(request: Request, env: Env): Promise<Response | null> {
-  const expected = env.INTERNAL_API_TOKEN?.trim();
-  if (!expected) {
-    return jsonResponse(
-      { error: "INTERNAL_API_TOKEN is not configured" },
-      { status: 500 },
-    );
-  }
-
-  const token = request.headers.get("Authorization")?.replace(/^Bearer\s+/i, "").trim() || "";
-  if (token !== expected) {
-    return jsonResponse({ error: "missing or invalid internal token" }, { status: 401 });
-  }
-  return null;
-}
-
-async function getSetting(env: Env, key: string): Promise<string | null> {
-  const row = await env.DB
-    .prepare("SELECT value FROM settings WHERE key = ?1")
-    .bind(key)
-    .first<{ value: string }>();
-  return row?.value || null;
-}
-
-async function setSetting(env: Env, key: string, value: string): Promise<void> {
-  await env.DB
-    .prepare(
-      `INSERT INTO settings (key, value, updated_at)
-       VALUES (?1, ?2, ?3)
-       ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at`,
-    )
-    .bind(key, value, nowISO())
-    .run();
-}
-
 async function insertEvent(env: Env, jobID: string, level: string, message: string): Promise<void> {
   await env.DB
     .prepare(
@@ -359,18 +479,40 @@ async function insertEvent(env: Env, jobID: string, level: string, message: stri
     .run();
 }
 
-async function getJob(env: Env, jobID: string): Promise<JobRecord | null> {
-  const row = await env.DB
-    .prepare("SELECT * FROM jobs WHERE id = ?1")
-    .bind(jobID)
-    .first<JobRow>();
+async function getJob(env: Env, jobID: string, ownerUserID?: string): Promise<JobRecord | null> {
+  const row = ownerUserID
+    ? await env.DB
+      .prepare("SELECT * FROM jobs WHERE id = ?1 AND owner_user_id = ?2")
+      .bind(jobID, ownerUserID)
+      .first<JobRow>()
+    : await env.DB
+      .prepare("SELECT * FROM jobs WHERE id = ?1")
+      .bind(jobID)
+      .first<JobRow>();
   return row ? parseJobRow(row) : null;
+}
+
+async function listJobs(env: Env, ownerUserID: string, limit = 5, windowMinutes = 20): Promise<JobRecord[]> {
+  const cutoff = new Date(Date.now() - (windowMinutes * 60 * 1000)).toISOString();
+  const result = await env.DB
+    .prepare(
+      `SELECT *
+       FROM jobs
+       WHERE owner_user_id = ?1
+         AND updated_at >= ?2
+       ORDER BY updated_at DESC
+       LIMIT ?3`,
+    )
+    .bind(ownerUserID, cutoff, limit)
+    .all<JobRow>();
+  const rows = Array.isArray(result.results) ? result.results : [];
+  return rows.map(parseJobRow);
 }
 
 async function listJobEvents(env: Env, jobID: string, limit = 80): Promise<JobEventRecord[]> {
   const result = await env.DB
     .prepare(
-      `SELECT id, job_id, level, message, created_at
+      `SELECT id, level, message, created_at
        FROM job_events
        WHERE job_id = ?1
        ORDER BY created_at DESC
@@ -378,7 +520,6 @@ async function listJobEvents(env: Env, jobID: string, limit = 80): Promise<JobEv
     )
     .bind(jobID, limit)
     .all<JobEventRow>();
-
   const rows = Array.isArray(result.results) ? result.results : [];
   return rows.map((row) => ({
     id: toNumber(row.id),
@@ -386,22 +527,6 @@ async function listJobEvents(env: Env, jobID: string, limit = 80): Promise<JobEv
     message: row.message,
     created_at: row.created_at,
   }));
-}
-
-async function listJobs(env: Env, limit = 5, windowMinutes = 20): Promise<JobRecord[]> {
-  const cutoff = new Date(Date.now() - (windowMinutes * 60 * 1000)).toISOString();
-  const result = await env.DB
-    .prepare(
-      `SELECT *
-       FROM jobs
-       WHERE updated_at >= ?2
-       ORDER BY updated_at DESC
-       LIMIT ?1`,
-    )
-    .bind(limit, cutoff)
-    .all<JobRow>();
-  const rows = Array.isArray(result.results) ? result.results : [];
-  return rows.map(parseJobRow);
 }
 
 async function updateJobProgress(env: Env, jobID: string, payload: ProgressPayload): Promise<void> {
@@ -460,9 +585,9 @@ async function completeJob(env: Env, jobID: string, payload: CompletePayload): P
   const errors = Array.isArray(payload.errors) ? payload.errors : current.errors;
   const files = Array.isArray(payload.files)
     ? payload.files.map((file) => ({
-        ...file,
-        download_url: file.download_url || jobFileDownloadURL(jobID, file.relative_path),
-      }))
+      ...file,
+      download_url: jobFileDownloadURL(jobID, file.relative_path),
+    }))
     : current.files;
 
   await env.DB
@@ -504,47 +629,35 @@ async function completeJob(env: Env, jobID: string, payload: CompletePayload): P
   return getJob(env, jobID);
 }
 
-async function getCookieState(env: Env): Promise<{
-  cookiesReady: boolean;
-  cookiesUpdatedAt: string | null;
-  cookies: Record<string, string>;
-}> {
-  const raw = await getSetting(env, COOKIE_SETTING_KEY);
-  const cookies = parseJSON<Record<string, string>>(raw, {});
-  return {
-    cookiesReady: typeof cookies.LV_PC_SESSION === "string" && cookies.LV_PC_SESSION.length > 0,
-    cookiesUpdatedAt: await getSetting(env, COOKIE_UPDATED_AT_KEY),
-    cookies,
-  };
-}
-
-async function createJob(env: Env, payload: CreateJobPayload): Promise<JobRecord> {
+async function createJob(env: Env, ownerUserID: string, payload: CreateJobPayload): Promise<JobRecord> {
   const urls = normalizeURLs(payload.url, payload.urls);
   if (urls.length === 0) {
     throw new Error("at least one url is required");
   }
 
-  const cookieState = await getCookieState(env);
+  const cookieState = await getUserCookieState(env, ownerUserID);
   if (!cookieState.cookiesReady) {
     throw new Error("cookies are missing or invalid");
   }
 
-  const thread = Math.min(100, Math.max(1, toNumber(payload.thread) || 10));
+  const threadInput = toNumber(payload.thread) || DEFAULT_THREAD;
+  const thread = clampThread(threadInput);
+  const createVideoList = payload.create_video_list !== false;
+  const outputSubdir = (payload.output_subdir || "").trim();
   const createdAt = nowISO();
   const jobID = nextJobID();
-  const outputSubdir = (payload.output_subdir || "").trim();
-  const createVideoList = payload.create_video_list !== false;
 
   await env.DB
     .prepare(
       `INSERT INTO jobs (
-         id, status, stage, urls_json, thread, output_subdir, create_video_list,
+         id, owner_user_id, status, stage, urls_json, thread, output_subdir, create_video_list,
          current_title, completed_parts, total_parts, progress_percent, titles_json,
          errors_json, files_json, runner_run_id, created_at, updated_at, started_at, finished_at
-       ) VALUES (?1, 'queued', 'waiting_runner', ?2, ?3, ?4, ?5, '', 0, 0, 0, '[]', '[]', '[]', '', ?6, ?6, NULL, NULL)`,
+       ) VALUES (?1, ?2, 'queued', 'waiting_runner', ?3, ?4, ?5, ?6, '', 0, 0, 0, '[]', '[]', '[]', '', ?7, ?7, NULL, NULL)`,
     )
     .bind(
       jobID,
+      ownerUserID,
       JSON.stringify(urls),
       thread,
       outputSubdir,
@@ -568,7 +681,7 @@ async function createJob(env: Env, payload: CreateJobPayload): Promise<JobRecord
     throw new Error(message);
   }
 
-  return (await getJob(env, jobID)) as JobRecord;
+  return (await getJob(env, jobID, ownerUserID)) as JobRecord;
 }
 
 async function triggerGitHubRunner(env: Env, jobID: string): Promise<void> {
@@ -578,33 +691,164 @@ async function triggerGitHubRunner(env: Env, jobID: string): Promise<void> {
 
   const workflowFile = env.GITHUB_WORKFLOW_FILE || DEFAULT_WORKFLOW_FILE;
   const ref = env.GITHUB_REF || "main";
-
   const response = await fetch(
     `https://api.github.com/repos/${env.GITHUB_REPOSITORY}/actions/workflows/${workflowFile}/dispatches`,
     {
       method: "POST",
       headers: {
         "content-type": "application/json",
-        "accept": "application/vnd.github+json",
-        "authorization": `Bearer ${env.GITHUB_ACTIONS_TOKEN}`,
+        accept: "application/vnd.github+json",
+        authorization: `Bearer ${env.GITHUB_ACTIONS_TOKEN}`,
         "user-agent": "GoDingtalk-Control-Plane",
       },
       body: JSON.stringify({
         ref,
-        inputs: {
-          job_id: jobID,
-        },
+        inputs: { job_id: jobID },
       }),
     },
   );
 
   if (!response.ok) {
     const body = await response.text();
-    throw new Error(`workflow dispatch failed (${response.status}): ${body.slice(0, 200)}`);
+    throw new Error(`workflow dispatch failed (${response.status}): ${body.slice(0, 220)}`);
   }
 }
 
-async function handleStatus(_request: Request, env: Env): Promise<Response> {
+async function resolveGitHubReleaseDownloadURL(
+  env: Env,
+  jobID: string,
+  relativePath: string,
+  fileName: string,
+): Promise<string | null> {
+  const repository = env.GITHUB_REPOSITORY?.trim();
+  if (!repository) {
+    return null;
+  }
+
+  const releaseTag = env.GITHUB_RELEASE_TAG?.trim() || DEFAULT_RELEASE_TAG;
+  const response = await fetch(
+    `https://api.github.com/repos/${repository}/releases/tags/${encodeURIComponent(releaseTag)}`,
+    {
+      headers: {
+        accept: "application/vnd.github+json",
+        "user-agent": "godingtalk-worker",
+      },
+    },
+  );
+  if (!response.ok) {
+    return null;
+  }
+
+  const payload = (await response.json()) as {
+    assets?: Array<{ name?: string; label?: string | null; browser_download_url?: string }>;
+  };
+
+  const safe = (value: string) => value.replace(/[\/ ]/g, "-");
+  const expected = new Set<string>([
+    `${jobID}-${safe(relativePath)}`,
+    `${jobID}-${safe(fileName)}`,
+  ]);
+
+  const match = payload.assets?.find((asset) => {
+    if (!asset.browser_download_url) {
+      return false;
+    }
+    if (asset.label && expected.has(asset.label)) {
+      return true;
+    }
+    return asset.name ? expected.has(asset.name) : false;
+  });
+
+  return match?.browser_download_url || null;
+}
+
+function withSetCookie(response: Response, cookie: string): Response {
+  const headers = new Headers(response.headers);
+  headers.append("Set-Cookie", cookie);
+  return new Response(response.body, {
+    status: response.status,
+    statusText: response.statusText,
+    headers,
+  });
+}
+
+async function handleAuthMe(request: Request, env: Env): Promise<Response> {
+  await ensureBootstrapUser(env);
+  const user = await getAuthUser(request, env);
+  const registrationOpen = (await listUsersCount(env)) === 0;
+  if (!user) {
+    return jsonResponse({
+      authenticated: false,
+      registration_open: registrationOpen,
+    });
+  }
+
+  const cookieState = await getUserCookieState(env, user.id);
+  return jsonResponse({
+    authenticated: true,
+    registration_open: registrationOpen,
+    user,
+    cookies_ready: cookieState.cookiesReady,
+    cookies_updated_at: cookieState.cookiesUpdatedAt,
+  });
+}
+
+async function handleAuthRegister(request: Request, env: Env): Promise<Response> {
+  const payload = (await request.json()) as AuthPayload;
+  const username = (payload.username || "").trim();
+  const password = (payload.password || "").trim();
+  if (username.length < 3 || password.length < 6) {
+    return jsonResponse({ error: "username >= 3 and password >= 6 are required" }, { status: 400 });
+  }
+
+  const usersCount = await listUsersCount(env);
+  if (usersCount > 0) {
+    return jsonResponse({ error: "registration is closed" }, { status: 403 });
+  }
+
+  const existing = await getUserByUsername(env, username);
+  if (existing) {
+    return jsonResponse({ error: "username already exists" }, { status: 409 });
+  }
+
+  const user = await createUser(env, username, password);
+  const token = await createSession(env, user.id);
+  const response = jsonResponse({ ok: true, user });
+  return withSetCookie(response, sessionCookie(token, SESSION_TTL_SECONDS));
+}
+
+async function handleAuthLogin(request: Request, env: Env): Promise<Response> {
+  await ensureBootstrapUser(env);
+
+  const payload = (await request.json()) as AuthPayload;
+  const username = (payload.username || "").trim();
+  const password = (payload.password || "").trim();
+  if (!username || !password) {
+    return jsonResponse({ error: "username and password are required" }, { status: 400 });
+  }
+
+  const user = await getUserByUsername(env, username);
+  if (!user) {
+    return jsonResponse({ error: "invalid username or password" }, { status: 401 });
+  }
+
+  const expected = await passwordHash(env, user.username, password);
+  if (expected !== user.password_hash) {
+    return jsonResponse({ error: "invalid username or password" }, { status: 401 });
+  }
+
+  const token = await createSession(env, user.id);
+  const response = jsonResponse({ ok: true, user: { id: user.id, username: user.username } });
+  return withSetCookie(response, sessionCookie(token, SESSION_TTL_SECONDS));
+}
+
+async function handleAuthLogout(request: Request, env: Env): Promise<Response> {
+  await dropSession(request, env);
+  const response = jsonResponse({ ok: true });
+  return withSetCookie(response, clearSessionCookie());
+}
+
+async function handleStatus(env: Env, user: AuthUser): Promise<Response> {
   const [countsRow, cookieState] = await Promise.all([
     env.DB
       .prepare(
@@ -614,14 +858,17 @@ async function handleStatus(_request: Request, env: Env): Promise<Response> {
            SUM(CASE WHEN status = 'running' THEN 1 ELSE 0 END) AS running_jobs,
            SUM(CASE WHEN status = 'succeeded' THEN 1 ELSE 0 END) AS succeeded_jobs,
            SUM(CASE WHEN status = 'failed' THEN 1 ELSE 0 END) AS failed_jobs
-         FROM jobs`,
+         FROM jobs
+         WHERE owner_user_id = ?1`,
       )
+      .bind(user.id)
       .first<Record<string, number | string | null>>(),
-    getCookieState(env),
+    getUserCookieState(env, user.id),
   ]);
 
   return jsonResponse({
-    mode: "github-actions-control-plane",
+    mode: "private-control-plane",
+    user,
     cookies_ready: cookieState.cookiesReady,
     cookies_updated_at: cookieState.cookiesUpdatedAt,
     total_jobs: toNumber(countsRow?.total_jobs),
@@ -631,11 +878,12 @@ async function handleStatus(_request: Request, env: Env): Promise<Response> {
     failed_jobs: toNumber(countsRow?.failed_jobs),
     workflow_repository: env.GITHUB_REPOSITORY || "",
     workflow_file: env.GITHUB_WORKFLOW_FILE || DEFAULT_WORKFLOW_FILE,
-    public_downloads: true,
+    public_downloads: false,
+    default_thread: DEFAULT_THREAD,
   });
 }
 
-async function handleCookies(request: Request, env: Env): Promise<Response> {
+async function handleCookies(request: Request, env: Env, user: AuthUser): Promise<Response> {
   if (request.method !== "POST") {
     return jsonResponse({ error: "method not allowed" }, { status: 405 });
   }
@@ -649,24 +897,23 @@ async function handleCookies(request: Request, env: Env): Promise<Response> {
     return jsonResponse({ error: "LV_PC_SESSION cookie is required" }, { status: 400 });
   }
 
-  await setSetting(env, COOKIE_SETTING_KEY, JSON.stringify(cookies));
-  await setSetting(env, COOKIE_UPDATED_AT_KEY, nowISO());
-
+  await saveUserCookies(env, user.id, cookies);
+  const state = await getUserCookieState(env, user.id);
   return jsonResponse({
     message: "cookies saved",
-    cookies_valid: true,
-    cookies_updated_at: await getSetting(env, COOKIE_UPDATED_AT_KEY),
+    cookies_valid: state.cookiesReady,
+    cookies_updated_at: state.cookiesUpdatedAt,
   });
 }
 
-async function handleJobs(request: Request, env: Env): Promise<Response> {
+async function handleJobs(request: Request, env: Env, user: AuthUser): Promise<Response> {
   if (request.method === "GET") {
-    return jsonResponse({ jobs: await listJobs(env) });
+    return jsonResponse({ jobs: await listJobs(env, user.id) });
   }
   if (request.method === "POST") {
     try {
       const payload = (await request.json()) as CreateJobPayload;
-      const job = await createJob(env, payload);
+      const job = await createJob(env, user.id, payload);
       return jsonResponse(job, { status: 202 });
     } catch (error) {
       return jsonResponse(
@@ -678,8 +925,8 @@ async function handleJobs(request: Request, env: Env): Promise<Response> {
   return jsonResponse({ error: "method not allowed" }, { status: 405 });
 }
 
-async function handleJobDetail(request: Request, jobID: string, env: Env): Promise<Response> {
-  const job = await getJob(env, jobID);
+async function handleJobDetail(request: Request, env: Env, user: AuthUser, jobID: string): Promise<Response> {
+  const job = await getJob(env, jobID, user.id);
   if (!job) {
     return jsonResponse({ error: "job not found" }, { status: 404 });
   }
@@ -688,14 +935,13 @@ async function handleJobDetail(request: Request, jobID: string, env: Env): Promi
   if (!includeEvents) {
     return jsonResponse(job);
   }
-
   return jsonResponse({
     job,
     events: await listJobEvents(env, jobID),
   });
 }
 
-async function handleFileDownload(request: Request, env: Env): Promise<Response> {
+async function handleFileDownload(request: Request, env: Env, user: AuthUser): Promise<Response> {
   const url = new URL(request.url);
   const jobID = url.searchParams.get("job_id") || "";
   const relativePath = url.searchParams.get("path") || "";
@@ -703,7 +949,7 @@ async function handleFileDownload(request: Request, env: Env): Promise<Response>
     return jsonResponse({ error: "job_id and path are required" }, { status: 400 });
   }
 
-  const job = await getJob(env, jobID);
+  const job = await getJob(env, jobID, user.id);
   if (!job) {
     return jsonResponse({ error: "job not found" }, { status: 404 });
   }
@@ -712,15 +958,14 @@ async function handleFileDownload(request: Request, env: Env): Promise<Response>
   if (!file) {
     return jsonResponse({ error: "file not found" }, { status: 404 });
   }
+
   if (!file.bucket_key) {
     const releaseURL = await resolveGitHubReleaseDownloadURL(env, jobID, file.relative_path, file.name);
     if (releaseURL) {
       return Response.redirect(releaseURL, 302);
     }
   }
-  if (!file.bucket_key && file.download_url) {
-    return Response.redirect(file.download_url, 302);
-  }
+
   if (!file.bucket_key) {
     return jsonResponse({ error: "file is missing storage metadata" }, { status: 404 });
   }
@@ -733,9 +978,8 @@ async function handleFileDownload(request: Request, env: Env): Promise<Response>
   const headers = new Headers();
   object.writeHttpMetadata(headers);
   headers.set("etag", object.httpEtag);
-  headers.set("cache-control", "public, max-age=3600");
+  headers.set("cache-control", "private, max-age=120");
   headers.set("content-disposition", `attachment; filename*=UTF-8''${encodeURIComponent(file.name)}`);
-
   if (!headers.get("content-type")) {
     headers.set("content-type", file.content_type || "application/octet-stream");
   }
@@ -749,20 +993,32 @@ async function handleInternalClaim(request: Request, env: Env, jobID: string): P
     return authError;
   }
 
+  const row = await env.DB
+    .prepare("SELECT owner_user_id, status FROM jobs WHERE id = ?1")
+    .bind(jobID)
+    .first<{ owner_user_id: string; status: string }>();
+
+  if (!row) {
+    return jsonResponse({ error: "job not found" }, { status: 404 });
+  }
+  if (row.status === "running") {
+    return jsonResponse({ error: "job is already running" }, { status: 409 });
+  }
+  if (row.status === "succeeded" || row.status === "failed") {
+    return jsonResponse({ error: "job already finished" }, { status: 409 });
+  }
+  if (!row.owner_user_id) {
+    return jsonResponse({ error: "job owner is missing" }, { status: 409 });
+  }
+
+  const cookieState = await getUserCookieState(env, row.owner_user_id);
+  if (!cookieState.cookiesReady) {
+    return jsonResponse({ error: "cookies are missing or invalid" }, { status: 409 });
+  }
+
   const job = await getJob(env, jobID);
   if (!job) {
     return jsonResponse({ error: "job not found" }, { status: 404 });
-  }
-  if (job.status === "running") {
-    return jsonResponse({ error: "job is already running" }, { status: 409 });
-  }
-  if (job.status === "succeeded" || job.status === "failed") {
-    return jsonResponse({ error: "job already finished" }, { status: 409 });
-  }
-
-  const cookieState = await getCookieState(env);
-  if (!cookieState.cookiesReady) {
-    return jsonResponse({ error: "cookies are missing or invalid" }, { status: 409 });
   }
 
   await env.DB
@@ -838,7 +1094,9 @@ export default {
       let response: Response;
 
       if (url.pathname === "/") {
-        response = htmlResponse(renderApp(url.origin));
+        response = htmlResponse(renderApp(url.origin, "home"));
+      } else if (url.pathname === "/settings") {
+        response = htmlResponse(renderApp(url.origin, "settings"));
       } else if (url.pathname === "/tampermonkey/godingtalk-helper.user.js") {
         response = textResponse(renderTampermonkeyScript(url.origin), {
           headers: {
@@ -846,16 +1104,49 @@ export default {
             "cache-control": "public, max-age=300",
           },
         });
+      } else if (url.pathname === "/api/auth/me" && request.method === "GET") {
+        response = await handleAuthMe(request, env);
+      } else if (url.pathname === "/api/auth/register" && request.method === "POST") {
+        response = await handleAuthRegister(request, env);
+      } else if (url.pathname === "/api/auth/login" && request.method === "POST") {
+        response = await handleAuthLogin(request, env);
+      } else if (url.pathname === "/api/auth/logout" && request.method === "POST") {
+        response = await handleAuthLogout(request, env);
       } else if (url.pathname === "/api/status" && request.method === "GET") {
-        response = await handleStatus(request, env);
+        const auth = await requireUserAuth(request, env);
+        if (auth.response) {
+          response = auth.response;
+        } else {
+          response = await handleStatus(env, auth.user as AuthUser);
+        }
       } else if (url.pathname === "/api/cookies") {
-        response = await handleCookies(request, env);
+        const auth = await requireUserAuth(request, env);
+        if (auth.response) {
+          response = auth.response;
+        } else {
+          response = await handleCookies(request, env, auth.user as AuthUser);
+        }
       } else if (url.pathname === "/api/jobs") {
-        response = await handleJobs(request, env);
+        const auth = await requireUserAuth(request, env);
+        if (auth.response) {
+          response = auth.response;
+        } else {
+          response = await handleJobs(request, env, auth.user as AuthUser);
+        }
       } else if (url.pathname.startsWith("/api/jobs/") && request.method === "GET") {
-        response = await handleJobDetail(request, url.pathname.replace("/api/jobs/", ""), env);
+        const auth = await requireUserAuth(request, env);
+        if (auth.response) {
+          response = auth.response;
+        } else {
+          response = await handleJobDetail(request, env, auth.user as AuthUser, url.pathname.replace("/api/jobs/", ""));
+        }
       } else if (url.pathname === "/api/files" && (request.method === "GET" || request.method === "HEAD")) {
-        response = await handleFileDownload(request, env);
+        const auth = await requireUserAuth(request, env);
+        if (auth.response) {
+          response = auth.response;
+        } else {
+          response = await handleFileDownload(request, env, auth.user as AuthUser);
+        }
       } else if (url.pathname.startsWith("/internal/jobs/")) {
         const parts = url.pathname.split("/").filter(Boolean);
         if (parts.length === 4 && parts[0] === "internal" && parts[1] === "jobs") {
@@ -880,11 +1171,7 @@ export default {
       return applyCors(request, response, env);
     } catch (error) {
       const message = error instanceof Error ? error.message : "internal error";
-      return applyCors(
-        request,
-        jsonResponse({ error: message }, { status: 500 }),
-        env,
-      );
+      return applyCors(request, jsonResponse({ error: message }, { status: 500 }), env);
     }
   },
 };
