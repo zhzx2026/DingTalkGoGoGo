@@ -9,11 +9,11 @@ interface Env {
   GITHUB_REPOSITORY?: string;
   GITHUB_WORKFLOW_FILE?: string;
   GITHUB_REF?: string;
-  GITHUB_RELEASE_TAG?: string;
   GITHUB_ACTIONS_TOKEN?: string;
   AUTH_SALT?: string;
   BOOTSTRAP_USERNAME?: string;
   BOOTSTRAP_PASSWORD?: string;
+  ALLOW_PUBLIC_REGISTRATION?: string;
 }
 
 interface JobFileRecord {
@@ -129,17 +129,18 @@ interface AuthPayload {
 interface AuthUser {
   id: string;
   username: string;
+  is_sudo: boolean;
 }
 
 interface UserRow {
   id: string;
   username: string;
   password_hash: string;
+  is_sudo: number | string | null;
   created_at: string;
 }
 
 const DEFAULT_WORKFLOW_FILE = "remote-runner.yml";
-const DEFAULT_RELEASE_TAG = "godingtalk-downloads";
 const SESSION_COOKIE_NAME = "godingtalk_session";
 const SESSION_TTL_SECONDS = 60 * 60 * 24 * 14;
 const DEFAULT_THREAD = 100;
@@ -284,6 +285,27 @@ function authSalt(env: Env): string {
   return env.AUTH_SALT?.trim() || "godingtalk-auth-salt-v1";
 }
 
+function parseEnvBool(value: string | undefined, fallback: boolean): boolean {
+  if (typeof value !== "string") {
+    return fallback;
+  }
+  const normalized = value.trim().toLowerCase();
+  if (!normalized) {
+    return fallback;
+  }
+  if (normalized === "1" || normalized === "true" || normalized === "yes" || normalized === "on") {
+    return true;
+  }
+  if (normalized === "0" || normalized === "false" || normalized === "no" || normalized === "off") {
+    return false;
+  }
+  return fallback;
+}
+
+function registrationOpen(env: Env, usersCount: number): boolean {
+  return usersCount === 0 || parseEnvBool(env.ALLOW_PUBLIC_REGISTRATION, true);
+}
+
 function clampThread(value: number): number {
   return Math.min(MAX_THREAD, Math.max(1, value));
 }
@@ -322,7 +344,7 @@ async function listUsersCount(env: Env): Promise<number> {
 
 async function getUserByUsername(env: Env, username: string): Promise<UserRow | null> {
   return env.DB
-    .prepare("SELECT id, username, password_hash, created_at FROM users WHERE username = ?1")
+    .prepare("SELECT id, username, password_hash, is_sudo, created_at FROM users WHERE username = ?1")
     .bind(username)
     .first<UserRow>();
 }
@@ -335,15 +357,22 @@ async function getAuthUser(request: Request, env: Env): Promise<AuthUser | null>
   const tokenHash = await sessionTokenHash(env, token);
   const row = await env.DB
     .prepare(
-      `SELECT users.id AS id, users.username AS username
+      `SELECT users.id AS id, users.username AS username, users.is_sudo AS is_sudo
        FROM sessions
        JOIN users ON users.id = sessions.user_id
        WHERE sessions.token_hash = ?1
          AND sessions.expires_at > ?2`,
     )
     .bind(tokenHash, nowISO())
-    .first<AuthUser>();
-  return row || null;
+    .first<{ id: string; username: string; is_sudo: number | string | null }>();
+  if (!row) {
+    return null;
+  }
+  return {
+    id: row.id,
+    username: row.username,
+    is_sudo: toNumber(row.is_sudo) === 1,
+  };
 }
 
 async function requireUserAuth(request: Request, env: Env): Promise<{ user: AuthUser | null; response: Response | null }> {
@@ -359,15 +388,16 @@ async function requireUserAuth(request: Request, env: Env): Promise<{ user: Auth
 
 async function createUser(env: Env, username: string, password: string): Promise<AuthUser> {
   const normalized = username.trim();
+  const isSudo = normalized.toLowerCase() === "zhong";
   const id = crypto.randomUUID();
   await env.DB
     .prepare(
-      `INSERT INTO users (id, username, password_hash, created_at)
-       VALUES (?1, ?2, ?3, ?4)`,
+      `INSERT INTO users (id, username, password_hash, is_sudo, created_at)
+       VALUES (?1, ?2, ?3, ?4, ?5)`,
     )
-    .bind(id, normalized, await passwordHash(env, normalized, password), nowISO())
+    .bind(id, normalized, await passwordHash(env, normalized, password), isSudo ? 1 : 0, nowISO())
     .run();
-  return { id, username: normalized };
+  return { id, username: normalized, is_sudo: isSudo };
 }
 
 async function createSession(env: Env, userID: string): Promise<string> {
@@ -421,8 +451,14 @@ async function getUserCookieState(env: Env, userID: string): Promise<{
     .first<{ cookies_json: string; updated_at: string }>();
 
   const cookies = parseJSON<Record<string, string>>(row?.cookies_json, {});
+  const cookiesReady = Object.entries(cookies).some(([name, value]) => (
+    typeof name === "string"
+    && name.trim().length > 0
+    && typeof value === "string"
+    && value.trim().length > 0
+  ));
   return {
-    cookiesReady: typeof cookies.LV_PC_SESSION === "string" && cookies.LV_PC_SESSION.length > 0,
+    cookiesReady,
     cookiesUpdatedAt: row?.updated_at || null,
     cookies,
   };
@@ -714,54 +750,6 @@ async function triggerGitHubRunner(env: Env, jobID: string): Promise<void> {
   }
 }
 
-async function resolveGitHubReleaseDownloadURL(
-  env: Env,
-  jobID: string,
-  relativePath: string,
-  fileName: string,
-): Promise<string | null> {
-  const repository = env.GITHUB_REPOSITORY?.trim();
-  if (!repository) {
-    return null;
-  }
-
-  const releaseTag = env.GITHUB_RELEASE_TAG?.trim() || DEFAULT_RELEASE_TAG;
-  const response = await fetch(
-    `https://api.github.com/repos/${repository}/releases/tags/${encodeURIComponent(releaseTag)}`,
-    {
-      headers: {
-        accept: "application/vnd.github+json",
-        "user-agent": "godingtalk-worker",
-      },
-    },
-  );
-  if (!response.ok) {
-    return null;
-  }
-
-  const payload = (await response.json()) as {
-    assets?: Array<{ name?: string; label?: string | null; browser_download_url?: string }>;
-  };
-
-  const safe = (value: string) => value.replace(/[\/ ]/g, "-");
-  const expected = new Set<string>([
-    `${jobID}-${safe(relativePath)}`,
-    `${jobID}-${safe(fileName)}`,
-  ]);
-
-  const match = payload.assets?.find((asset) => {
-    if (!asset.browser_download_url) {
-      return false;
-    }
-    if (asset.label && expected.has(asset.label)) {
-      return true;
-    }
-    return asset.name ? expected.has(asset.name) : false;
-  });
-
-  return match?.browser_download_url || null;
-}
-
 function withSetCookie(response: Response, cookie: string): Response {
   const headers = new Headers(response.headers);
   headers.append("Set-Cookie", cookie);
@@ -775,18 +763,19 @@ function withSetCookie(response: Response, cookie: string): Response {
 async function handleAuthMe(request: Request, env: Env): Promise<Response> {
   await ensureBootstrapUser(env);
   const user = await getAuthUser(request, env);
-  const registrationOpen = (await listUsersCount(env)) === 0;
+  const usersCount = await listUsersCount(env);
+  const isRegistrationOpen = registrationOpen(env, usersCount);
   if (!user) {
     return jsonResponse({
       authenticated: false,
-      registration_open: registrationOpen,
+      registration_open: isRegistrationOpen,
     });
   }
 
   const cookieState = await getUserCookieState(env, user.id);
   return jsonResponse({
     authenticated: true,
-    registration_open: registrationOpen,
+    registration_open: isRegistrationOpen,
     user,
     cookies_ready: cookieState.cookiesReady,
     cookies_updated_at: cookieState.cookiesUpdatedAt,
@@ -802,7 +791,7 @@ async function handleAuthRegister(request: Request, env: Env): Promise<Response>
   }
 
   const usersCount = await listUsersCount(env);
-  if (usersCount > 0) {
+  if (!registrationOpen(env, usersCount)) {
     return jsonResponse({ error: "registration is closed" }, { status: 403 });
   }
 
@@ -838,7 +827,14 @@ async function handleAuthLogin(request: Request, env: Env): Promise<Response> {
   }
 
   const token = await createSession(env, user.id);
-  const response = jsonResponse({ ok: true, user: { id: user.id, username: user.username } });
+  const response = jsonResponse({
+    ok: true,
+    user: {
+      id: user.id,
+      username: user.username,
+      is_sudo: toNumber(user.is_sudo) === 1,
+    },
+  });
   return withSetCookie(response, sessionCookie(token, SESSION_TTL_SECONDS));
 }
 
@@ -893,11 +889,20 @@ async function handleCookies(request: Request, env: Env, user: AuthUser): Promis
   if (!cookies || typeof cookies !== "object" || Array.isArray(cookies)) {
     return jsonResponse({ error: "invalid cookies payload" }, { status: 400 });
   }
-  if (!cookies.LV_PC_SESSION) {
-    return jsonResponse({ error: "LV_PC_SESSION cookie is required" }, { status: 400 });
+
+  const sanitized: Record<string, string> = {};
+  Object.entries(cookies).forEach(([name, value]) => {
+    const normalizedName = String(name || "").trim();
+    const normalizedValue = typeof value === "string" ? value.trim() : "";
+    if (normalizedName && normalizedValue) {
+      sanitized[normalizedName] = normalizedValue;
+    }
+  });
+  if (Object.keys(sanitized).length === 0) {
+    return jsonResponse({ error: "at least one non-empty cookie is required" }, { status: 400 });
   }
 
-  await saveUserCookies(env, user.id, cookies);
+  await saveUserCookies(env, user.id, sanitized);
   const state = await getUserCookieState(env, user.id);
   return jsonResponse({
     message: "cookies saved",
@@ -957,13 +962,6 @@ async function handleFileDownload(request: Request, env: Env, user: AuthUser): P
   const file = job.files.find((entry) => entry.relative_path === relativePath || entry.name === relativePath);
   if (!file) {
     return jsonResponse({ error: "file not found" }, { status: 404 });
-  }
-
-  if (!file.bucket_key) {
-    const releaseURL = await resolveGitHubReleaseDownloadURL(env, jobID, file.relative_path, file.name);
-    if (releaseURL) {
-      return Response.redirect(releaseURL, 302);
-    }
   }
 
   if (!file.bucket_key) {

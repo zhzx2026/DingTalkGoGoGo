@@ -36,11 +36,23 @@ jobs:
         run: |
           printf '%s' "${INTERNAL_API_TOKEN}" | npx wrangler secret put INTERNAL_API_TOKEN
           printf '%s' "${GITHUB_ACTIONS_TOKEN}" | npx wrangler secret put GITHUB_ACTIONS_TOKEN
+          if [ -n "${AUTH_SALT}" ]; then
+            printf '%s' "${AUTH_SALT}" | npx wrangler secret put AUTH_SALT
+          fi
+          if [ -n "${BOOTSTRAP_USERNAME}" ]; then
+            printf '%s' "${BOOTSTRAP_USERNAME}" | npx wrangler secret put BOOTSTRAP_USERNAME
+          fi
+          if [ -n "${BOOTSTRAP_PASSWORD}" ]; then
+            printf '%s' "${BOOTSTRAP_PASSWORD}" | npx wrangler secret put BOOTSTRAP_PASSWORD
+          fi
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           INTERNAL_API_TOKEN: ${{ secrets.GODINGTALK_INTERNAL_TOKEN }}
           GITHUB_ACTIONS_TOKEN: ${{ secrets.GODINGTALK_GITHUB_ACTIONS_TOKEN }}
+          AUTH_SALT: ${{ secrets.GODINGTALK_AUTH_SALT }}
+          BOOTSTRAP_USERNAME: ${{ secrets.GODINGTALK_BOOTSTRAP_USERNAME }}
+          BOOTSTRAP_PASSWORD: ${{ secrets.GODINGTALK_BOOTSTRAP_PASSWORD }}
 
       - name: Apply D1 migrations
         run: npx wrangler d1 migrations apply DB --remote

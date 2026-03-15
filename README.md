@@ -3,20 +3,20 @@
 钉钉直播回放下载工具，现在支持三种运行方式：
 
 - `CLI`：本地直接下载单个或批量回放
-- `Remote Public Mode`：Cloudflare Worker + D1 + R2 + GitHub Actions，公开网页提交任务，远程 runner 下载，不占你的电脑
+- `Remote Private Mode`：Cloudflare Worker + D1 + R2 + GitHub Actions，多用户登录隔离，远程 runner 下载，不占你的电脑
 - `Server Mode`：保留原来的 Go HTTP 服务模式，适合你自己有 VPS 的场景
 
 ## 推荐架构
 
-这次默认推荐的是远程公益版，不再依赖 Quick Tunnel，也不要求用户自己保存公网 token。
+这次默认推荐的是远程私有版，不再依赖 Quick Tunnel，也不要求终端用户提供 token。
 
 ```text
 Browser / Tampermonkey
         |
         v
-Cloudflare Worker (UI + API)
+Cloudflare Worker (UI + API + 登录鉴权)
         |
-        +--> D1 保存任务 / cookies 元数据 / 状态
+        +--> D1 保存用户 / 会话 / cookies 元数据 / 任务状态
         +--> GitHub Actions workflow_dispatch
         |
         v
@@ -24,23 +24,24 @@ GitHub Actions Runner
         |
         +--> GoDingtalk 下载 m3u8 / ffmpeg 转 mp4
         +--> 回写进度到 Worker
-        +--> 上传成品到公共发布资产
+        +--> 上传成品到私有 R2
         |
         v
-GitHub Release 资产（可公开直链）
+R2 私有对象
         |
         v
-网页直接下载
+登录后网页内下载
 ```
 
 这套链路的特点：
 
-- 公开网页可直接使用，不需要单独的用户 token
+- 用户登录后才能操作，Cookie 与视频按用户隔离
+- 视频存储在私有 R2，对外不暴露公共直链
 - 任务和状态保存在数据库里，不再是进程内存
 - 下载执行在 GitHub runner 上，不依赖你的电脑常驻
 - 每个任务会触发独立的 Actions 运行，天然可以并行
 
-## 远程公益版部署
+## 远程私有版部署
 
 ### 1. Cloudflare 资源
 
@@ -48,7 +49,7 @@ GitHub Release 资产（可公开直链）
 
 - 一个 Worker
 - 一个 D1 数据库
-- 一个 R2 Bucket（当前主要用于 Worker 文件绑定，远程 runner 现阶段默认上传到 GitHub Release 资产）
+- 一个 R2 Bucket（用于保存下载后的视频文件）
 
 `worker/wrangler.toml` 里要填真实值：
 
@@ -65,6 +66,7 @@ GitHub Release 资产（可公开直链）
 npm install
 printf '%s' 'change-this-internal-token' | npx wrangler secret put INTERNAL_API_TOKEN
 printf '%s' 'ghp_xxx' | npx wrangler secret put GITHUB_ACTIONS_TOKEN
+printf '%s' 'change-this-auth-salt' | npx wrangler secret put AUTH_SALT
 npx wrangler d1 migrations apply DB --remote
 npx wrangler deploy
 ```
@@ -73,6 +75,8 @@ npx wrangler deploy
 
 - `INTERNAL_API_TOKEN`：只给 Worker 和 GitHub runner 之间使用
 - `GITHUB_ACTIONS_TOKEN`：Worker 用它去触发仓库里的 `remote-runner.yml`
+- `AUTH_SALT`：登录密码和会话哈希的盐值，建议自定义
+- `BOOTSTRAP_USERNAME` / `BOOTSTRAP_PASSWORD`（可选）：预置一个初始账号
 
 ### 3. GitHub secrets / variables
 
@@ -83,16 +87,16 @@ npx wrangler deploy
 - `GODINGTALK_CONTROL_URL`
 - `GODINGTALK_INTERNAL_TOKEN`
 - `GODINGTALK_GITHUB_ACTIONS_TOKEN`
-
-再配置这个 `Repository Variable`：
-
-- `GODINGTALK_R2_BUCKET`
+- `GODINGTALK_R2_ACCESS_KEY_ID`
+- `GODINGTALK_R2_SECRET_ACCESS_KEY`
+- `GODINGTALK_R2_BUCKET`（可选，不填默认 `godingtalk-files`）
 
 建议它们的含义如下：
 
 - `GODINGTALK_CONTROL_URL`：你部署好的 Worker 地址，例如 `https://godingtalk-worker.example.workers.dev`
 - `GODINGTALK_INTERNAL_TOKEN`：和 Worker secret `INTERNAL_API_TOKEN` 保持一致
 - `GODINGTALK_GITHUB_ACTIONS_TOKEN`：给 `deploy-worker.yml` 用，用来同步 Worker secret
+- `GODINGTALK_R2_ACCESS_KEY_ID` / `GODINGTALK_R2_SECRET_ACCESS_KEY`：给远程 runner 上传 R2
 - `GODINGTALK_R2_BUCKET`：真实的 R2 bucket 名称
 
 ### 4. 自动工作流
@@ -110,7 +114,7 @@ npx wrangler deploy
   - 被 Worker 远程触发
   - 领取任务
   - 用 GoDingtalk 下载
-  - 上传 mp4 到 GitHub Release 资产
+  - 上传 mp4 到私有 R2
   - 回写最终状态
 - `.github/workflows/release.yml`
   - 打 tag 时构建二进制和 Docker 镜像
@@ -119,11 +123,14 @@ npx wrangler deploy
 
 部署完成后，直接打开 Worker 根地址即可：
 
+- 注册/登录账号（默认开放注册）
 - 上传 cookies
 - 粘贴一个或多个回放链接
 - 提交任务
 - 网页轮询看进度
-- 成功后直接点下载链接
+- 成功后在登录态内直接点下载链接
+
+如果要关闭公开注册，把 `worker/wrangler.toml` 里的 `ALLOW_PUBLIC_REGISTRATION` 改成 `"false"`，再重新部署。
 
 如果你习惯用 Tampermonkey：
 
@@ -136,8 +143,12 @@ npx wrangler deploy
 
 ## Remote API
 
-公开 API：
+登录态 API：
 
+- `GET /api/auth/me`
+- `POST /api/auth/register`
+- `POST /api/auth/login`
+- `POST /api/auth/logout`
 - `GET /api/status`
 - `POST /api/cookies`
 - `GET /api/jobs`
@@ -225,7 +236,7 @@ GODINGTALK_PUBLIC_BASE_URL=https://api.example.com \
 - `GET /api/downloads/{jobId}`
 - `GET /files/{path}`
 
-这套模式现在属于兼容层，不是推荐的公益版公开部署方式。
+这套模式现在属于兼容层，不是推荐的私有登录隔离部署方式。
 
 ## 配置项
 
@@ -259,7 +270,7 @@ GODINGTALK_PUBLIC_BASE_URL=https://api.example.com \
 - 真正下载依赖 `ffmpeg`，所以执行节点仍然是 GitHub runner 或你自己的服务器
 - Tampermonkey 只能辅助导入浏览器可见 cookie，不能替代完整登录态
 - GitHub Actions 并发能力受你的 GitHub 计划额度限制
-- 现在默认的公共下载出口是 GitHub Release 资产；后续补上长期有效的 Cloudflare API Token 后，可以再把上传端切回 R2
+- 视频文件现在走私有 R2，不再依赖 GitHub Release 公共直链
 
 ## 许可证
 

@@ -364,7 +364,7 @@ export function renderApp(appOrigin: string, page: AppPage): string {
 
       <section id="auth-panel" class="panel">
         <h2>用户登录</h2>
-        <p>为了隔离隐私，Cookie 和视频都按登录用户独立保存。首次部署可直接注册第一个账号。</p>
+        <p>为了隔离隐私，Cookie 和视频都按登录用户独立保存。当前为开放注册模式。</p>
         <div class="fields">
           <div class="auth-grid">
             <div class="field">
@@ -378,7 +378,7 @@ export function renderApp(appOrigin: string, page: AppPage): string {
           </div>
           <div class="actions">
             <button id="login-btn" class="primary" type="button">登录</button>
-            <button id="register-btn" class="secondary" type="button">注册首个账号</button>
+            <button id="register-btn" class="secondary" type="button">注册</button>
             <button id="logout-btn" class="secondary hidden" type="button">退出登录</button>
           </div>
         </div>
@@ -408,7 +408,7 @@ export function renderApp(appOrigin: string, page: AppPage): string {
         <div class="fields">
           <div class="field">
             <label for="cookies">Cookies 内容</label>
-            <textarea id="cookies" placeholder='{"LV_PC_SESSION":"replace-me"}'></textarea>
+            <textarea id="cookies" placeholder='{"cookie_name":"cookie_value"}'></textarea>
           </div>
           <div class="actions">
             <button id="upload-cookies-btn" class="primary" type="button">上传 Cookies</button>
@@ -590,7 +590,8 @@ export function renderApp(appOrigin: string, page: AppPage): string {
 
       function renderAuthState() {
         if (state.authenticated && state.user) {
-          el.userChip.textContent = "已登录: " + state.user.username;
+          const roleSuffix = state.user.is_sudo ? " (sudo)" : "";
+          el.userChip.textContent = "已登录: " + state.user.username + roleSuffix;
           el.logoutBtn.classList.remove("hidden");
           el.loginBtn.classList.add("hidden");
           el.registerBtn.classList.add("hidden");
@@ -709,7 +710,7 @@ export function renderApp(appOrigin: string, page: AppPage): string {
         });
         await refreshAuth();
         await refreshStatusAndJobs();
-        setNotice("首个账号已创建并登录。", "ok");
+        setNotice("账号已创建并登录。", "ok");
       }
 
       async function logout() {
@@ -830,7 +831,7 @@ export function renderApp(appOrigin: string, page: AppPage): string {
         el.exampleCookiesBtn.addEventListener("click", () => {
           if (!el.cookies) return;
           el.cookies.value = JSON.stringify({
-            LV_PC_SESSION: "replace-me",
+            acw_tc: "replace-me",
             csrfToken: "optional",
           }, null, 2);
         });

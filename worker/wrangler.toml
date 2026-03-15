@@ -8,6 +8,7 @@ CORS_ALLOW_ORIGIN = "*"
 GITHUB_REPOSITORY = "zhzx2026/DingTalkGoGoGo"
 GITHUB_WORKFLOW_FILE = "remote-runner.yml"
 GITHUB_REF = "main"
+ALLOW_PUBLIC_REGISTRATION = "true"
 
 [[d1_databases]]
 binding = "DB"
