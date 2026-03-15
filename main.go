@@ -149,6 +149,14 @@ func startChrome(config *Config) error {
 // saveDir: 保存目录
 // Thread：线程数
 func M3u8Down(title, playbackUrl, saveDir string, Thread int) error {
+	if strings.TrimSpace(playbackUrl) == "" {
+		return fmt.Errorf("回放地址为空，可能 cookies 无效、回放未生成，或当前链接没有下载权限")
+	}
+
+	if _, err := url.ParseRequestURI(playbackUrl); err != nil {
+		return fmt.Errorf("回放地址无效: %w", err)
+	}
+
 	// 创建临时文件夹
 	tempDir := filepath.Join(saveDir, ".videoTemp")
 
@@ -276,9 +284,14 @@ func getLiveRoomPublicInfo(roomId, liveUuid, saveDir string, Thread int, config 
 	if !ok {
 		return "", fmt.Errorf("响应格式错误: 未找到 playbackUrl 字段")
 	}
+	playbackUrl = strings.TrimSpace(playbackUrl)
 
 	fmt.Println("标题:", title)
 	fmt.Println("回放地址:", playbackUrl)
+
+	if playbackUrl == "" {
+		return title, fmt.Errorf("未获取到回放地址，可能 cookies 无效、直播回放未就绪，或该回放没有权限访问")
+	}
 
 	if err := M3u8Down(title, playbackUrl, saveDir, Thread); err != nil {
 		return title, err

@@ -356,6 +356,13 @@ func (s *Server) handleCreateDownload(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) runJob(jobID, saveDir string) {
+	defer func() {
+		if recovered := recover(); recovered != nil {
+			log.Printf("job panic recovered job=%s err=%v", jobID, recovered)
+			s.finishJob(jobID, jobStatusFailed, nil, []string{fmt.Sprintf("任务执行异常: %v", recovered)})
+		}
+	}()
+
 	s.concurrency <- struct{}{}
 	defer func() {
 		<-s.concurrency
