@@ -30,6 +30,10 @@ type Config struct {
 	PublicBaseURL string `json:"public_base_url"`
 	// 是否启用 CORS
 	ServerEnableCORS bool `json:"server_enable_cors"`
+	// 远程控制面地址
+	ControlBaseURL string `json:"control_base_url"`
+	// 控制面内部调用 Token
+	InternalAPIToken string `json:"internal_api_token"`
 }
 
 // getConfigDir 获取配置文件夹路径
@@ -195,5 +199,13 @@ func ApplyEnvOverrides(config *Config) {
 		if parsed, err := strconv.ParseBool(value); err == nil {
 			config.ServerEnableCORS = parsed
 		}
+	}
+
+	if value := strings.TrimSpace(os.Getenv("GODINGTALK_CONTROL_URL")); value != "" {
+		config.ControlBaseURL = strings.TrimRight(value, "/")
+	}
+
+	if value := strings.TrimSpace(os.Getenv("GODINGTALK_INTERNAL_API_TOKEN")); value != "" {
+		config.InternalAPIToken = value
 	}
 }

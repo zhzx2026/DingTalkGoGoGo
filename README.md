@@ -1,27 +1,162 @@
 # GoDingtalk
 
-钉钉直播回放下载工具，支持两种运行方式：
+钉钉直播回放下载工具，现在支持三种运行方式：
 
-- CLI 模式：本地直接下载单个或批量回放
-- Server 模式：跑在 Linux 服务器上，通过 HTTP API 提交下载任务，再配合 Cloudflare Tunnel + Worker 对外暴露
+- `CLI`：本地直接下载单个或批量回放
+- `Remote Public Mode`：Cloudflare Worker + D1 + R2 + GitHub Actions，公开网页提交任务，远程 runner 下载，不占你的电脑
+- `Server Mode`：保留原来的 Go HTTP 服务模式，适合你自己有 VPS 的场景
 
-## 架构说明
+## 推荐架构
 
-这个项目的实际下载依赖 `ffmpeg` 和 `Chrome/chromedp`，所以不能直接部署到 Cloudflare Worker。
+这次默认推荐的是远程公益版，不再依赖 Quick Tunnel，也不要求用户自己保存公网 token。
 
-推荐部署结构：
+```text
+Browser / Tampermonkey
+        |
+        v
+Cloudflare Worker (UI + API)
+        |
+        +--> D1 保存任务 / cookies 元数据 / 状态
+        +--> GitHub Actions workflow_dispatch
+        |
+        v
+GitHub Actions Runner
+        |
+        +--> GoDingtalk 下载 m3u8 / ffmpeg 转 mp4
+        +--> 回写进度到 Worker
+        +--> 上传成品到公共发布资产
+        |
+        v
+GitHub Release 资产（可公开直链）
+        |
+        v
+网页直接下载
+```
 
-1. GoDingtalk Server 跑在你的服务器或 Docker 容器中，负责实际下载
-2. Cloudflare Tunnel 把服务器的 `:8080` 暴露到 Cloudflare
-3. Cloudflare Worker 作为公网入口，做二次鉴权并转发到 Tunnel
-4. GitHub Actions 负责测试、发布二进制、发布 Docker 镜像、部署 Worker
+这套链路的特点：
+
+- 公开网页可直接使用，不需要单独的用户 token
+- 任务和状态保存在数据库里，不再是进程内存
+- 下载执行在 GitHub runner 上，不依赖你的电脑常驻
+- 每个任务会触发独立的 Actions 运行，天然可以并行
+
+## 远程公益版部署
+
+### 1. Cloudflare 资源
+
+先准备：
+
+- 一个 Worker
+- 一个 D1 数据库
+- 一个 R2 Bucket（当前主要用于 Worker 文件绑定，远程 runner 现阶段默认上传到 GitHub Release 资产）
+
+`worker/wrangler.toml` 里要填真实值：
+
+- `name`
+- `d1_databases[].database_id`
+- `r2_buckets[].bucket_name`
+- `r2_buckets[].preview_bucket_name`
+
+### 2. Worker secrets
+
+在 `worker/` 目录执行：
+
+```bash
+npm install
+printf '%s' 'change-this-internal-token' | npx wrangler secret put INTERNAL_API_TOKEN
+printf '%s' 'ghp_xxx' | npx wrangler secret put GITHUB_ACTIONS_TOKEN
+npx wrangler d1 migrations apply DB --remote
+npx wrangler deploy
+```
+
+说明：
+
+- `INTERNAL_API_TOKEN`：只给 Worker 和 GitHub runner 之间使用
+- `GITHUB_ACTIONS_TOKEN`：Worker 用它去触发仓库里的 `remote-runner.yml`
+
+### 3. GitHub secrets / variables
+
+在仓库里配置这些 `Secrets`：
+
+- `CLOUDFLARE_API_TOKEN`
+- `CLOUDFLARE_ACCOUNT_ID`
+- `GODINGTALK_CONTROL_URL`
+- `GODINGTALK_INTERNAL_TOKEN`
+- `GODINGTALK_GITHUB_ACTIONS_TOKEN`
+
+再配置这个 `Repository Variable`：
+
+- `GODINGTALK_R2_BUCKET`
+
+建议它们的含义如下：
+
+- `GODINGTALK_CONTROL_URL`：你部署好的 Worker 地址，例如 `https://godingtalk-worker.example.workers.dev`
+- `GODINGTALK_INTERNAL_TOKEN`：和 Worker secret `INTERNAL_API_TOKEN` 保持一致
+- `GODINGTALK_GITHUB_ACTIONS_TOKEN`：给 `deploy-worker.yml` 用，用来同步 Worker secret
+- `GODINGTALK_R2_BUCKET`：真实的 R2 bucket 名称
+
+### 4. 自动工作流
+
+仓库现在有这几条工作流：
+
+- `.github/workflows/ci.yml`
+  - `go test ./...`
+  - `npm run typecheck`
+- `.github/workflows/deploy-worker.yml`
+  - 同步 Worker secrets
+  - 执行 D1 migrations
+  - 部署 Worker
+- `.github/workflows/remote-runner.yml`
+  - 被 Worker 远程触发
+  - 领取任务
+  - 用 GoDingtalk 下载
+  - 上传 mp4 到 GitHub Release 资产
+  - 回写最终状态
+- `.github/workflows/release.yml`
+  - 打 tag 时构建二进制和 Docker 镜像
+
+### 5. 使用方式
+
+部署完成后，直接打开 Worker 根地址即可：
+
+- 上传 cookies
+- 粘贴一个或多个回放链接
+- 提交任务
+- 网页轮询看进度
+- 成功后直接点下载链接
+
+如果你习惯用 Tampermonkey：
+
+- 打开 `/tampermonkey/godingtalk-helper.user.js`
+- 安装脚本
+- 在钉钉页面点右下角按钮
+- 当前链接和可见 cookies 会自动带到控制台
+
+注意：Tampermonkey 依然拿不到 `HttpOnly` cookie，所以它只是辅助入口，不是唯一来源。
+
+## Remote API
+
+公开 API：
+
+- `GET /api/status`
+- `POST /api/cookies`
+- `GET /api/jobs`
+- `POST /api/jobs`
+- `GET /api/jobs/{jobId}`
+- `GET /api/files?job_id=...&path=...`
+
+内部 API：
+
+- `GET /internal/jobs/{jobId}/claim`
+- `POST /internal/jobs/{jobId}/progress`
+- `POST /internal/jobs/{jobId}/complete`
 
 ## CLI 模式
 
 ### 前提条件
 
 - `ffmpeg`
-- `Google Chrome` 或 `Chromium`
+- `Google Chrome` 或 `Chromium`（只在 `-login` 时需要）
 
 ### 从源码构建
 
@@ -49,11 +184,30 @@ go build -o GoDingtalk .
 ./GoDingtalk -login
 ```
 
-首次运行会自动生成 `.goDingtalkConfig/config.json`。
+## GitHub Runner 远程执行
 
-## Server 模式
+`remote-runner.yml` 实际调用的是新的 runner 模式：
 
-### 直接启动
+```bash
+./GoDingtalk \
+  -runRemoteJob \
+  -controlURL "https://your-worker.example.workers.dev" \
+  -internalToken "change-this-internal-token" \
+  -jobID "job-123"
+```
+
+它会：
+
+1. 从 Worker 领取任务和 cookies
+2. 本地执行真实下载
+3. 持续回写进度
+4. 生成结果清单给工作流后续上传 R2
+
+## Server Mode
+
+老的 Go HTTP 服务模式还保留着，适合你自己有 VPS 或 Docker 主机的时候用。
+
+启动示例：
 
 ```bash
 GODINGTALK_SERVER_AUTH_TOKEN=change-this-origin-token \
@@ -61,164 +215,33 @@ GODINGTALK_PUBLIC_BASE_URL=https://api.example.com \
 ./GoDingtalk -serve -listen :8080 -saveDir /data/video
 ```
 
-### Docker 启动
+可用接口：
 
-```bash
-docker compose up -d godingtalk
-```
+- `GET /healthz`
+- `GET /api/status`
+- `POST /api/cookies`
+- `POST /api/downloads`
+- `GET /api/downloads`
+- `GET /api/downloads/{jobId}`
+- `GET /files/{path}`
 
-默认使用：
-
-- 配置目录：`/data/config`
-- 视频目录：`/data/video`
-- API 监听：`:8080`
-
-### Server API
-
-公开健康检查：
-
-```bash
-curl http://127.0.0.1:8080/healthz
-```
-
-查询状态：
-
-```bash
-curl http://127.0.0.1:8080/api/status \
-  -H "Authorization: Bearer change-this-origin-token"
-```
-
-上传 cookies：
-
-```bash
-curl http://127.0.0.1:8080/api/cookies \
-  -H "Authorization: Bearer change-this-origin-token" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "cookies": {
-      "LV_PC_SESSION": "your-session",
-      "other_cookie": "value"
-    }
-  }'
-```
-
-创建下载任务：
-
-```bash
-curl http://127.0.0.1:8080/api/downloads \
-  -H "Authorization: Bearer change-this-origin-token" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "url": "https://n.dingtalk.com/dingding/live-room/index.html?roomId=XXXX&liveUuid=XXXX",
-    "thread": 10,
-    "output_subdir": "job-001"
-  }'
-```
-
-查询任务：
-
-```bash
-curl http://127.0.0.1:8080/api/downloads/job-1710000000-0001 \
-  -H "Authorization: Bearer change-this-origin-token"
-```
-
-下载生成的视频文件：
-
-```bash
-curl -L http://127.0.0.1:8080/files/job-001/example.mp4 \
-  -H "Authorization: Bearer change-this-origin-token" \
-  -o example.mp4
-```
-
-## Cloudflare Tunnel
-
-仓库提供了 Tunnel 模板文件：
-
-- [deploy/cloudflared/config.yml.example](/Users/zhong/repo/DingTalkGoGoGo/deploy/cloudflared/config.yml.example)
-- [docker-compose.yml](/Users/zhong/repo/DingTalkGoGoGo/docker-compose.yml)
-
-部署步骤：
-
-1. 在 Cloudflare 创建 Tunnel
-2. 下载 Tunnel 的 `credentials.json`
-3. 复制 `deploy/cloudflared/config.yml.example` 为 `deploy/cloudflared/config.yml`
-4. 把 hostname 改成你自己的源站域名，例如 `origin.godingtalk.example.com`
-5. 把 `credentials.json` 放到 `deploy/cloudflared/credentials.json`
-6. 启动：
-
-```bash
-docker compose up -d
-```
-
-## Cloudflare Worker
-
-Worker 代码位于：
-
-- [worker/src/index.ts](/Users/zhong/repo/DingTalkGoGoGo/worker/src/index.ts)
-- [worker/wrangler.toml](/Users/zhong/repo/DingTalkGoGoGo/worker/wrangler.toml)
-
-它的职责只有两件事：
-
-1. 作为公网统一入口
-2. 校验公网 Token，再转发到 Tunnel 源站
-
-部署前需要先修改 `worker/wrangler.toml` 中的：
-
-- `name`
-- `ORIGIN_BASE_URL`
-- `CORS_ALLOW_ORIGIN`
-
-然后设置 Worker secrets：
-
-```bash
-cd worker
-npm install
-printf '%s' 'change-this-public-token' | npx wrangler secret put WORKER_API_TOKEN
-printf '%s' 'change-this-origin-token' | npx wrangler secret put ORIGIN_SHARED_TOKEN
-npx wrangler deploy
-```
-
-推荐令牌分层：
-
-- `WORKER_API_TOKEN`：给外部调用方使用
-- `ORIGIN_SHARED_TOKEN`：只让 Worker 和 Go 服务之间使用
-- `GODINGTALK_SERVER_AUTH_TOKEN`：设置成和 `ORIGIN_SHARED_TOKEN` 一样
-
-## GitHub Actions
-
-仓库新增了三条工作流：
-
-- [ci.yml](/Users/zhong/repo/DingTalkGoGoGo/.github/workflows/ci.yml)：推送和 PR 时执行 `go test ./...`
-- [release.yml](/Users/zhong/repo/DingTalkGoGoGo/.github/workflows/release.yml)：打 `v*` tag 时发布二进制并推送 GHCR Docker 镜像
-- [deploy-worker.yml](/Users/zhong/repo/DingTalkGoGoGo/.github/workflows/deploy-worker.yml)：Worker 目录变更时自动部署 Worker
-
-需要在 GitHub 仓库里配置这些 secrets：
-
-- `CLOUDFLARE_API_TOKEN`
-- `CLOUDFLARE_ACCOUNT_ID`
-- `WORKER_API_TOKEN`
-- `ORIGIN_SHARED_TOKEN`
-
-Docker 镜像会在 tag 发布时推送到：
-
-```text
-ghcr.io/<github-owner>/godingtalk-server:<tag>
-ghcr.io/<github-owner>/godingtalk-server:latest
-```
+这套模式现在属于兼容层，不是推荐的公益版公开部署方式。
 
 ## 配置项
 
-示例配置见 [config.example.json](/Users/zhong/repo/DingTalkGoGoGo/config.example.json)。
+示例见 `config.example.json`。
 
-新增服务端相关字段：
+新增字段：
 
 - `server_listen`
 - `server_auth_token`
 - `server_max_concurrent_jobs`
 - `public_base_url`
 - `server_enable_cors`
+- `control_base_url`
+- `internal_api_token`
 
-同时支持环境变量覆盖：
+可用环境变量：
 
 - `GODINGTALK_CONFIG_DIR`
 - `GODINGTALK_SAVE_DIR`
@@ -227,12 +250,16 @@ ghcr.io/<github-owner>/godingtalk-server:latest
 - `GODINGTALK_SERVER_AUTH_TOKEN`
 - `GODINGTALK_SERVER_MAX_CONCURRENT_JOBS`
 - `GODINGTALK_PUBLIC_BASE_URL`
+- `GODINGTALK_CONTROL_URL`
+- `GODINGTALK_INTERNAL_API_TOKEN`
 
 ## 注意事项
 
-- 服务端模式建议直接上传已有 cookies，不要依赖服务器弹出浏览器登录
-- Cloudflare Worker 不负责下载，只负责入口、鉴权和转发
-- 下载结果默认保存在服务端 `save_directory` 下，并通过 `/files/*` 暴露
+- Worker 不负责下载视频，它只负责 UI、状态、触发远程任务和分发成品
+- 真正下载依赖 `ffmpeg`，所以执行节点仍然是 GitHub runner 或你自己的服务器
+- Tampermonkey 只能辅助导入浏览器可见 cookie，不能替代完整登录态
+- GitHub Actions 并发能力受你的 GitHub 计划额度限制
+- 现在默认的公共下载出口是 GitHub Release 资产；后续补上长期有效的 Cloudflare API Token 后，可以再把上传端切回 R2
 
 ## 许可证
 

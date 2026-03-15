@@ -4,5 +4,17 @@ compatibility_date = "2026-03-15"
 workers_dev = true
 
 [vars]
-ORIGIN_BASE_URL = "https://origin.godingtalk.example.com"
 CORS_ALLOW_ORIGIN = "*"
+GITHUB_REPOSITORY = "zhzx2026/DingTalkGoGoGo"
+GITHUB_WORKFLOW_FILE = "remote-runner.yml"
+GITHUB_REF = "main"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "godingtalk-db"
+database_id = "12f5efa5-c6f4-4ac9-9089-620818102c5b"
+
+[[r2_buckets]]
+binding = "FILES"
+bucket_name = "godingtalk-files"
+preview_bucket_name = "godingtalk-files-preview"

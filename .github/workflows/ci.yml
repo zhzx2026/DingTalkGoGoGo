@@ -8,7 +8,7 @@ on:
       - main
 
 jobs:
-  test:
+  go-test:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -19,3 +19,21 @@ jobs:
 
       - name: Run tests
         run: go test ./...
+
+  worker-check:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: worker
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install worker dependencies
+        run: npm install
+
+      - name: Typecheck worker
+        run: npm run typecheck

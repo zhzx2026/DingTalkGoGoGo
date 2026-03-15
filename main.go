@@ -455,10 +455,15 @@ func main() {
 	versionFlag := flag.Bool("version", false, "显示版本号")
 	configFile := flag.String("config", "", "配置文件路径")
 	serveFlag := flag.Bool("serve", false, "以 HTTP 服务模式运行")
+	runRemoteJobFlag := flag.Bool("runRemoteJob", false, "运行远程控制面的单个任务（给 GitHub Actions runner 使用）")
 	listenFlag := flag.String("listen", "", "HTTP 服务监听地址 (默认: :8080)")
 	authTokenFlag := flag.String("authToken", "", "HTTP 服务 Bearer Token")
 	publicBaseURLFlag := flag.String("publicBaseURL", "", "服务对外访问基础 URL，用于生成下载链接")
 	maxJobsFlag := flag.Int("maxJobs", 0, "HTTP 服务最大并发任务数")
+	controlURLFlag := flag.String("controlURL", "", "远程控制面基础 URL")
+	internalTokenFlag := flag.String("internalToken", "", "远程控制面内部 Token")
+	jobIDFlag := flag.String("jobID", "", "远程任务 ID")
+	resultFileFlag := flag.String("resultFile", "", "远程任务结果清单输出路径")
 	loginFlag := flag.Bool("login", false, "强制重新登录获取Cookies")
 	urlFlag := flag.String("url", "", "需要下载的回放URL，格式为 -url \"https://n.dingtalk.com/dingding/live-room/index.html?roomId=XXXX&liveUuid=XXXX\"")
 	urlFile := flag.String("urlFile", "", "包含需要下载的回放URL的文件路径，格式为 -urlFile \"/path/to/file\"")
@@ -513,9 +518,27 @@ func main() {
 	if *maxJobsFlag > 0 {
 		config.ServerMaxConcurrentJobs = *maxJobsFlag
 	}
+	if *controlURLFlag != "" {
+		config.ControlBaseURL = strings.TrimRight(*controlURLFlag, "/")
+	}
+	if *internalTokenFlag != "" {
+		config.InternalAPIToken = *internalTokenFlag
+	}
 
 	// 初始化全局 HTTP 客户端
 	initHTTPClient(config.HTTPTimeout)
+
+	if *runRemoteJobFlag {
+		if *saveDir == "" {
+			*saveDir = filepath.Join(os.TempDir(), "godingtalk-remote")
+		}
+		if err := runRemoteJob(config.ControlBaseURL, config.InternalAPIToken, *jobIDFlag, *saveDir, *resultFileFlag); err != nil {
+			fmt.Printf("错误: 远程任务执行失败: %v\n", err)
+			os.Exit(1)
+		}
+		fmt.Println("远程任务处理完成")
+		return
+	}
 
 	if *serveFlag {
 		if *saveDir != "" {

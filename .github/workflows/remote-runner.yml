@@ -1,0 +1,138 @@
+name: Remote Runner
+
+on:
+  workflow_dispatch:
+    inputs:
+      job_id:
+        description: Job ID from the Worker control plane
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  run-job:
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+    env:
+      JOB_ID: ${{ inputs.job_id }}
+      CONTROL_URL: ${{ secrets.GODINGTALK_CONTROL_URL }}
+      INTERNAL_TOKEN: ${{ secrets.GODINGTALK_INTERNAL_TOKEN }}
+      RELEASE_TAG: godingtalk-downloads
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.25'
+
+      - name: Install ffmpeg
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg
+
+      - name: Build GoDingtalk
+        run: go build -o GoDingtalk .
+
+      - name: Ensure download release exists
+        run: |
+          if ! gh release view "${RELEASE_TAG}" > /dev/null 2>&1; then
+            gh release create "${RELEASE_TAG}" \
+              --title "GoDingtalk Downloads" \
+              --notes "Public assets uploaded by the remote GitHub Actions download runner." \
+              --target "${GITHUB_SHA}"
+          fi
+
+      - name: Run remote job
+        id: remote_job
+        continue-on-error: true
+        run: |
+          ./GoDingtalk \
+            -runRemoteJob \
+            -controlURL "${CONTROL_URL}" \
+            -internalToken "${INTERNAL_TOKEN}" \
+            -jobID "${JOB_ID}" \
+            -saveDir "${RUNNER_TEMP}/godingtalk" \
+            -resultFile "${RUNNER_TEMP}/job-result.json"
+
+      - name: Upload output files to GitHub Release
+        if: always()
+        run: |
+          RESULT_FILE="${RUNNER_TEMP}/job-result.json"
+          UPLOAD_FILE="${RUNNER_TEMP}/uploaded-files.json"
+          echo '[]' > "${UPLOAD_FILE}"
+
+          if [ ! -f "${RESULT_FILE}" ]; then
+            exit 0
+          fi
+
+          while IFS= read -r entry; do
+            JSON="$(printf '%s' "${entry}" | base64 --decode)"
+            LOCAL_PATH="$(printf '%s' "${JSON}" | jq -r '.local_path')"
+            RELATIVE_PATH="$(printf '%s' "${JSON}" | jq -r '.relative_path')"
+            NAME="$(printf '%s' "${JSON}" | jq -r '.name')"
+            SIZE_BYTES="$(printf '%s' "${JSON}" | jq -r '.size_bytes')"
+            SAFE_RELATIVE_PATH="$(printf '%s' "${RELATIVE_PATH}" | tr '/ ' '--')"
+            ASSET_NAME="${JOB_ID}-${SAFE_RELATIVE_PATH}"
+            DOWNLOAD_URL="https://github.com/${GITHUB_REPOSITORY}/releases/download/${RELEASE_TAG}/${ASSET_NAME}"
+
+            gh release upload "${RELEASE_TAG}" "${LOCAL_PATH}#${ASSET_NAME}" --clobber
+
+            TMP_FILE="$(mktemp)"
+            jq \
+              --arg name "${NAME}" \
+              --arg relative_path "${RELATIVE_PATH}" \
+              --arg download_url "${DOWNLOAD_URL}" \
+              --argjson size_bytes "${SIZE_BYTES:-0}" \
+              '. += [{
+                "name": $name,
+                "relative_path": $relative_path,
+                "download_url": $download_url,
+                "size_bytes": $size_bytes
+              }]' \
+              "${UPLOAD_FILE}" > "${TMP_FILE}"
+            mv "${TMP_FILE}" "${UPLOAD_FILE}"
+          done < <(jq -r '.files[]? | @base64' "${RESULT_FILE}")
+
+      - name: Finalize remote job
+        if: always()
+        run: |
+          RESULT_FILE="${RUNNER_TEMP}/job-result.json"
+          UPLOAD_FILE="${RUNNER_TEMP}/uploaded-files.json"
+          COMPLETE_FILE="${RUNNER_TEMP}/job-complete.json"
+
+          if [ -f "${RESULT_FILE}" ]; then
+            jq \
+              --slurpfile files "${UPLOAD_FILE}" \
+              '{
+                status: .status,
+                stage: (if .status == "succeeded" then "completed" else "failed" end),
+                titles: .titles,
+                errors: .errors,
+                files: $files[0],
+                progress_percent: (if .status == "succeeded" then 100 else 0 end)
+              }' \
+              "${RESULT_FILE}" > "${COMPLETE_FILE}"
+          else
+            jq -n \
+              --arg status "failed" \
+              --arg stage "failed" \
+              --arg message "GitHub Actions runner failed before producing a manifest. Inspect the workflow logs." \
+              '{status:$status, stage:$stage, errors:[$message], files:[], progress_percent:0}' > "${COMPLETE_FILE}"
+          fi
+
+          curl -sS --fail \
+            -X POST "${CONTROL_URL}/internal/jobs/${JOB_ID}/complete" \
+            -H "Authorization: Bearer ${INTERNAL_TOKEN}" \
+            -H "Content-Type: application/json" \
+            --data @"${COMPLETE_FILE}"
+
+      - name: Mark workflow failed when download failed
+        if: always()
+        run: |
+          RESULT_FILE="${RUNNER_TEMP}/job-result.json"
+          if [ ! -f "${RESULT_FILE}" ]; then
+            exit 1
+          fi
+          jq -e '.status == "succeeded"' "${RESULT_FILE}" > /dev/null

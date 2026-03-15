@@ -1,14 +1,16 @@
-export function renderApp(): string {
+export function renderApp(appOrigin: string): string {
+  const installURL = `${appOrigin.replace(/\/$/, "")}/tampermonkey/godingtalk-helper.user.js`;
+
   return `<!doctype html>
 <html lang="zh-CN">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>GoDingtalk Console</title>
+    <title>GoDingtalk 公益版控制台</title>
     <style>
       :root {
         --bg: #f4efe6;
-        --surface: rgba(255, 252, 247, 0.78);
+        --surface: rgba(255, 252, 247, 0.82);
         --surface-strong: #fffaf1;
         --ink: #1e2a2f;
         --muted: #5f6d72;
@@ -42,7 +44,7 @@ export function renderApp(): string {
       }
 
       .shell {
-        max-width: 1240px;
+        max-width: 1280px;
         margin: 0 auto;
       }
 
@@ -102,7 +104,7 @@ export function renderApp(): string {
         display: grid;
         gap: 14px;
         margin-top: 24px;
-        grid-template-columns: repeat(3, minmax(0, 1fr));
+        grid-template-columns: repeat(4, minmax(0, 1fr));
       }
 
       .hero-stat {
@@ -124,11 +126,11 @@ export function renderApp(): string {
       .hero-stat strong {
         display: block;
         margin-top: 8px;
-        font-size: 22px;
+        font-size: 24px;
         font-weight: 700;
       }
 
-      .grid {
+      .layout {
         display: grid;
         gap: 18px;
         margin-top: 22px;
@@ -195,6 +197,29 @@ export function renderApp(): string {
         color: var(--muted);
       }
 
+      .hint {
+        color: var(--muted);
+        font-size: 13px;
+        line-height: 1.6;
+      }
+
+      .notice {
+        margin-top: 16px;
+        padding: 12px 14px;
+        border-radius: 14px;
+        font-size: 14px;
+      }
+
+      .notice.ok {
+        background: rgba(21, 122, 110, 0.12);
+        color: #0f5b52;
+      }
+
+      .notice.error {
+        background: rgba(182, 63, 44, 0.12);
+        color: #8d2f20;
+      }
+
       .fields {
         display: grid;
         gap: 14px;
@@ -208,7 +233,7 @@ export function renderApp(): string {
       .field-row {
         display: grid;
         gap: 14px;
-        grid-template-columns: 1fr 170px 170px;
+        grid-template-columns: 1fr 160px 190px;
       }
 
       label {
@@ -233,7 +258,7 @@ export function renderApp(): string {
       }
 
       textarea {
-        min-height: 168px;
+        min-height: 156px;
         padding: 14px;
         line-height: 1.55;
         resize: vertical;
@@ -246,86 +271,78 @@ export function renderApp(): string {
         transform: translateY(-1px);
       }
 
-      .hint {
-        color: var(--muted);
-        font-size: 13px;
-        line-height: 1.55;
-      }
-
       .actions {
         display: flex;
         flex-wrap: wrap;
         gap: 10px;
       }
 
-      button {
-        appearance: none;
-        border: 0;
-        border-radius: 999px;
+      button, .button-link {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
         min-height: 46px;
         padding: 0 18px;
+        border: 0;
+        border-radius: 999px;
         font: inherit;
         font-weight: 700;
         cursor: pointer;
-        transition: transform 120ms ease, box-shadow 120ms ease, opacity 120ms ease;
+        text-decoration: none;
       }
 
-      button:hover {
-        transform: translateY(-1px);
+      button.primary, .button-link.primary {
+        background: linear-gradient(135deg, var(--accent), #e18c42);
+        color: white;
+        box-shadow: 0 16px 36px rgba(210, 106, 46, 0.22);
       }
 
-      button:disabled {
-        opacity: 0.62;
-        cursor: wait;
-        transform: none;
-      }
-
-      .primary {
-        background: linear-gradient(135deg, var(--accent), #e08b4d);
-        color: #fff8f1;
-        box-shadow: 0 14px 28px rgba(210, 106, 46, 0.24);
-      }
-
-      .secondary {
-        background: rgba(21, 122, 110, 0.12);
-        color: #0f5b52;
-      }
-
-      .ghost {
-        background: rgba(30, 42, 47, 0.07);
+      button.secondary, .button-link.secondary {
+        background: rgba(30, 42, 47, 0.08);
         color: var(--ink);
       }
 
-      .notice {
-        margin-top: 14px;
-        padding: 14px 16px;
-        border-radius: 16px;
-        border: 1px solid transparent;
-        font-size: 14px;
-        line-height: 1.55;
+      button:disabled {
+        cursor: wait;
+        opacity: 0.72;
       }
 
-      .notice.ok {
-        background: rgba(21, 122, 110, 0.09);
-        border-color: rgba(21, 122, 110, 0.16);
-        color: #0f5b52;
+      .mini-grid {
+        display: grid;
+        gap: 12px;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
       }
 
-      .notice.error {
-        background: rgba(182, 63, 44, 0.09);
-        border-color: rgba(182, 63, 44, 0.14);
-        color: var(--danger);
+      .mini-card {
+        padding: 16px;
+        border: 1px solid rgba(25, 43, 45, 0.08);
+        border-radius: 18px;
+        background: rgba(255, 255, 255, 0.56);
+      }
+
+      .mini-card strong {
+        display: block;
+        margin-bottom: 8px;
+        font-size: 16px;
+      }
+
+      .muted-card {
+        padding: 16px;
+        border-radius: 18px;
+        border: 1px dashed rgba(25, 43, 45, 0.16);
+        color: var(--muted);
+        line-height: 1.6;
       }
 
       .jobs {
         display: grid;
-        gap: 12px;
+        gap: 16px;
       }
 
       .job-card {
         padding: 18px;
-        border: 1px solid rgba(25, 43, 45, 0.1);
-        border-radius: 20px;
+        border-radius: 22px;
+        border: 1px solid rgba(25, 43, 45, 0.08);
         background: rgba(255, 255, 255, 0.56);
       }
 
@@ -333,25 +350,26 @@ export function renderApp(): string {
         display: flex;
         align-items: flex-start;
         justify-content: space-between;
-        gap: 14px;
+        gap: 12px;
       }
 
       .job-id {
-        font-family: "IBM Plex Mono", "SFMono-Regular", monospace;
-        font-size: 12px;
         color: var(--muted);
+        font-size: 12px;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
       }
 
       .job-title {
         margin: 8px 0 0;
-        font-size: 18px;
+        font-size: 20px;
       }
 
       .job-meta, .job-files, .job-errors {
-        margin-top: 12px;
+        margin-top: 10px;
         color: var(--muted);
-        font-size: 13px;
-        line-height: 1.7;
+        font-size: 14px;
+        line-height: 1.6;
       }
 
       .job-progress {
@@ -362,24 +380,22 @@ export function renderApp(): string {
         display: flex;
         align-items: center;
         justify-content: space-between;
-        gap: 10px;
-        font-size: 13px;
+        margin-bottom: 8px;
+        font-size: 14px;
         color: var(--muted);
       }
 
       .progress-track {
-        margin-top: 8px;
         height: 10px;
+        overflow: hidden;
         border-radius: 999px;
         background: rgba(30, 42, 47, 0.08);
-        overflow: hidden;
       }
 
       .progress-fill {
         height: 100%;
         border-radius: inherit;
-        background: linear-gradient(90deg, var(--accent), var(--accent-2));
-        transition: width 220ms ease;
+        background: linear-gradient(135deg, var(--accent), var(--accent-2));
       }
 
       .job-files a {
@@ -396,47 +412,13 @@ export function renderApp(): string {
         color: var(--danger);
       }
 
-      .muted-card {
-        padding: 18px;
-        border: 1px dashed rgba(25, 43, 45, 0.18);
-        border-radius: 18px;
-        color: var(--muted);
-        background: rgba(255, 255, 255, 0.38);
-      }
-
-      .foot {
-        margin-top: 18px;
-        color: var(--muted);
-        font-size: 13px;
-        line-height: 1.6;
-      }
-
-      @media (max-width: 1080px) {
-        .grid {
-          grid-template-columns: 1fr;
-        }
-
-        .hero-grid {
-          grid-template-columns: 1fr;
-        }
-      }
-
-      @media (max-width: 720px) {
+      @media (max-width: 980px) {
         body {
-          padding: 16px;
+          padding: 14px;
         }
 
-        .hero, .panel {
-          padding: 18px;
-          border-radius: 24px;
-        }
-
-        .field-row {
+        .hero-grid, .layout, .field-row, .mini-grid {
           grid-template-columns: 1fr;
-        }
-
-        h1 {
-          font-size: 40px;
         }
       }
     </style>
@@ -444,82 +426,83 @@ export function renderApp(): string {
   <body>
     <main class="shell">
       <section class="hero">
-        <span class="eyebrow">GoDingtalk Console</span>
-        <h1>把下载链路收进一个页面里。</h1>
-        <p>
-          这个页面负责四件事：保存访问 token、上传 cookies、提交回放下载、盯住任务结果。
-          真正的视频下载仍然在 Go 服务端执行，所以页面能做的是把这条流程变得顺手，而不是绕开钉钉的权限限制。
-        </p>
+        <span class="eyebrow">GoDingtalk Public Console</span>
+        <h1>不用你的电脑常驻，也能远程下钉钉回放。</h1>
+        <p>这版控制台会把任务写进数据库，再触发 GitHub Actions 远程 runner 去下载，成品回传到对象存储。入口公开可访问，不再依赖 Quick Tunnel，也不需要单独 token。</p>
         <div class="hero-grid">
           <div class="hero-stat">
-            <label>Worker 状态</label>
-            <strong id="hero-worker">准备中</strong>
-          </div>
-          <div class="hero-stat">
             <label>Cookies</label>
-            <strong id="hero-cookies">未检测</strong>
+            <strong id="hero-cookies">未准备</strong>
           </div>
           <div class="hero-stat">
-            <label>任务队列</label>
-            <strong id="hero-jobs">0</strong>
+            <label>总任务数</label>
+            <strong id="hero-total">0</strong>
+          </div>
+          <div class="hero-stat">
+            <label>运行中</label>
+            <strong id="hero-running">0</strong>
+          </div>
+          <div class="hero-stat">
+            <label>已完成</label>
+            <strong id="hero-success">0</strong>
           </div>
         </div>
+        <div id="status-notice" class="notice ok" hidden></div>
       </section>
 
-      <section class="grid">
+      <section class="layout">
         <div class="stack">
           <article class="panel">
             <div class="panel-header">
               <div>
-                <h2>访问配置</h2>
-                <p class="panel-subtitle">先把访问 token 保存下来，之后页面会自动带上它访问 API。</p>
+                <h2>浏览器辅助</h2>
+                <p class="panel-subtitle">先装 Tampermonkey 辅助脚本，它会把当前页面链接和可见 cookies 一键带进控制台。浏览器读不到的 HttpOnly cookies，仍可能需要你手动补全。</p>
               </div>
-              <span class="badge idle" id="token-badge">等待输入</span>
+              <span class="badge idle">公益版入口</span>
             </div>
-            <div class="fields">
-              <div class="field">
-                <label for="token">Bearer Token</label>
-                <input id="token" placeholder="输入 Worker API Token" autocomplete="off" />
-                <div class="hint">页面不会直接读取钉钉 cookie。它只能带着你的 token 调用我们自己的 Worker API。</div>
+            <div class="mini-grid">
+              <div class="mini-card">
+                <strong>安装脚本</strong>
+                <div class="hint">打开下面这个地址安装脚本，然后在钉钉页面点右下角按钮。</div>
+                <div class="actions" style="margin-top: 12px;">
+                  <a class="button-link primary" href="${installURL}" target="_blank" rel="noreferrer">安装 Tampermonkey 脚本</a>
+                </div>
+              </div>
+              <div class="mini-card">
+                <strong>远程运行</strong>
+                <div class="hint">任务不会在你的电脑上执行。创建任务后，会由 GitHub Actions 远程 runner 下载并上传成品。</div>
               </div>
             </div>
-            <div class="actions" style="margin-top: 14px;">
-              <button class="primary" id="save-token">保存 Token</button>
-              <button class="ghost" id="clear-token">清除 Token</button>
-              <button class="secondary" id="refresh-status">刷新状态</button>
-            </div>
-            <div id="status-notice" class="notice ok" hidden></div>
           </article>
 
           <article class="panel">
             <div class="panel-header">
               <div>
                 <h2>Cookies</h2>
-                <p class="panel-subtitle">支持三种粘贴格式：JSON 对象、JSON 数组、或普通的 Cookie Header 字符串。</p>
+                <p class="panel-subtitle">支持三种格式：JSON 对象、JSON 数组、原始 cookie header 字符串。</p>
               </div>
               <span class="badge warn" id="cookie-badge">未上传</span>
             </div>
             <div class="fields">
               <div class="field">
-                <label for="cookies">Cookie 内容</label>
-                <textarea id="cookies" placeholder='例如：{"LV_PC_SESSION":"..."} 或 LV_PC_SESSION=...; other=value'></textarea>
+                <label for="cookies">Cookies 内容</label>
+                <textarea id="cookies" placeholder='{"LV_PC_SESSION":"replace-me"}'></textarea>
               </div>
+              <div class="actions">
+                <button class="primary" id="upload-cookies">上传 Cookies</button>
+                <button class="secondary" id="example-cookies">填入示例</button>
+              </div>
+              <div class="hint">至少需要 <code>LV_PC_SESSION</code>。如果脚本导入后还是缺关键 cookie，直接补到这个文本框里再上传。</div>
             </div>
-            <div class="actions">
-              <button class="primary" id="upload-cookies">上传 Cookies</button>
-              <button class="ghost" id="example-cookies">填充示例</button>
-            </div>
-            <p class="foot">
-              这里依旧需要你手动提供 cookies。网页不能跨域直接读取 dingtalk.com 域下的浏览器 cookie，这个限制来自浏览器本身。
-            </p>
           </article>
 
           <article class="panel">
             <div class="panel-header">
               <div>
-                <h2>新建下载任务</h2>
-                <p class="panel-subtitle">支持单条链接，也支持一行一个链接。服务端会按任务目录保存视频并生成下载链接。</p>
+                <h2>创建下载任务</h2>
+                <p class="panel-subtitle">支持单个或多个回放链接。每个任务会触发一个独立 GitHub Actions 运行，天然可以并行。</p>
               </div>
+              <span class="badge idle">Remote Runner</span>
             </div>
             <div class="fields">
               <div class="field">
@@ -528,25 +511,26 @@ export function renderApp(): string {
               </div>
               <div class="field-row">
                 <div class="field">
-                  <label for="output-subdir">输出目录</label>
-                  <input id="output-subdir" placeholder="留空则自动生成 job id" />
+                  <label for="output-subdir">输出标识</label>
+                  <input id="output-subdir" placeholder="留空自动生成" />
                 </div>
                 <div class="field">
                   <label for="threads">线程数</label>
                   <input id="threads" type="number" min="1" max="100" value="10" />
                 </div>
                 <div class="field">
-                  <label for="video-list">标题清单</label>
+                  <label for="video-list">生成视频列表</label>
                   <select id="video-list">
                     <option value="true">生成</option>
                     <option value="false">不生成</option>
                   </select>
                 </div>
               </div>
-            </div>
-            <div class="actions">
-              <button class="primary" id="create-job">开始下载</button>
-              <button class="secondary" id="load-jobs">刷新任务列表</button>
+              <div class="actions">
+                <button class="primary" id="create-job">开始远程下载</button>
+                <button class="secondary" id="refresh-status">刷新状态</button>
+                <button class="secondary" id="load-jobs">刷新任务列表</button>
+              </div>
             </div>
           </article>
         </div>
@@ -555,23 +539,23 @@ export function renderApp(): string {
           <article class="panel">
             <div class="panel-header">
               <div>
-                <h2>服务状态</h2>
-                <p class="panel-subtitle">这里展示当前后端是否可达、cookies 是否有效、以及正在排队的任务数量。</p>
+                <h2>系统状态</h2>
+                <p class="panel-subtitle">这里显示控制面的数据库状态和 GitHub Actions 目标仓库。</p>
               </div>
+              <span class="badge idle" id="polling-badge">自动轮询中</span>
             </div>
-            <div id="status-card" class="muted-card">还没有拉取状态。</div>
+            <div id="status-card" class="muted-card">还没拿到状态，通常是 Worker 还没部署完成，或者 D1 / R2 / GitHub secrets 还没配齐。</div>
           </article>
 
           <article class="panel">
             <div class="panel-header">
               <div>
                 <h2>任务列表</h2>
-                <p class="panel-subtitle">页面会自动刷新；成功任务会展示文件下载链接。</p>
+                <p class="panel-subtitle">成功任务会直接展示网页下载链接；失败任务会保留错误信息，方便你复测。</p>
               </div>
-              <span class="badge idle" id="polling-badge">自动轮询中</span>
             </div>
             <div id="jobs" class="jobs">
-              <div class="muted-card">还没有任务，先上传 cookies 再提交链接。</div>
+              <div class="muted-card">还没有任务，先上传 cookies 再提交一个链接。</div>
             </div>
           </article>
         </aside>
@@ -580,12 +564,8 @@ export function renderApp(): string {
 
     <script>
       const elements = {
-        token: document.getElementById("token"),
-        saveToken: document.getElementById("save-token"),
-        clearToken: document.getElementById("clear-token"),
         refreshStatus: document.getElementById("refresh-status"),
         statusNotice: document.getElementById("status-notice"),
-        tokenBadge: document.getElementById("token-badge"),
         cookies: document.getElementById("cookies"),
         uploadCookies: document.getElementById("upload-cookies"),
         exampleCookies: document.getElementById("example-cookies"),
@@ -598,22 +578,18 @@ export function renderApp(): string {
         loadJobs: document.getElementById("load-jobs"),
         jobs: document.getElementById("jobs"),
         statusCard: document.getElementById("status-card"),
-        heroWorker: document.getElementById("hero-worker"),
         heroCookies: document.getElementById("hero-cookies"),
-        heroJobs: document.getElementById("hero-jobs"),
+        heroTotal: document.getElementById("hero-total"),
+        heroRunning: document.getElementById("hero-running"),
+        heroSuccess: document.getElementById("hero-success"),
         pollingBadge: document.getElementById("polling-badge"),
       };
 
-      const storageKey = "godingtalk.worker.token";
       let pollingHandle = null;
 
-      function readToken() {
-        return elements.token.value.trim();
-      }
-
-      function setNotice(message, type = "ok") {
+      function setNotice(message, type) {
         elements.statusNotice.hidden = false;
-        elements.statusNotice.className = "notice " + type;
+        elements.statusNotice.className = "notice " + (type || "ok");
         elements.statusNotice.textContent = message;
       }
 
@@ -622,28 +598,18 @@ export function renderApp(): string {
         elements.statusNotice.textContent = "";
       }
 
-      function setTokenBadge() {
-        const hasToken = Boolean(readToken());
-        elements.tokenBadge.textContent = hasToken ? "Token 已保存" : "等待输入";
-        elements.tokenBadge.className = "badge " + (hasToken ? "ok" : "idle");
-      }
-
-      function authHeaders(json = false) {
+      function buildHeaders(json) {
         const headers = new Headers();
-        const token = readToken();
-        if (token) {
-          headers.set("Authorization", "Bearer " + token);
-        }
         if (json) {
           headers.set("Content-Type", "application/json");
         }
         return headers;
       }
 
-      async function request(path, options = {}) {
+      async function request(path, options) {
         const response = await fetch(path, {
-          ...options,
-          headers: options.headers || authHeaders(options.body ? true : false),
+          ...(options || {}),
+          headers: (options && options.headers) || buildHeaders(Boolean(options && options.body)),
         });
 
         const contentType = response.headers.get("content-type") || "";
@@ -659,6 +625,45 @@ export function renderApp(): string {
         }
 
         return payload;
+      }
+
+      function escapeHTML(value) {
+        return String(value)
+          .replaceAll("&", "&amp;")
+          .replaceAll("<", "&lt;")
+          .replaceAll(">", "&gt;")
+          .replaceAll('"', "&quot;");
+      }
+
+      function formatTime(value) {
+        if (!value) {
+          return "未开始";
+        }
+        const date = new Date(value);
+        return Number.isNaN(date.getTime()) ? value : date.toLocaleString();
+      }
+
+      function formatStage(stage) {
+        switch (stage) {
+          case "waiting_runner":
+            return "等待远程 runner";
+          case "preparing":
+            return "准备环境";
+          case "queued":
+            return "排队中";
+          case "resolving":
+            return "解析回放";
+          case "downloading":
+            return "下载分片";
+          case "converting":
+            return "转换 MP4";
+          case "completed":
+            return "已完成";
+          case "failed":
+            return "失败";
+          default:
+            return stage || "未知";
+        }
       }
 
       function parseCookiesInput(raw) {
@@ -699,12 +704,12 @@ export function renderApp(): string {
           if (!chunk) {
             return;
           }
-          const separatorIndex = chunk.indexOf("=");
-          if (separatorIndex === -1) {
+          const index = chunk.indexOf("=");
+          if (index === -1) {
             return;
           }
-          const name = chunk.slice(0, separatorIndex).trim();
-          const value = chunk.slice(separatorIndex + 1).trim();
+          const name = chunk.slice(0, index).trim();
+          const value = chunk.slice(index + 1).trim();
           if (name) {
             cookieMap[name] = value;
           }
@@ -717,61 +722,30 @@ export function renderApp(): string {
         return cookieMap;
       }
 
-      function formatTime(value) {
-        if (!value) {
-          return "未开始";
-        }
-        const date = new Date(value);
-        return Number.isNaN(date.getTime()) ? value : date.toLocaleString();
-      }
-
-      function formatStage(stage) {
-        switch (stage) {
-          case "queued":
-            return "排队中";
-          case "resolving":
-            return "解析回放";
-          case "downloading":
-            return "下载分片";
-          case "converting":
-            return "转换 MP4";
-          case "completed":
-            return "已完成";
-          case "failed":
-            return "失败";
-          default:
-            return stage || "未知";
-        }
-      }
-
       function renderStatus(status) {
-        elements.heroWorker.textContent = "在线";
-        elements.heroCookies.textContent = status.cookies_valid ? "有效" : "未准备";
-        elements.heroJobs.textContent = String(status.queued_or_running_jobs || 0);
-        elements.cookieBadge.textContent = status.cookies_valid ? "已就绪" : "未上传";
-        elements.cookieBadge.className = "badge " + (status.cookies_valid ? "ok" : "warn");
+        const cookiesReady = Boolean(status.cookies_ready);
+        elements.heroCookies.textContent = cookiesReady ? "已就绪" : "未准备";
+        elements.heroTotal.textContent = String(status.total_jobs || 0);
+        elements.heroRunning.textContent = String(status.running_jobs || 0);
+        elements.heroSuccess.textContent = String(status.succeeded_jobs || 0);
+        elements.cookieBadge.textContent = cookiesReady ? "已上传" : "未上传";
+        elements.cookieBadge.className = "badge " + (cookiesReady ? "ok" : "warn");
 
         elements.statusCard.innerHTML = [
-          '<strong style="font-size:18px;">服务已连接</strong>',
-          '<div class="job-meta">监听地址：' + escapeHTML(status.listen || "-") + '</div>',
-          '<div class="job-meta">保存目录：' + escapeHTML(status.save_root || "-") + '</div>',
-          '<div class="job-meta">Cookies 文件：' + escapeHTML(status.cookies_file || "-") + '</div>',
-          '<div class="job-meta">最大并发任务：' + escapeHTML(String(status.max_concurrent_jobs ?? "-")) + '</div>',
-          '<div class="job-meta">排队或运行中：' + escapeHTML(String(status.queued_or_running_jobs ?? 0)) + '</div>',
+          '<strong style="font-size:18px;">控制面已连接</strong>',
+          '<div class="job-meta">模式：' + escapeHTML(status.mode || "-") + '</div>',
+          '<div class="job-meta">GitHub 仓库：' + escapeHTML(status.workflow_repository || "未配置") + '</div>',
+          '<div class="job-meta">工作流文件：' + escapeHTML(status.workflow_file || "-") + '</div>',
+          '<div class="job-meta">Cookies 更新时间：' + escapeHTML(formatTime(status.cookies_updated_at)) + '</div>',
+          '<div class="job-meta">等待中：' + escapeHTML(String(status.queued_jobs || 0)) + '</div>',
+          '<div class="job-meta">运行中：' + escapeHTML(String(status.running_jobs || 0)) + '</div>',
+          '<div class="job-meta">失败：' + escapeHTML(String(status.failed_jobs || 0)) + '</div>',
         ].join("");
-      }
-
-      function escapeHTML(value) {
-        return String(value)
-          .replaceAll("&", "&amp;")
-          .replaceAll("<", "&lt;")
-          .replaceAll(">", "&gt;")
-          .replaceAll('"', "&quot;");
       }
 
       function renderJobs(jobs) {
         if (!Array.isArray(jobs) || jobs.length === 0) {
-          elements.jobs.innerHTML = '<div class="muted-card">还没有任务，先提交一个链接试试。</div>';
+          elements.jobs.innerHTML = '<div class="muted-card">还没有任务，先上传 cookies 再提交一个链接。</div>';
           return;
         }
 
@@ -803,30 +777,57 @@ export function renderApp(): string {
             '<div class="job-meta">创建时间：' + escapeHTML(formatTime(job.created_at)) + '</div>',
             '<div class="job-meta">开始时间：' + escapeHTML(formatTime(job.started_at)) + '</div>',
             '<div class="job-meta">完成时间：' + escapeHTML(formatTime(job.finished_at)) + '</div>',
-            '<div class="job-meta">输出目录：' + escapeHTML(job.relative_save_dir || "-") + '</div>',
+            '<div class="job-meta">输出标识：' + escapeHTML(job.output_subdir || "-") + '</div>',
             titles.length > 1 ? '<div class="job-meta">标题：' + titles.map(escapeHTML).join(" / ") + '</div>' : '',
-            files.length ? '<div class="job-files">' + files.map((file) => '<div><a href="' + escapeHTML(file.download_url || ("/files/" + file.relative_path)) + '" target="_blank" rel="noreferrer">' + escapeHTML(file.name) + '</a></div>').join("") + '</div>' : '',
+            files.length ? '<div class="job-files">' + files.map((file) => '<div><a href="' + escapeHTML(file.download_url || "#") + '" target="_blank" rel="noreferrer">' + escapeHTML(file.name) + '</a></div>').join("") + '</div>' : '',
             errors.length ? '<div class="job-errors">' + errors.map(escapeHTML).join("<br/>") + '</div>' : '',
             '</section>',
           ].join("");
         }).join("");
       }
 
+      function decodeImportPayload() {
+        const hash = window.location.hash || "";
+        if (!hash.startsWith("#import=")) {
+          return;
+        }
+
+        try {
+          const encoded = hash.slice("#import=".length);
+          const decoded = decodeURIComponent(escape(atob(encoded)));
+          const payload = JSON.parse(decoded);
+
+          if (payload.url) {
+            elements.urls.value = payload.url + (elements.urls.value ? "\\n" + elements.urls.value : "");
+          }
+
+          if (payload.cookies && Object.keys(payload.cookies).length > 0) {
+            elements.cookies.value = JSON.stringify(payload.cookies, null, 2);
+          } else if (payload.cookie_header) {
+            elements.cookies.value = payload.cookie_header;
+          }
+
+          setNotice("已从 Tampermonkey 带入当前页面链接和可见 cookies。", "ok");
+          history.replaceState(null, "", window.location.pathname);
+        } catch (error) {
+          setNotice("Tampermonkey 导入失败，请手动粘贴 cookies。", "error");
+        }
+      }
+
       async function refreshStatus() {
         try {
-          const status = await request("/api/status", { headers: authHeaders(false) });
+          const status = await request("/api/status");
           renderStatus(status);
           clearNotice();
         } catch (error) {
-          elements.heroWorker.textContent = "待授权";
+          elements.statusCard.innerHTML = '<strong style="font-size:18px;">状态暂时不可用</strong><div class="job-meta">通常是 Worker 还没部署完成，或者 D1 / R2 / GitHub Actions secrets 还没配齐。</div>';
           setNotice(error.message, "error");
-          elements.statusCard.innerHTML = '<strong style="font-size:18px;">还没拿到状态</strong><div class="job-meta">通常是 token 未填写，或者后端暂时不可达。</div>';
         }
       }
 
       async function refreshJobs() {
         try {
-          const payload = await request("/api/downloads", { headers: authHeaders(false) });
+          const payload = await request("/api/jobs");
           renderJobs(payload.jobs || []);
         } catch (error) {
           renderJobs([]);
@@ -838,7 +839,7 @@ export function renderApp(): string {
         const parsed = parseCookiesInput(elements.cookies.value);
         const payload = await request("/api/cookies", {
           method: "POST",
-          headers: authHeaders(true),
+          headers: buildHeaders(true),
           body: JSON.stringify({ cookies: parsed }),
         });
         setNotice(payload.message || "Cookies 已上传。");
@@ -868,9 +869,9 @@ export function renderApp(): string {
           body.urls = urls;
         }
 
-        const payload = await request("/api/downloads", {
+        const payload = await request("/api/jobs", {
           method: "POST",
-          headers: authHeaders(true),
+          headers: buildHeaders(true),
           body: JSON.stringify(body),
         });
 
@@ -893,26 +894,6 @@ export function renderApp(): string {
           refreshJobs();
         }, 5000);
       }
-
-      elements.saveToken.addEventListener("click", () => {
-        const token = readToken();
-        if (!token) {
-          setNotice("先输入 token 再保存。", "error");
-          return;
-        }
-        localStorage.setItem(storageKey, token);
-        setTokenBadge();
-        setNotice("Token 已保存到本地浏览器。");
-        refreshStatus();
-        refreshJobs();
-      });
-
-      elements.clearToken.addEventListener("click", () => {
-        localStorage.removeItem(storageKey);
-        elements.token.value = "";
-        setTokenBadge();
-        setNotice("Token 已清除。");
-      });
 
       elements.refreshStatus.addEventListener("click", async () => {
         await refreshStatus();
@@ -950,11 +931,7 @@ export function renderApp(): string {
 
       elements.loadJobs.addEventListener("click", refreshJobs);
 
-      const storedToken = localStorage.getItem(storageKey);
-      if (storedToken) {
-        elements.token.value = storedToken;
-      }
-      setTokenBadge();
+      decodeImportPayload();
       installPolling();
       refreshStatus();
       refreshJobs();
