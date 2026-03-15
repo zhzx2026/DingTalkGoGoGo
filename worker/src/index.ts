@@ -66,6 +66,21 @@ interface JobRecord {
   finished_at: string | null;
 }
 
+interface JobEventRow {
+  id: number | string;
+  job_id: string;
+  level: string;
+  message: string;
+  created_at: string;
+}
+
+interface JobEventRecord {
+  id: number;
+  level: string;
+  message: string;
+  created_at: string;
+}
+
 interface CookiePayload {
   cookies: Record<string, string>;
 }
@@ -350,6 +365,27 @@ async function getJob(env: Env, jobID: string): Promise<JobRecord | null> {
     .bind(jobID)
     .first<JobRow>();
   return row ? parseJobRow(row) : null;
+}
+
+async function listJobEvents(env: Env, jobID: string, limit = 80): Promise<JobEventRecord[]> {
+  const result = await env.DB
+    .prepare(
+      `SELECT id, job_id, level, message, created_at
+       FROM job_events
+       WHERE job_id = ?1
+       ORDER BY created_at DESC
+       LIMIT ?2`,
+    )
+    .bind(jobID, limit)
+    .all<JobEventRow>();
+
+  const rows = Array.isArray(result.results) ? result.results : [];
+  return rows.map((row) => ({
+    id: toNumber(row.id),
+    level: row.level,
+    message: row.message,
+    created_at: row.created_at,
+  }));
 }
 
 async function listJobs(env: Env, limit = 5, windowMinutes = 20): Promise<JobRecord[]> {
@@ -642,12 +678,21 @@ async function handleJobs(request: Request, env: Env): Promise<Response> {
   return jsonResponse({ error: "method not allowed" }, { status: 405 });
 }
 
-async function handleJobDetail(jobID: string, env: Env): Promise<Response> {
+async function handleJobDetail(request: Request, jobID: string, env: Env): Promise<Response> {
   const job = await getJob(env, jobID);
   if (!job) {
     return jsonResponse({ error: "job not found" }, { status: 404 });
   }
-  return jsonResponse(job);
+
+  const includeEvents = new URL(request.url).searchParams.get("include") === "events";
+  if (!includeEvents) {
+    return jsonResponse(job);
+  }
+
+  return jsonResponse({
+    job,
+    events: await listJobEvents(env, jobID),
+  });
 }
 
 async function handleFileDownload(request: Request, env: Env): Promise<Response> {
@@ -808,7 +853,7 @@ export default {
       } else if (url.pathname === "/api/jobs") {
         response = await handleJobs(request, env);
       } else if (url.pathname.startsWith("/api/jobs/") && request.method === "GET") {
-        response = await handleJobDetail(url.pathname.replace("/api/jobs/", ""), env);
+        response = await handleJobDetail(request, url.pathname.replace("/api/jobs/", ""), env);
       } else if (url.pathname === "/api/files" && (request.method === "GET" || request.method === "HEAD")) {
         response = await handleFileDownload(request, env);
       } else if (url.pathname.startsWith("/internal/jobs/")) {

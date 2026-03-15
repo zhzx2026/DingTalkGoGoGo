@@ -6,25 +6,25 @@ export function renderApp(appOrigin: string): string {
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="icon" href="data:," />
     <title>GoDingtalk 公益远程下载台</title>
     <style>
       :root {
-        --paper: #f3efe7;
-        --paper-2: #faf7f0;
-        --card: rgba(255, 250, 243, 0.88);
-        --card-strong: #fffaf4;
-        --ink: #172126;
-        --muted: #617079;
-        --line: rgba(23, 33, 38, 0.12);
-        --accent: #d6622a;
-        --accent-2: #0e7b72;
-        --accent-3: #d1a44f;
-        --danger: #b13928;
-        --ok: #136d60;
-        --shadow: 0 24px 70px rgba(23, 33, 38, 0.12);
-        --radius-xl: 34px;
-        --radius-lg: 24px;
-        --radius-md: 18px;
+        --bg: #f6f4ef;
+        --surface: #fffdfa;
+        --surface-soft: #f8f5ef;
+        --ink: #1d252b;
+        --muted: #68757d;
+        --line: rgba(29, 37, 43, 0.12);
+        --line-strong: rgba(29, 37, 43, 0.18);
+        --accent: #d5602a;
+        --accent-2: #0f756a;
+        --danger: #b63a2e;
+        --ok: #0f756a;
+        --shadow: 0 18px 50px rgba(29, 37, 43, 0.08);
+        --radius-xl: 28px;
+        --radius-lg: 20px;
+        --radius-md: 16px;
         --radius-sm: 12px;
       }
 
@@ -35,98 +35,72 @@ export function renderApp(appOrigin: string): string {
       html, body {
         margin: 0;
         min-height: 100%;
-        color: var(--ink);
-        font-family: "IBM Plex Sans", "Space Grotesk", "Avenir Next", sans-serif;
         background:
-          radial-gradient(circle at 15% 0%, rgba(214, 98, 42, 0.18), transparent 24%),
-          radial-gradient(circle at 85% 10%, rgba(14, 123, 114, 0.14), transparent 26%),
-          linear-gradient(180deg, var(--paper-2) 0%, var(--paper) 100%);
+          radial-gradient(circle at top left, rgba(213, 96, 42, 0.08), transparent 24%),
+          linear-gradient(180deg, #faf8f3 0%, var(--bg) 100%);
+        color: var(--ink);
+        font-family: "IBM Plex Sans", "Avenir Next", "Segoe UI", sans-serif;
       }
 
       body {
-        padding: 22px;
+        padding: 20px;
       }
 
       .shell {
-        max-width: 1380px;
+        max-width: 1180px;
         margin: 0 auto;
       }
 
-      .shell[data-mode="basic"] .advanced-only {
+      .shell[data-mode="basic"] .pro-only {
         display: none !important;
+      }
+
+      .shell[data-mode="basic"] .workspace {
+        grid-template-columns: 1fr;
       }
 
       .shell[data-mode="pro"] .basic-only {
         display: none !important;
       }
 
-      .hero {
-        position: relative;
-        overflow: hidden;
-        padding: 32px;
-        border: 1px solid var(--line);
-        border-radius: 40px;
-        background:
-          linear-gradient(140deg, rgba(255, 251, 244, 0.96), rgba(255, 245, 231, 0.84)),
-          linear-gradient(120deg, rgba(214, 98, 42, 0.08), rgba(14, 123, 114, 0.08));
-        box-shadow: var(--shadow);
-      }
-
-      .hero::before {
-        content: "";
-        position: absolute;
-        inset: auto auto -120px -100px;
-        width: 280px;
-        height: 280px;
-        border-radius: 999px;
-        background: radial-gradient(circle, rgba(214, 98, 42, 0.12), transparent 72%);
-        pointer-events: none;
-      }
-
-      .hero::after {
-        content: "";
-        position: absolute;
-        inset: -80px -40px auto auto;
-        width: 260px;
-        height: 260px;
-        border-radius: 999px;
-        background: radial-gradient(circle, rgba(14, 123, 114, 0.12), transparent 70%);
-        pointer-events: none;
-      }
-
-      .hero-top {
+      .topbar {
         display: grid;
-        gap: 20px;
-        grid-template-columns: minmax(0, 1.2fr) auto;
+        gap: 18px;
+        grid-template-columns: minmax(0, 1fr) auto;
         align-items: start;
+        padding: 28px;
+        border: 1px solid var(--line);
+        border-radius: 32px;
+        background: rgba(255, 253, 250, 0.88);
+        box-shadow: var(--shadow);
+        backdrop-filter: blur(10px);
       }
 
       .eyebrow {
         display: inline-flex;
         align-items: center;
         gap: 8px;
-        padding: 9px 13px;
+        padding: 7px 11px;
         border-radius: 999px;
-        background: rgba(23, 33, 38, 0.06);
+        background: rgba(29, 37, 43, 0.06);
         color: var(--muted);
         font-size: 12px;
-        letter-spacing: 0.12em;
+        letter-spacing: 0.1em;
         text-transform: uppercase;
       }
 
       h1 {
-        margin: 16px 0 10px;
-        font-family: "IBM Plex Serif", "Iowan Old Style", Georgia, serif;
-        font-size: clamp(40px, 5vw, 68px);
-        line-height: 0.92;
-        letter-spacing: -0.05em;
+        margin: 14px 0 8px;
+        font-size: clamp(34px, 4vw, 54px);
+        line-height: 0.95;
+        letter-spacing: -0.04em;
+        font-family: "IBM Plex Serif", Georgia, serif;
       }
 
-      .hero-copy {
-        max-width: 760px;
+      .topbar p {
+        max-width: 720px;
         margin: 0;
         color: var(--muted);
-        font-size: 16px;
         line-height: 1.7;
       }
 
@@ -134,16 +108,15 @@ export function renderApp(appOrigin: string): string {
         display: inline-grid;
         grid-auto-flow: column;
         gap: 8px;
-        padding: 8px;
-        border: 1px solid rgba(23, 33, 38, 0.08);
+        padding: 6px;
+        border: 1px solid var(--line);
         border-radius: 999px;
-        background: rgba(255, 255, 255, 0.56);
-        backdrop-filter: blur(12px);
+        background: var(--surface-soft);
       }
 
       .mode-button {
-        min-height: 48px;
-        padding: 0 18px;
+        min-height: 44px;
+        padding: 0 16px;
         border: 0;
         border-radius: 999px;
         background: transparent;
@@ -154,176 +127,91 @@ export function renderApp(appOrigin: string): string {
       }
 
       .mode-button.active {
-        background: linear-gradient(135deg, var(--ink), #334047);
+        background: linear-gradient(135deg, var(--ink), #394750);
         color: white;
-        box-shadow: 0 14px 34px rgba(23, 33, 38, 0.2);
       }
 
-      .hero-band {
+      .stats {
         display: grid;
-        gap: 14px;
-        margin-top: 24px;
+        gap: 12px;
+        margin-top: 16px;
         grid-template-columns: repeat(4, minmax(0, 1fr));
       }
 
-      .hero-stat {
-        padding: 18px 20px;
-        border: 1px solid rgba(23, 33, 38, 0.08);
-        border-radius: 22px;
-        background: rgba(255, 255, 255, 0.58);
-        backdrop-filter: blur(12px);
+      .stat {
+        padding: 16px 18px;
+        border: 1px solid var(--line);
+        border-radius: 18px;
+        background: var(--surface);
       }
 
-      .hero-stat label {
+      .stat label {
         display: block;
         color: var(--muted);
-        font-size: 12px;
-        letter-spacing: 0.1em;
-        text-transform: uppercase;
-      }
-
-      .hero-stat strong {
-        display: block;
-        margin-top: 8px;
-        font-size: 28px;
-        font-weight: 700;
-      }
-
-      .edition-row {
-        display: grid;
-        gap: 16px;
-        margin-top: 20px;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-      }
-
-      .edition-card {
-        position: relative;
-        overflow: hidden;
-        padding: 22px;
-        border-radius: 26px;
-        border: 1px solid rgba(23, 33, 38, 0.08);
-        background: rgba(255, 255, 255, 0.6);
-      }
-
-      .edition-card::after {
-        content: "";
-        position: absolute;
-        inset: auto -40px -40px auto;
-        width: 140px;
-        height: 140px;
-        border-radius: 999px;
-        pointer-events: none;
-        opacity: 0.5;
-      }
-
-      .edition-card.basic-card::after {
-        background: radial-gradient(circle, rgba(214, 98, 42, 0.18), transparent 68%);
-      }
-
-      .edition-card.pro-card::after {
-        background: radial-gradient(circle, rgba(14, 123, 114, 0.18), transparent 68%);
-      }
-
-      .edition-kicker {
-        display: inline-flex;
-        align-items: center;
-        gap: 8px;
-        padding: 7px 11px;
-        border-radius: 999px;
         font-size: 12px;
         letter-spacing: 0.08em;
         text-transform: uppercase;
       }
 
-      .edition-kicker.basic {
-        background: rgba(214, 98, 42, 0.12);
-        color: #9b481f;
-      }
-
-      .edition-kicker.pro {
-        background: rgba(14, 123, 114, 0.12);
-        color: #0d655d;
-      }
-
-      .edition-card h2 {
-        margin: 14px 0 8px;
-        font-size: 26px;
-        font-family: "IBM Plex Serif", Georgia, serif;
-      }
-
-      .edition-card p {
-        margin: 0;
-        color: var(--muted);
-        line-height: 1.7;
-      }
-
-      .edition-list {
-        display: grid;
-        gap: 10px;
-        margin-top: 16px;
-      }
-
-      .edition-list div {
-        padding: 12px 14px;
-        border-radius: 16px;
-        background: rgba(255, 255, 255, 0.62);
-        color: var(--ink);
+      .stat strong {
+        display: block;
+        margin-top: 8px;
+        font-size: 24px;
       }
 
       .notice {
-        margin-top: 18px;
-        padding: 13px 15px;
-        border-radius: 16px;
+        margin-top: 14px;
+        padding: 12px 14px;
+        border-radius: 14px;
         font-size: 14px;
       }
 
       .notice.ok {
-        background: rgba(14, 123, 114, 0.12);
-        color: #0d655d;
+        background: rgba(15, 117, 106, 0.1);
+        color: var(--ok);
       }
 
       .notice.error {
-        background: rgba(177, 57, 40, 0.12);
-        color: #8d2d21;
+        background: rgba(182, 58, 46, 0.12);
+        color: var(--danger);
       }
 
       .workspace {
         display: grid;
-        gap: 20px;
-        margin-top: 22px;
-        grid-template-columns: 1.08fr 0.92fr;
+        gap: 18px;
+        margin-top: 20px;
+        grid-template-columns: minmax(0, 1fr) 360px;
       }
 
       .stack {
         display: grid;
-        gap: 20px;
+        gap: 18px;
       }
 
       .panel {
-        padding: 24px;
+        padding: 22px;
         border: 1px solid var(--line);
         border-radius: var(--radius-xl);
-        background: var(--card);
+        background: rgba(255, 253, 250, 0.92);
         box-shadow: var(--shadow);
-        backdrop-filter: blur(12px);
       }
 
       .panel-header {
         display: flex;
         align-items: flex-start;
         justify-content: space-between;
-        gap: 14px;
-        margin-bottom: 18px;
+        gap: 12px;
+        margin-bottom: 14px;
       }
 
       .panel-header h2 {
         margin: 0;
-        font-size: 24px;
+        font-size: 22px;
         font-family: "IBM Plex Serif", Georgia, serif;
       }
 
       .panel-subtitle {
-        margin: 8px 0 0;
+        margin: 6px 0 0;
         color: var(--muted);
         font-size: 14px;
         line-height: 1.65;
@@ -340,56 +228,31 @@ export function renderApp(appOrigin: string): string {
       }
 
       .badge.ok {
-        background: rgba(14, 123, 114, 0.12);
-        color: #0d655d;
+        background: rgba(15, 117, 106, 0.1);
+        color: var(--ok);
       }
 
       .badge.warn {
-        background: rgba(214, 98, 42, 0.14);
-        color: #9b481f;
+        background: rgba(213, 96, 42, 0.12);
+        color: #a14b22;
       }
 
       .badge.idle {
-        background: rgba(23, 33, 38, 0.08);
+        background: rgba(29, 37, 43, 0.08);
         color: var(--muted);
       }
 
-      .feature-grid {
-        display: grid;
-        gap: 14px;
-        grid-template-columns: 1.05fr 0.95fr;
-      }
-
-      .feature-card {
-        padding: 18px;
-        border-radius: 22px;
-        border: 1px solid rgba(23, 33, 38, 0.08);
-        background: rgba(255, 255, 255, 0.58);
-      }
-
-      .feature-card strong {
-        display: block;
-        margin-bottom: 8px;
-        font-size: 17px;
-      }
-
-      .feature-card p {
-        margin: 0;
-        color: var(--muted);
-        line-height: 1.7;
-      }
-
-      .quick-steps {
-        display: grid;
+      .helper-strip {
+        display: flex;
+        flex-wrap: wrap;
         gap: 10px;
-        margin-top: 14px;
+        align-items: center;
       }
 
-      .quick-steps div {
-        padding: 11px 13px;
-        border-radius: 14px;
-        background: rgba(23, 33, 38, 0.05);
+      .hint {
         color: var(--muted);
+        font-size: 13px;
+        line-height: 1.65;
       }
 
       .fields {
@@ -404,39 +267,32 @@ export function renderApp(appOrigin: string): string {
 
       .field-row {
         display: grid;
-        gap: 14px;
-        grid-template-columns: 1fr 160px 190px;
-      }
-
-      .helper-grid {
-        display: grid;
-        gap: 14px;
-        grid-template-columns: 1.15fr 0.85fr;
+        gap: 12px;
+        grid-template-columns: 1fr 150px 170px;
       }
 
       label {
         font-size: 13px;
         font-weight: 700;
-        color: #334148;
+        color: #354149;
       }
 
       input, textarea, select {
         width: 100%;
-        border: 1px solid rgba(23, 33, 38, 0.12);
+        border: 1px solid var(--line);
         border-radius: var(--radius-md);
-        background: var(--card-strong);
+        background: var(--surface);
         color: var(--ink);
         font: inherit;
-        transition: border-color 120ms ease, transform 120ms ease, box-shadow 120ms ease;
       }
 
       input, select {
-        min-height: 52px;
+        min-height: 48px;
         padding: 12px 14px;
       }
 
       textarea {
-        min-height: 160px;
+        min-height: 150px;
         padding: 14px;
         line-height: 1.6;
         resize: vertical;
@@ -444,9 +300,8 @@ export function renderApp(appOrigin: string): string {
 
       input:focus, textarea:focus, select:focus {
         outline: none;
-        border-color: rgba(14, 123, 114, 0.42);
-        box-shadow: 0 0 0 5px rgba(14, 123, 114, 0.08);
-        transform: translateY(-1px);
+        border-color: rgba(15, 117, 106, 0.45);
+        box-shadow: 0 0 0 4px rgba(15, 117, 106, 0.08);
       }
 
       .actions {
@@ -459,30 +314,24 @@ export function renderApp(appOrigin: string): string {
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        min-height: 48px;
-        padding: 0 18px;
+        min-height: 44px;
+        padding: 0 16px;
         border: 0;
         border-radius: 999px;
         font: inherit;
         font-weight: 700;
-        cursor: pointer;
         text-decoration: none;
+        cursor: pointer;
       }
 
       button.primary, .button-link.primary {
-        background: linear-gradient(135deg, var(--accent), #e07f3f);
+        background: linear-gradient(135deg, var(--accent), #e07d41);
         color: white;
-        box-shadow: 0 16px 34px rgba(214, 98, 42, 0.22);
       }
 
       button.secondary, .button-link.secondary {
-        background: rgba(23, 33, 38, 0.08);
+        background: rgba(29, 37, 43, 0.08);
         color: var(--ink);
-      }
-
-      button.ghost {
-        background: rgba(14, 123, 114, 0.1);
-        color: #0d655d;
       }
 
       button:disabled {
@@ -490,65 +339,41 @@ export function renderApp(appOrigin: string): string {
         cursor: wait;
       }
 
-      .hint {
-        color: var(--muted);
-        font-size: 13px;
-        line-height: 1.65;
-      }
-
-      .mode-note {
-        padding: 16px;
-        border-radius: 20px;
-        border: 1px dashed rgba(23, 33, 38, 0.14);
-        background: rgba(255, 255, 255, 0.5);
+      .basic-note {
+        padding: 14px 16px;
+        border-radius: 16px;
+        background: var(--surface-soft);
         color: var(--muted);
         line-height: 1.7;
       }
 
-      .status-grid {
-        display: grid;
-        gap: 12px;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-      }
-
-      .status-item {
-        padding: 16px;
-        border-radius: 18px;
-        background: rgba(255, 255, 255, 0.58);
-        border: 1px solid rgba(23, 33, 38, 0.08);
-      }
-
-      .status-item label {
-        display: block;
-        font-size: 12px;
-        letter-spacing: 0.08em;
-        text-transform: uppercase;
-        color: var(--muted);
-      }
-
-      .status-item strong {
-        display: block;
-        margin-top: 8px;
-        font-size: 17px;
-      }
-
       .jobs {
         display: grid;
-        gap: 16px;
+        gap: 12px;
       }
 
       .job-card {
-        padding: 18px;
-        border-radius: 24px;
-        border: 1px solid rgba(23, 33, 38, 0.08);
-        background: rgba(255, 255, 255, 0.58);
+        padding: 16px;
+        border: 1px solid var(--line);
+        border-radius: 18px;
+        background: var(--surface);
       }
 
-      .job-top {
+      .job-card.selected {
+        border-color: rgba(15, 117, 106, 0.28);
+        box-shadow: inset 0 0 0 1px rgba(15, 117, 106, 0.1);
+      }
+
+      .job-head {
         display: flex;
         align-items: flex-start;
         justify-content: space-between;
         gap: 12px;
+      }
+
+      .job-title {
+        margin: 6px 0 0;
+        font-size: 18px;
       }
 
       .job-id {
@@ -558,39 +383,35 @@ export function renderApp(appOrigin: string): string {
         text-transform: uppercase;
       }
 
-      .job-title {
-        margin: 8px 0 0;
-        font-size: 20px;
-      }
-
-      .job-meta, .job-files, .job-errors {
+      .job-meta, .job-errors, .job-files {
         margin-top: 10px;
         color: var(--muted);
         font-size: 14px;
         line-height: 1.6;
       }
 
-      .job-progress {
-        margin-top: 14px;
+      .progress {
+        margin-top: 12px;
       }
 
       .progress-top {
         display: flex;
         align-items: center;
         justify-content: space-between;
-        margin-bottom: 8px;
-        font-size: 14px;
+        gap: 12px;
+        font-size: 13px;
         color: var(--muted);
       }
 
-      .progress-track {
-        height: 10px;
+      .track {
+        height: 8px;
+        margin-top: 8px;
         overflow: hidden;
         border-radius: 999px;
-        background: rgba(23, 33, 38, 0.08);
+        background: rgba(29, 37, 43, 0.08);
       }
 
-      .progress-fill {
+      .fill {
         height: 100%;
         border-radius: inherit;
         background: linear-gradient(135deg, var(--accent), var(--accent-2));
@@ -598,8 +419,8 @@ export function renderApp(appOrigin: string): string {
 
       .job-files a {
         color: var(--accent-2);
-        text-decoration: none;
         font-weight: 700;
+        text-decoration: none;
       }
 
       .job-files a:hover {
@@ -611,42 +432,102 @@ export function renderApp(appOrigin: string): string {
       }
 
       .empty {
-        padding: 18px;
-        border-radius: 20px;
-        border: 1px dashed rgba(23, 33, 38, 0.14);
+        padding: 16px;
+        border: 1px dashed var(--line-strong);
+        border-radius: 16px;
         color: var(--muted);
-        background: rgba(255, 255, 255, 0.44);
+        background: var(--surface-soft);
         line-height: 1.7;
+      }
+
+      .detail-grid {
+        display: grid;
+        gap: 10px;
+      }
+
+      .detail-item {
+        padding: 14px;
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        background: var(--surface);
+      }
+
+      .detail-item label {
+        display: block;
+        color: var(--muted);
+        font-size: 12px;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+
+      .detail-item strong {
+        display: block;
+        margin-top: 6px;
+        font-size: 16px;
+      }
+
+      .log-list {
+        display: grid;
+        gap: 10px;
+        max-height: 520px;
+        overflow: auto;
+      }
+
+      .log-item {
+        padding: 12px 14px;
+        border-radius: 14px;
+        border: 1px solid var(--line);
+        background: var(--surface);
+      }
+
+      .log-meta {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        font-size: 12px;
+        color: var(--muted);
+      }
+
+      .log-level {
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+      }
+
+      .log-level.error {
+        color: var(--danger);
+      }
+
+      .log-level.info {
+        color: var(--accent-2);
+      }
+
+      .log-message {
+        margin-top: 8px;
+        color: var(--ink);
+        line-height: 1.6;
+        white-space: pre-wrap;
+        word-break: break-word;
       }
 
       code {
         padding: 2px 6px;
         border-radius: 8px;
-        background: rgba(23, 33, 38, 0.06);
-        font-family: "IBM Plex Mono", "SFMono-Regular", monospace;
+        background: rgba(29, 37, 43, 0.06);
+        font-family: "IBM Plex Mono", monospace;
       }
 
-      @media (max-width: 1120px) {
-        .workspace,
-        .hero-top,
-        .edition-row,
-        .feature-grid,
-        .helper-grid,
-        .field-row,
-        .hero-band {
-          grid-template-columns: 1fr;
-        }
-      }
-
-      @media (max-width: 720px) {
+      @media (max-width: 980px) {
         body {
           padding: 14px;
         }
 
-        .hero,
-        .panel {
-          padding: 20px;
-          border-radius: 28px;
+        .topbar,
+        .stats,
+        .workspace,
+        .field-row {
+          grid-template-columns: 1fr;
         }
 
         .mode-switch {
@@ -658,64 +539,38 @@ export function renderApp(appOrigin: string): string {
   </head>
   <body>
     <main id="app-shell" class="shell" data-mode="basic">
-      <section class="hero">
-        <div class="hero-top">
-          <div>
-            <span class="eyebrow">GoDingtalk Public Console</span>
-            <h1>公益远程下载台</h1>
-            <p id="hero-copy" class="hero-copy">普通版保留最短路径：装脚本、补 cookies、贴链接、等成品。适合先把下载跑通，不想碰并发和任务参数。</p>
-          </div>
-          <div class="mode-switch" role="tablist" aria-label="界面模式">
-            <button id="mode-basic" class="mode-button active" type="button">普通版</button>
-            <button id="mode-pro" class="mode-button" type="button">高级版</button>
-          </div>
+      <section class="topbar">
+        <div>
+          <span class="eyebrow">GoDingtalk Public Console</span>
+          <h1>公益远程下载台</h1>
+          <p id="hero-copy">简单版只保留必要功能：上传 cookies、贴回放链接、开始远程下载、查看最新结果。高级版再展开参数、状态细节和任务日志。</p>
         </div>
-
-        <div class="hero-band">
-          <div class="hero-stat">
-            <label>Cookies</label>
-            <strong id="hero-cookies">未准备</strong>
-          </div>
-          <div class="hero-stat">
-            <label>总任务数</label>
-            <strong id="hero-total">0</strong>
-          </div>
-          <div class="hero-stat">
-            <label>运行中</label>
-            <strong id="hero-running">0</strong>
-          </div>
-          <div class="hero-stat">
-            <label>已完成</label>
-            <strong id="hero-success">0</strong>
-          </div>
+        <div class="mode-switch" role="tablist" aria-label="界面模式">
+          <button id="mode-basic" class="mode-button active" type="button">简单版</button>
+          <button id="mode-pro" class="mode-button" type="button">高级版</button>
         </div>
-
-        <div class="edition-row">
-          <article class="edition-card basic-card">
-            <span class="edition-kicker basic">普通版</span>
-            <h2>少填参数，先把结果拿到。</h2>
-            <p>固定用默认线程和标准流程，你只需要处理 cookies 和回放链接。适合第一次上手，或者临时帮别人拉一条视频。</p>
-            <div class="edition-list">
-              <div>1. 安装 Tampermonkey 脚本</div>
-              <div>2. 上传 cookies 或让脚本带入</div>
-              <div>3. 粘贴链接后直接开始远程下载</div>
-            </div>
-          </article>
-
-          <article class="edition-card pro-card">
-            <span class="edition-kicker pro">高级版</span>
-            <h2>显式控制任务行为。</h2>
-            <p>开放线程数、输出标识、生成视频列表等参数，适合批量下载、问题定位和多任务并发调度时做更细的控制。</p>
-            <div class="edition-list">
-              <div>可调整并发线程，便于压榨远程 runner</div>
-              <div>可区分输出标识，方便后续审计和归档</div>
-              <div>可看更多系统状态，适合排错</div>
-            </div>
-          </article>
-        </div>
-
-        <div id="status-notice" class="notice ok" hidden></div>
       </section>
+
+      <section class="stats">
+        <div class="stat">
+          <label>Cookies</label>
+          <strong id="hero-cookies">未准备</strong>
+        </div>
+        <div class="stat">
+          <label>总任务数</label>
+          <strong id="hero-total">0</strong>
+        </div>
+        <div class="stat">
+          <label>运行中</label>
+          <strong id="hero-running">0</strong>
+        </div>
+        <div class="stat">
+          <label>已完成</label>
+          <strong id="hero-success">0</strong>
+        </div>
+      </section>
+
+      <div id="status-notice" class="notice ok" hidden></div>
 
       <section class="workspace">
         <div class="stack">
@@ -723,27 +578,13 @@ export function renderApp(appOrigin: string): string {
             <div class="panel-header">
               <div>
                 <h2>浏览器辅助</h2>
-                <p class="panel-subtitle">先装脚本，再去钉钉直播页点右下角按钮。它会把当前链接和可见 cookies 带回这里；浏览器拿不到的 HttpOnly cookies，仍需要你手动补。</p>
+                <p class="panel-subtitle">安装脚本后，在钉钉页面点按钮即可把当前链接和可见 cookies 带回这里。</p>
               </div>
               <span class="badge idle">Tampermonkey</span>
             </div>
-
-            <div class="feature-grid">
-              <div class="feature-card">
-                <strong>安装辅助脚本</strong>
-                <p>脚本只负责把当前页面上下文带回控制台，不在你的电脑上执行下载。真正的下载仍由远程 GitHub Actions runner 完成。</p>
-                <div class="actions" style="margin-top: 14px;">
-                  <a class="button-link primary" href="${installURL}" target="_blank" rel="noreferrer">安装 Tampermonkey 脚本</a>
-                </div>
-              </div>
-              <div class="feature-card">
-                <strong>入口说明</strong>
-                <div class="quick-steps">
-                  <div>入口公开，不再依赖 Quick Tunnel</div>
-                  <div>任务写入数据库后远程执行</div>
-                  <div>成品通过网页直接下载</div>
-                </div>
-              </div>
+            <div class="helper-strip">
+              <a class="button-link primary" href="${installURL}" target="_blank" rel="noreferrer">安装脚本</a>
+              <span class="hint">脚本只负责带回页面上下文，下载仍由远程 GitHub Actions runner 执行。</span>
             </div>
           </article>
 
@@ -755,27 +596,14 @@ export function renderApp(appOrigin: string): string {
               </div>
               <span class="badge warn" id="cookie-badge">未上传</span>
             </div>
-
-            <div class="helper-grid">
-              <div class="fields">
-                <div class="field">
-                  <label for="cookies">Cookies 内容</label>
-                  <textarea id="cookies" placeholder='{"LV_PC_SESSION":"replace-me"}'></textarea>
-                </div>
-                <div class="actions">
-                  <button class="primary" id="upload-cookies" type="button">上传 Cookies</button>
-                  <button class="secondary" id="example-cookies" type="button">填入示例</button>
-                </div>
+            <div class="fields">
+              <div class="field">
+                <label for="cookies">Cookies 内容</label>
+                <textarea id="cookies" placeholder='{"LV_PC_SESSION":"replace-me"}'></textarea>
               </div>
-
-              <div class="mode-note basic-only">
-                <strong style="display:block; margin-bottom:8px; color:var(--ink);">普通版建议</strong>
-                只要能把有效 cookies 交进来，后面就按默认流程跑。第一次测试时别急着开很多参数，先拿到一条成品最重要。
-              </div>
-
-              <div class="mode-note advanced-only">
-                <strong style="display:block; margin-bottom:8px; color:var(--ink);">高级版建议</strong>
-                如果脚本导入后依然缺少关键字段，直接在这里手动补齐。高级版更适合把 cookie 导出结果当作原始输入源来维护。
+              <div class="actions">
+                <button class="primary" id="upload-cookies" type="button">上传 Cookies</button>
+                <button class="secondary" id="example-cookies" type="button">填入示例</button>
               </div>
             </div>
           </article>
@@ -783,10 +611,10 @@ export function renderApp(appOrigin: string): string {
           <article class="panel">
             <div class="panel-header">
               <div>
-                <h2 id="job-panel-title">创建下载任务</h2>
-                <p id="job-panel-subtitle" class="panel-subtitle">普通版只保留最少输入。贴回放链接后直接发往远程 runner。</p>
+                <h2 id="job-panel-title">开始下载</h2>
+                <p id="job-panel-subtitle" class="panel-subtitle">简单版固定默认参数，只保留必要输入。</p>
               </div>
-              <span id="mode-chip" class="badge idle">普通版流程</span>
+              <span id="mode-chip" class="badge idle">简单版</span>
             </div>
 
             <div class="fields">
@@ -795,59 +623,85 @@ export function renderApp(appOrigin: string): string {
                 <textarea id="urls" placeholder="每行一个钉钉回放链接"></textarea>
               </div>
 
-              <div class="mode-note basic-only">
-                普通版固定使用默认线程 <code>10</code>、自动输出标识，并保持生成视频列表。你只管贴链接，剩下的按标准配置跑。
+              <div class="basic-note basic-only">
+                默认线程 <code>10</code>，默认生成视频列表，输出标识自动处理。你只需要贴链接。
               </div>
 
-              <div class="field-row advanced-only">
-                <div class="field">
-                  <label for="output-subdir">输出标识</label>
-                  <input id="output-subdir" placeholder="留空自动生成" />
+              <div class="fields pro-only">
+                <div class="field-row">
+                  <div class="field">
+                    <label for="output-subdir">输出标识</label>
+                    <input id="output-subdir" placeholder="留空自动生成" />
+                  </div>
+                  <div class="field">
+                    <label for="threads">线程数</label>
+                    <input id="threads" type="number" min="1" max="100" value="10" />
+                  </div>
+                  <div class="field">
+                    <label for="video-list">生成视频列表</label>
+                    <select id="video-list">
+                      <option value="true">生成</option>
+                      <option value="false">不生成</option>
+                    </select>
+                  </div>
                 </div>
-                <div class="field">
-                  <label for="threads">线程数</label>
-                  <input id="threads" type="number" min="1" max="100" value="10" />
-                </div>
-                <div class="field">
-                  <label for="video-list">生成视频列表</label>
-                  <select id="video-list">
-                    <option value="true">生成</option>
-                    <option value="false">不生成</option>
-                  </select>
-                </div>
+                <div class="hint">高级版保留显式参数，方便批量调度、排错和区分不同任务输出。</div>
               </div>
 
               <div class="actions">
                 <button class="primary" id="create-job" type="button">开始远程下载</button>
                 <button class="secondary" id="refresh-status" type="button">刷新状态</button>
-                <button class="secondary" id="load-jobs" type="button">刷新任务列表</button>
+                <button class="secondary" id="load-jobs" type="button">刷新任务</button>
               </div>
             </div>
-          </article>
-        </div>
-
-        <aside class="stack">
-          <article class="panel">
-            <div class="panel-header">
-              <div>
-                <h2>系统状态</h2>
-                <p class="panel-subtitle">普通版给你结论；高级版顺带暴露控制面和 GitHub workflow 的更多细节。</p>
-              </div>
-              <span class="badge idle" id="polling-badge">自动轮询中</span>
-            </div>
-            <div id="status-card" class="empty">还没拿到状态，通常是 Worker 正在部署，或者数据库 / GitHub Actions secrets 还没完全就绪。</div>
           </article>
 
           <article class="panel">
             <div class="panel-header">
               <div>
-                <h2>任务列表</h2>
-                <p class="panel-subtitle">这里只显示最近 20 分钟内更新过的最新 5 条任务。已完成任务会直接给网页下载链接。</p>
+                <h2>最近任务</h2>
+                <p class="panel-subtitle">这里只显示最近 20 分钟内更新过的最新 5 条任务。</p>
               </div>
+              <span class="badge idle">最近窗口</span>
             </div>
             <div id="jobs" class="jobs">
               <div class="empty">最近 20 分钟内还没有任务。先上传 cookies，再贴一条回放链接试跑。</div>
             </div>
+          </article>
+        </div>
+
+        <aside class="stack pro-only">
+          <article class="panel">
+            <div class="panel-header">
+              <div>
+                <h2>系统细节</h2>
+                <p class="panel-subtitle">高级版展示控制面状态和远程 workflow 细节。</p>
+              </div>
+              <span class="badge idle" id="polling-badge">自动轮询中</span>
+            </div>
+            <div id="status-card" class="detail-grid">
+              <div class="empty">正在读取控制面状态。</div>
+            </div>
+          </article>
+
+          <article class="panel">
+            <div class="panel-header">
+              <div>
+                <h2>任务详情</h2>
+                <p class="panel-subtitle">点击左边任务卡片后，这里会展开该任务的详细信息和下载文件。</p>
+              </div>
+            </div>
+            <div id="job-detail" class="empty">先从左侧选一条任务。</div>
+          </article>
+
+          <article class="panel">
+            <div class="panel-header">
+              <div>
+                <h2>任务日志</h2>
+                <p class="panel-subtitle">这里显示数据库里的任务事件流，用来排错。</p>
+              </div>
+            </div>
+            <div id="job-logs" class="empty">选中任务后会显示最新日志。</div>
           </article>
         </aside>
       </section>
@@ -855,18 +709,18 @@ export function renderApp(appOrigin: string): string {
 
     <script>
       const MODE_STORAGE_KEY = "godingtalk-ui-mode";
-      const editionCopy = {
+      const copyMap = {
         basic: {
-          hero: "普通版保留最短路径：装脚本、补 cookies、贴链接、等成品。适合先把下载跑通，不想碰并发和任务参数。",
-          title: "快速创建下载任务",
-          subtitle: "普通版只保留最少输入。贴回放链接后直接发往远程 runner。",
-          chip: "普通版流程",
+          hero: "简单版只保留必要功能：上传 cookies、贴回放链接、开始远程下载、查看最新结果。高级版再展开参数、状态细节和任务日志。",
+          title: "开始下载",
+          subtitle: "简单版固定默认参数，只保留必要输入。",
+          chip: "简单版",
         },
         pro: {
-          hero: "高级版把远程 runner 的关键控制项都放出来，适合批量任务、排错和你想自己掌控线程、输出标识的时候。",
-          title: "高级任务编排",
-          subtitle: "高级版开放线程、输出标识和附加选项，适合多任务并发或专门做一次精细化下载。",
-          chip: "高级版流程",
+          hero: "高级版用于排错和精细控制。除了基础下载入口，还会展示系统状态、任务详情和事件日志。",
+          title: "高级任务创建",
+          subtitle: "高级版保留线程、输出标识和附加选项。",
+          chip: "高级版",
         },
       };
 
@@ -878,8 +732,9 @@ export function renderApp(appOrigin: string): string {
         jobPanelTitle: document.getElementById("job-panel-title"),
         jobPanelSubtitle: document.getElementById("job-panel-subtitle"),
         modeChip: document.getElementById("mode-chip"),
-        refreshStatus: document.getElementById("refresh-status"),
         statusNotice: document.getElementById("status-notice"),
+        refreshStatus: document.getElementById("refresh-status"),
+        loadJobs: document.getElementById("load-jobs"),
         cookies: document.getElementById("cookies"),
         uploadCookies: document.getElementById("upload-cookies"),
         exampleCookies: document.getElementById("example-cookies"),
@@ -889,18 +744,23 @@ export function renderApp(appOrigin: string): string {
         threads: document.getElementById("threads"),
         videoList: document.getElementById("video-list"),
         createJob: document.getElementById("create-job"),
-        loadJobs: document.getElementById("load-jobs"),
         jobs: document.getElementById("jobs"),
         statusCard: document.getElementById("status-card"),
+        jobDetail: document.getElementById("job-detail"),
+        jobLogs: document.getElementById("job-logs"),
         heroCookies: document.getElementById("hero-cookies"),
         heroTotal: document.getElementById("hero-total"),
         heroRunning: document.getElementById("hero-running"),
         heroSuccess: document.getElementById("hero-success"),
-        pollingBadge: document.getElementById("polling-badge"),
       };
 
-      let currentMode = "basic";
-      let pollingHandle = null;
+      const state = {
+        mode: "basic",
+        jobs: [],
+        selectedJobID: "",
+        selectedDetail: null,
+        pollingHandle: null,
+      };
 
       function safeLocalStorageGet(key) {
         try {
@@ -1052,87 +912,139 @@ export function renderApp(appOrigin: string): string {
       }
 
       function applyMode(mode) {
-        currentMode = mode === "pro" ? "pro" : "basic";
-        elements.shell.dataset.mode = currentMode;
-        elements.modeBasic.classList.toggle("active", currentMode === "basic");
-        elements.modePro.classList.toggle("active", currentMode === "pro");
-        elements.heroCopy.textContent = editionCopy[currentMode].hero;
-        elements.jobPanelTitle.textContent = editionCopy[currentMode].title;
-        elements.jobPanelSubtitle.textContent = editionCopy[currentMode].subtitle;
-        elements.modeChip.textContent = editionCopy[currentMode].chip;
-        safeLocalStorageSet(MODE_STORAGE_KEY, currentMode);
+        state.mode = mode === "pro" ? "pro" : "basic";
+        elements.shell.dataset.mode = state.mode;
+        elements.modeBasic.classList.toggle("active", state.mode === "basic");
+        elements.modePro.classList.toggle("active", state.mode === "pro");
+        elements.heroCopy.textContent = copyMap[state.mode].hero;
+        elements.jobPanelTitle.textContent = copyMap[state.mode].title;
+        elements.jobPanelSubtitle.textContent = copyMap[state.mode].subtitle;
+        elements.modeChip.textContent = copyMap[state.mode].chip;
+        safeLocalStorageSet(MODE_STORAGE_KEY, state.mode);
+
+        if (state.mode === "pro") {
+          refreshSelectedJob();
+        }
       }
 
       function renderStatus(status) {
         const cookiesReady = Boolean(status.cookies_ready);
-        const totalJobs = Number(status.total_jobs || 0);
-        const runningJobs = Number(status.running_jobs || 0);
-        const succeededJobs = Number(status.succeeded_jobs || 0);
-
         elements.heroCookies.textContent = cookiesReady ? "已就绪" : "未准备";
-        elements.heroTotal.textContent = String(totalJobs);
-        elements.heroRunning.textContent = String(runningJobs);
-        elements.heroSuccess.textContent = String(succeededJobs);
+        elements.heroTotal.textContent = String(Number(status.total_jobs || 0));
+        elements.heroRunning.textContent = String(Number(status.running_jobs || 0));
+        elements.heroSuccess.textContent = String(Number(status.succeeded_jobs || 0));
         elements.cookieBadge.textContent = cookiesReady ? "已上传" : "未上传";
         elements.cookieBadge.className = "badge " + (cookiesReady ? "ok" : "warn");
 
-        const cards = [
-          '<div class="status-item"><label>当前模式</label><strong>' + escapeHTML(status.mode || "-") + '</strong></div>',
-          '<div class="status-item"><label>Cookies 更新时间</label><strong>' + escapeHTML(formatTime(status.cookies_updated_at)) + '</strong></div>',
-          '<div class="status-item"><label>等待中</label><strong>' + escapeHTML(String(status.queued_jobs || 0)) + '</strong></div>',
-          '<div class="status-item"><label>失败任务</label><strong>' + escapeHTML(String(status.failed_jobs || 0)) + '</strong></div>',
-        ];
-
-        if (currentMode === "pro") {
-          cards.push('<div class="status-item"><label>GitHub 仓库</label><strong>' + escapeHTML(status.workflow_repository || "未配置") + '</strong></div>');
-          cards.push('<div class="status-item"><label>工作流文件</label><strong>' + escapeHTML(status.workflow_file || "-") + '</strong></div>');
-        }
-
-        elements.statusCard.innerHTML = '<div class="status-grid">' + cards.join("") + '</div>';
+        elements.statusCard.innerHTML = [
+          '<div class="detail-item"><label>模式</label><strong>' + escapeHTML(status.mode || "-") + '</strong></div>',
+          '<div class="detail-item"><label>Cookies 更新时间</label><strong>' + escapeHTML(formatTime(status.cookies_updated_at)) + '</strong></div>',
+          '<div class="detail-item"><label>GitHub 仓库</label><strong>' + escapeHTML(status.workflow_repository || "未配置") + '</strong></div>',
+          '<div class="detail-item"><label>工作流文件</label><strong>' + escapeHTML(status.workflow_file || "-") + '</strong></div>',
+          '<div class="detail-item"><label>等待中</label><strong>' + escapeHTML(String(status.queued_jobs || 0)) + '</strong></div>',
+          '<div class="detail-item"><label>失败任务</label><strong>' + escapeHTML(String(status.failed_jobs || 0)) + '</strong></div>',
+        ].join("");
       }
 
       function renderJobs(jobs) {
-        if (!Array.isArray(jobs) || jobs.length === 0) {
+        state.jobs = Array.isArray(jobs) ? jobs : [];
+
+        if (state.jobs.length === 0) {
           elements.jobs.innerHTML = '<div class="empty">最近 20 分钟内还没有任务。先上传 cookies，再贴一条回放链接试跑。</div>';
+          if (state.mode === "pro") {
+            elements.jobDetail.innerHTML = '先从左侧选一条任务。';
+            elements.jobLogs.innerHTML = '选中任务后会显示最新日志。';
+          }
           return;
         }
 
-        elements.jobs.innerHTML = jobs.map((job) => {
+        if (!state.selectedJobID || !state.jobs.some((job) => job.id === state.selectedJobID)) {
+          state.selectedJobID = state.jobs[0].id;
+        }
+
+        elements.jobs.innerHTML = state.jobs.map((job) => {
           const files = Array.isArray(job.files) ? job.files : [];
-          const titles = Array.isArray(job.titles) ? job.titles : [];
           const errors = Array.isArray(job.errors) ? job.errors : [];
-          const statusClass = job.status === "succeeded" ? "ok" : (job.status === "failed" ? "warn" : "idle");
+          const titleText = job.current_title || (Array.isArray(job.titles) && job.titles[0]) || "下载任务";
           const progress = Math.max(0, Math.min(100, Number(job.progress_percent || 0)));
-          const stageText = formatStage(job.stage);
-          const completedParts = Number(job.completed_parts || 0);
-          const totalParts = Number(job.total_parts || 0);
-          const titleText = job.current_title || titles[0] || "下载任务";
+          const statusClass = job.status === "succeeded" ? "ok" : (job.status === "failed" ? "warn" : "idle");
+          const isSelected = state.mode === "pro" && state.selectedJobID === job.id;
 
           return [
-            '<section class="job-card">',
-            '<div class="job-top">',
+            '<section class="job-card' + (isSelected ? ' selected' : '') + '" data-job-id="' + escapeHTML(job.id) + '">',
+            '<div class="job-head">',
             '<div>',
             '<div class="job-id">' + escapeHTML(job.id) + '</div>',
             '<h3 class="job-title">' + escapeHTML(titleText) + '</h3>',
             '</div>',
             '<span class="badge ' + statusClass + '">' + escapeHTML(job.status || "unknown") + '</span>',
             '</div>',
-            '<div class="job-progress">',
-            '<div class="progress-top"><span>' + escapeHTML(stageText) + '</span><strong>' + escapeHTML(progress.toFixed(1)) + '%</strong></div>',
-            '<div class="progress-track"><div class="progress-fill" style="width:' + escapeHTML(progress.toFixed(1)) + '%"></div></div>',
-            totalParts > 0 ? '<div class="job-meta">分片进度：' + escapeHTML(String(completedParts)) + ' / ' + escapeHTML(String(totalParts)) + '</div>' : '',
+            '<div class="progress">',
+            '<div class="progress-top"><span>' + escapeHTML(formatStage(job.stage)) + '</span><strong>' + escapeHTML(progress.toFixed(1)) + '%</strong></div>',
+            '<div class="track"><div class="fill" style="width:' + escapeHTML(progress.toFixed(1)) + '%"></div></div>',
             '</div>',
-            '<div class="job-meta">创建时间：' + escapeHTML(formatTime(job.created_at)) + '</div>',
-            '<div class="job-meta">开始时间：' + escapeHTML(formatTime(job.started_at)) + '</div>',
-            '<div class="job-meta">完成时间：' + escapeHTML(formatTime(job.finished_at)) + '</div>',
-            currentMode === "pro" ? '<div class="job-meta">输出标识：' + escapeHTML(job.output_subdir || "-") + '</div>' : '',
-            currentMode === "pro" && job.runner_run_id ? '<div class="job-meta">Runner Run ID：' + escapeHTML(job.runner_run_id) + '</div>' : '',
-            titles.length > 1 ? '<div class="job-meta">标题：' + titles.map(escapeHTML).join(" / ") + '</div>' : '',
+            '<div class="job-meta">创建：' + escapeHTML(formatTime(job.created_at)) + '</div>',
+            Number(job.total_parts || 0) > 0 ? '<div class="job-meta">分片：' + escapeHTML(String(job.completed_parts || 0)) + ' / ' + escapeHTML(String(job.total_parts || 0)) + '</div>' : '',
+            state.mode === "pro" && job.runner_run_id ? '<div class="job-meta">Run ID：' + escapeHTML(job.runner_run_id) + '</div>' : '',
             files.length ? '<div class="job-files">' + files.map((file) => '<div><a href="' + escapeHTML(file.download_url || "#") + '" target="_blank" rel="noreferrer">' + escapeHTML(file.name) + '</a></div>').join("") + '</div>' : '',
-            errors.length ? '<div class="job-errors">' + errors.map(escapeHTML).join("<br/>") + '</div>' : '',
+            state.mode === "basic" && errors.length ? '<div class="job-errors">' + errors.slice(0, 1).map(escapeHTML).join("") + '</div>' : '',
             '</section>',
           ].join("");
         }).join("");
+
+        elements.jobs.querySelectorAll("[data-job-id]").forEach((node) => {
+          node.addEventListener("click", () => {
+            const jobID = node.getAttribute("data-job-id");
+            if (!jobID) {
+              return;
+            }
+            state.selectedJobID = jobID;
+            renderJobs(state.jobs);
+            refreshSelectedJob();
+          });
+        });
+      }
+
+      function renderJobDetail(detailPayload) {
+        if (!detailPayload || !detailPayload.job) {
+          elements.jobDetail.innerHTML = '先从左侧选一条任务。';
+          elements.jobLogs.innerHTML = '选中任务后会显示最新日志。';
+          return;
+        }
+
+        const job = detailPayload.job;
+        const files = Array.isArray(job.files) ? job.files : [];
+        const errors = Array.isArray(job.errors) ? job.errors : [];
+        const events = Array.isArray(detailPayload.events) ? detailPayload.events : [];
+        const titleText = job.current_title || (Array.isArray(job.titles) && job.titles[0]) || "下载任务";
+
+        elements.jobDetail.innerHTML = [
+          '<div class="detail-grid">',
+          '<div class="detail-item"><label>标题</label><strong>' + escapeHTML(titleText) + '</strong></div>',
+          '<div class="detail-item"><label>阶段</label><strong>' + escapeHTML(formatStage(job.stage)) + '</strong></div>',
+          '<div class="detail-item"><label>线程数</label><strong>' + escapeHTML(String(job.thread || 0)) + '</strong></div>',
+          '<div class="detail-item"><label>输出标识</label><strong>' + escapeHTML(job.output_subdir || "-") + '</strong></div>',
+          '<div class="detail-item"><label>创建时间</label><strong>' + escapeHTML(formatTime(job.created_at)) + '</strong></div>',
+          '<div class="detail-item"><label>完成时间</label><strong>' + escapeHTML(formatTime(job.finished_at)) + '</strong></div>',
+          '</div>',
+          files.length ? '<div class="job-files">' + files.map((file) => '<div><a href="' + escapeHTML(file.download_url || "#") + '" target="_blank" rel="noreferrer">' + escapeHTML(file.name) + '</a></div>').join("") + '</div>' : '<div class="empty" style="margin-top:12px;">这个任务暂时还没有可下载文件。</div>',
+          errors.length ? '<div class="job-errors">' + errors.map(escapeHTML).join("<br/>") + '</div>' : '',
+        ].join("");
+
+        if (events.length === 0) {
+          elements.jobLogs.innerHTML = '<div class="empty">这个任务目前还没有事件日志。</div>';
+          return;
+        }
+
+        elements.jobLogs.innerHTML = '<div class="log-list">' + events.map((event) => [
+          '<section class="log-item">',
+          '<div class="log-meta">',
+          '<span class="log-level ' + escapeHTML(event.level || "info") + '">' + escapeHTML(event.level || "info") + '</span>',
+          '<span>' + escapeHTML(formatTime(event.created_at)) + '</span>',
+          '</div>',
+          '<div class="log-message">' + escapeHTML(event.message || "") + '</div>',
+          '</section>',
+        ].join("")).join("") + '</div>';
       }
 
       function decodeImportPayload() {
@@ -1169,7 +1081,7 @@ export function renderApp(appOrigin: string): string {
           renderStatus(status);
           clearNotice();
         } catch (error) {
-          elements.statusCard.innerHTML = '<div class="empty"><strong style="display:block; margin-bottom:8px; color:var(--ink);">状态暂时不可用</strong>通常是 Worker 还没部署完成，或者数据库 / GitHub Actions secrets 还没完全就绪。</div>';
+          elements.statusCard.innerHTML = '<div class="empty">状态暂时不可用，通常是 Worker 还没部署完成，或者数据库 / GitHub Actions secrets 还没完全就绪。</div>';
           setNotice(error.message, "error");
         }
       }
@@ -1178,9 +1090,31 @@ export function renderApp(appOrigin: string): string {
         try {
           const payload = await request("/api/jobs");
           renderJobs(payload.jobs || []);
+          if (state.mode === "pro") {
+            await refreshSelectedJob();
+          }
         } catch (error) {
           renderJobs([]);
           setNotice(error.message, "error");
+        }
+      }
+
+      async function refreshSelectedJob() {
+        if (state.mode !== "pro") {
+          return;
+        }
+        if (!state.selectedJobID) {
+          renderJobDetail(null);
+          return;
+        }
+
+        try {
+          const detail = await request("/api/jobs/" + encodeURIComponent(state.selectedJobID) + "?include=events");
+          state.selectedDetail = detail;
+          renderJobDetail(detail);
+        } catch (error) {
+          elements.jobDetail.innerHTML = '<div class="empty">任务详情读取失败。</div>';
+          elements.jobLogs.innerHTML = '<div class="empty">' + escapeHTML(error.message) + '</div>';
         }
       }
 
@@ -1206,7 +1140,7 @@ export function renderApp(appOrigin: string): string {
         }
 
         const body = {};
-        if (currentMode === "pro") {
+        if (state.mode === "pro") {
           body.thread = Number(elements.threads.value || "10");
           body.output_subdir = elements.outputSubdir.value.trim();
           body.create_video_list = elements.videoList.value === "true";
@@ -1228,10 +1162,11 @@ export function renderApp(appOrigin: string): string {
           body: JSON.stringify(body),
         });
 
-        setNotice("任务已创建：" + payload.id);
-        if (currentMode === "pro") {
+        state.selectedJobID = payload.id || state.selectedJobID;
+        if (state.mode === "pro") {
           elements.outputSubdir.value = "";
         }
+        setNotice("任务已创建：" + payload.id);
         await refreshJobs();
         await refreshStatus();
       }
@@ -1241,10 +1176,10 @@ export function renderApp(appOrigin: string): string {
       }
 
       function installPolling() {
-        if (pollingHandle) {
-          clearInterval(pollingHandle);
+        if (state.pollingHandle) {
+          clearInterval(state.pollingHandle);
         }
-        pollingHandle = setInterval(() => {
+        state.pollingHandle = setInterval(() => {
           refreshStatus();
           refreshJobs();
         }, 5000);
@@ -1257,6 +1192,8 @@ export function renderApp(appOrigin: string): string {
         await refreshStatus();
         await refreshJobs();
       });
+
+      elements.loadJobs.addEventListener("click", refreshJobs);
 
       elements.uploadCookies.addEventListener("click", async () => {
         setBusy(elements.uploadCookies, true);
@@ -1286,8 +1223,6 @@ export function renderApp(appOrigin: string): string {
           setBusy(elements.createJob, false);
         }
       });
-
-      elements.loadJobs.addEventListener("click", refreshJobs);
 
       applyMode(safeLocalStorageGet(MODE_STORAGE_KEY) || "basic");
       decodeImportPayload();
