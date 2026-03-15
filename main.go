@@ -29,6 +29,12 @@ var Version = "dev"
 // 全局HTTP客户端，在 main 中根据配置初始化
 var httpClient *http.Client
 
+type downloadHooks struct {
+	OnTitle    func(string)
+	OnStage    func(string)
+	OnProgress func(completed int, total int)
+}
+
 // initHTTPClient 初始化全局HTTP客户端
 func initHTTPClient(timeout int) {
 	httpClient = &http.Client{
@@ -149,6 +155,10 @@ func startChrome(config *Config) error {
 // saveDir: 保存目录
 // Thread：线程数
 func M3u8Down(title, playbackUrl, saveDir string, Thread int) error {
+	return m3u8Down(title, playbackUrl, saveDir, Thread, downloadHooks{})
+}
+
+func m3u8Down(title, playbackUrl, saveDir string, Thread int, hooks downloadHooks) error {
 	if strings.TrimSpace(playbackUrl) == "" {
 		return fmt.Errorf("回放地址为空，可能 cookies 无效、回放未生成，或当前链接没有下载权限")
 	}
@@ -170,7 +180,11 @@ func M3u8Down(title, playbackUrl, saveDir string, Thread int) error {
 	m3u8.SetNumOfThread(Thread)
 	m3u8.SetIfShowTheBar(true)
 	m3u8.SetSaveDirectory(tempDir)
+	m3u8.SetProgressCallback(hooks.OnProgress)
 
+	if hooks.OnStage != nil {
+		hooks.OnStage("downloading")
+	}
 	if !m3u8.DefaultDownload() {
 		// 下载失败时清理临时文件夹
 		os.RemoveAll(tempDir)
@@ -178,6 +192,9 @@ func M3u8Down(title, playbackUrl, saveDir string, Thread int) error {
 	}
 	fmt.Println("下载成功")
 
+	if hooks.OnStage != nil {
+		hooks.OnStage("converting")
+	}
 	if err := ffmpeg(title, tempDir, saveDir); err != nil {
 		// 转换失败时清理临时文件夹
 		os.RemoveAll(tempDir)
@@ -198,6 +215,10 @@ func M3u8Down(title, playbackUrl, saveDir string, Thread int) error {
 // roomId：直播间ID
 // liveUuid：直播UUID
 func getLiveRoomPublicInfo(roomId, liveUuid, saveDir string, Thread int, config *Config) (string, error) {
+	return getLiveRoomPublicInfoWithHooks(roomId, liveUuid, saveDir, Thread, config, downloadHooks{})
+}
+
+func getLiveRoomPublicInfoWithHooks(roomId, liveUuid, saveDir string, Thread int, config *Config, hooks downloadHooks) (string, error) {
 	// 构造URL
 	urlStr := "https://lv.dingtalk.com/getOpenLiveInfo?roomId=" + roomId + "&liveUuid=" + liveUuid
 	urlObj, err := url.Parse(urlStr)
@@ -289,11 +310,15 @@ func getLiveRoomPublicInfo(roomId, liveUuid, saveDir string, Thread int, config 
 	fmt.Println("标题:", title)
 	fmt.Println("回放地址:", playbackUrl)
 
+	if hooks.OnTitle != nil {
+		hooks.OnTitle(title)
+	}
+
 	if playbackUrl == "" {
 		return title, fmt.Errorf("未获取到回放地址，可能 cookies 无效、直播回放未就绪，或该回放没有权限访问")
 	}
 
-	if err := M3u8Down(title, playbackUrl, saveDir, Thread); err != nil {
+	if err := m3u8Down(title, playbackUrl, saveDir, Thread, hooks); err != nil {
 		return title, err
 	}
 
@@ -304,6 +329,10 @@ func getLiveRoomPublicInfo(roomId, liveUuid, saveDir string, Thread int, config 
 // 然后调用getLiveRoomPublicInfo函数进行处理
 // 如果URL解析出错或缺少roomId或liveUuid参数，则打印错误信息并返回
 func processURL(urlStr, saveDir string, Thread int, config *Config, videoListFile string) (string, error) {
+	return processURLWithHooks(urlStr, saveDir, Thread, config, videoListFile, downloadHooks{})
+}
+
+func processURLWithHooks(urlStr, saveDir string, Thread int, config *Config, videoListFile string, hooks downloadHooks) (string, error) {
 	// 解析 URL
 	parsedURL, err := url.Parse(urlStr)
 	if err != nil {
@@ -318,7 +347,7 @@ func processURL(urlStr, saveDir string, Thread int, config *Config, videoListFil
 		return "", fmt.Errorf("URL 中缺少 roomId 或 liveUuid 参数")
 	}
 
-	title, err := getLiveRoomPublicInfo(roomId, liveUuid, saveDir, Thread, config)
+	title, err := getLiveRoomPublicInfoWithHooks(roomId, liveUuid, saveDir, Thread, config, hooks)
 
 	// 下载完成后立即追加标题到视频列表文件
 	if err == nil && videoListFile != "" && title != "" {

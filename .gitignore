@@ -30,6 +30,8 @@ cookies.json
 config.json
 *.mp4
 *.ts
+!worker/**/*.ts
+!worker/tsconfig.json
 
 # 下载目录
 video/

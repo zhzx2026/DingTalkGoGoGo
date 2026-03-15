@@ -35,9 +35,14 @@ type DownloadFile struct {
 type DownloadJob struct {
 	ID              string         `json:"id"`
 	Status          string         `json:"status"`
+	Stage           string         `json:"stage,omitempty"`
 	URLs            []string       `json:"urls"`
 	Thread          int            `json:"thread"`
 	RelativeSaveDir string         `json:"relative_save_dir"`
+	CurrentTitle    string         `json:"current_title,omitempty"`
+	CompletedParts  int            `json:"completed_parts,omitempty"`
+	TotalParts      int            `json:"total_parts,omitempty"`
+	ProgressPercent float64        `json:"progress_percent,omitempty"`
 	VideoListPath   string         `json:"video_list_path,omitempty"`
 	Titles          []string       `json:"titles,omitempty"`
 	Files           []DownloadFile `json:"files,omitempty"`
@@ -336,6 +341,7 @@ func (s *Server) handleCreateDownload(w http.ResponseWriter, r *http.Request) {
 	job := &DownloadJob{
 		ID:              jobID,
 		Status:          jobStatusQueued,
+		Stage:           "queued",
 		URLs:            urls,
 		Thread:          threadCount,
 		RelativeSaveDir: relativeSaveDir,
@@ -371,6 +377,7 @@ func (s *Server) runJob(jobID, saveDir string) {
 	startedAt := time.Now()
 	s.updateJob(jobID, func(job *DownloadJob) {
 		job.Status = jobStatusRunning
+		job.Stage = "resolving"
 		job.StartedAt = &startedAt
 		job.UpdatedAt = startedAt
 	})
@@ -402,7 +409,37 @@ func (s *Server) runJob(jobID, saveDir string) {
 	)
 
 	for _, rawURL := range job.URLs {
-		title, err := processURL(rawURL, saveDir, job.Thread, s.config, job.VideoListPath)
+		title, err := processURLWithHooks(rawURL, saveDir, job.Thread, s.config, job.VideoListPath, downloadHooks{
+			OnTitle: func(title string) {
+				s.updateJob(jobID, func(current *DownloadJob) {
+					current.CurrentTitle = title
+					current.UpdatedAt = time.Now()
+				})
+			},
+			OnStage: func(stage string) {
+				s.updateJob(jobID, func(current *DownloadJob) {
+					current.Stage = stage
+					if stage == "converting" && current.TotalParts > 0 {
+						current.CompletedParts = current.TotalParts
+						current.ProgressPercent = 100
+					}
+					current.UpdatedAt = time.Now()
+				})
+			},
+			OnProgress: func(completed int, total int) {
+				s.updateJob(jobID, func(current *DownloadJob) {
+					current.Stage = "downloading"
+					current.CompletedParts = completed
+					current.TotalParts = total
+					if total > 0 {
+						current.ProgressPercent = float64(completed) * 100 / float64(total)
+					} else {
+						current.ProgressPercent = 0
+					}
+					current.UpdatedAt = time.Now()
+				})
+			},
+		})
 		if title != "" {
 			titles = append(titles, title)
 		}
@@ -428,6 +465,15 @@ func (s *Server) finishJob(jobID, status string, files []DownloadFile, errors []
 	finishedAt := time.Now()
 	s.updateJob(jobID, func(job *DownloadJob) {
 		job.Status = status
+		if status == jobStatusSucceeded {
+			job.Stage = "completed"
+			if job.TotalParts > 0 {
+				job.CompletedParts = job.TotalParts
+				job.ProgressPercent = 100
+			}
+		} else {
+			job.Stage = "failed"
+		}
 		job.Files = files
 		job.Errors = append([]string(nil), errors...)
 		job.FinishedAt = &finishedAt

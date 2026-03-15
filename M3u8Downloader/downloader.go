@@ -94,6 +94,8 @@ type M3u8Downloader interface {
 	MergeFile() error
 	// MergeFileInDir 将合并后的视频文件保存到目录dir中
 	MergeFileInDir(path string, saveName string) error
+	// SetProgressCallback 设置下载进度回调
+	SetProgressCallback(callback func(completed int, total int))
 }
 
 // m3u8downloader 下载器对象结构体
@@ -145,6 +147,8 @@ type DownloadConfig struct {
 	TotalNum int
 	// DownloadModel 设置下载模式
 	DownloadModel DownloadModelType
+	// ProgressCallback 下载进度回调
+	ProgressCallback func(completed int, total int)
 }
 
 // M3u8 解析m3u8文件后的内容的集合
@@ -286,6 +290,11 @@ func (md *m3u8downloader) SetDownloadModel(model DownloadModelType) {
 	}
 }
 
+// SetProgressCallback 设置下载进度回调
+func (md *m3u8downloader) SetProgressCallback(callback func(completed int, total int)) {
+	md.config.ProgressCallback = callback
+}
+
 // showTheBar 显示进度条方法
 func (md *m3u8downloader) showTheBar() {
 	md.printInfo()
@@ -345,6 +354,9 @@ func (md *m3u8downloader) Download() error {
 	md.config.errCount = 0
 	md.config.completeCount = 0
 	md.config.TotalNum = len(md.m3u8ParseResult.M3u8.Segments)
+	if md.config.ProgressCallback != nil {
+		md.config.ProgressCallback(0, md.config.TotalNum)
+	}
 	md.suffixList = make([]string, md.config.TotalNum)
 	md.waitGroup.Add(md.config.NumOfThreads)
 	//选择下载模式
@@ -463,6 +475,9 @@ func (md *m3u8downloader) SaveAsTsFileAndMergeEncryption(index, threadId int, bo
 	md.buffer[threadId].Reset()
 	count := atomic.AddInt64(&md.config.completeCount, 1)
 	md.successChan <- int(count)
+	if md.config.ProgressCallback != nil {
+		md.config.ProgressCallback(int(count), md.config.TotalNum)
+	}
 	//fmt.Println(md.config.completeCount)
 	body = nil
 }
@@ -517,6 +532,9 @@ func (md *m3u8downloader) WriteIntoCacheAndSave(index, threadId int, body []byte
 	md.buffer[threadId].Reset()
 	count := atomic.AddInt64(&md.config.completeCount, 1)
 	md.successChan <- int(count)
+	if md.config.ProgressCallback != nil {
+		md.config.ProgressCallback(int(count), md.config.TotalNum)
+	}
 }
 
 // MergeFileInDir 将目标目录下的ts文件全部合并
