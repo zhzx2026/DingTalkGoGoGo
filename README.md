@@ -195,6 +195,26 @@ go build -o GoDingtalk .
 ./GoDingtalk -login
 ```
 
+### 无头二维码登录（适合 GitHub Actions / 远程 Windows）
+
+```bash
+./GoDingtalk -loginQR -loginQRFile login-qr.png
+```
+
+它会：
+
+1. 打开钉钉登录页并自动识别页面里的登录二维码
+2. 解出登录 URL 后重新生成一张本地二维码图片
+3. 在终端打印可扫码的 ASCII 二维码
+4. 等待你用钉钉扫码确认后自动保存 `cookies.json`
+
+如果你使用 GitHub Actions，可以直接手动触发 `.github/workflows/windows-login.yml`：
+
+1. 进入仓库 Actions 页面
+2. 运行 `Windows Login`
+3. 在日志里查看二维码链接 / 终端二维码，或下载 `windows-login-qr` artifact
+4. 扫码完成后下载 `windows-login-cookies` artifact
+
 ## GitHub Runner 远程执行
 
 `remote-runner.yml` 实际调用的是新的 runner 模式：

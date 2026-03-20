@@ -2,10 +2,12 @@ package main
 
 import (
 	"bufio"
+	"bytes"
 	"context"
 	"encoding/json"
 	"flag"
 	"fmt"
+	"image"
 	"io"
 	"log"
 	"net/http"
@@ -20,7 +22,13 @@ import (
 	"GoDingtalk/M3u8Downloader"
 
 	"github.com/chromedp/cdproto/network"
+	cdpage "github.com/chromedp/cdproto/page"
 	"github.com/chromedp/chromedp"
+	"github.com/makiuchi-d/gozxing"
+	zxingqrcode "github.com/makiuchi-d/gozxing/qrcode"
+	qrencode "github.com/skip2/go-qrcode"
+
+	_ "image/png"
 )
 
 // Version 程序版本号，通过 -ldflags "-X main.Version=vX.X.X" 注入
@@ -28,6 +36,18 @@ var Version = "dev"
 
 // 全局HTTP客户端，在 main 中根据配置初始化
 var httpClient *http.Client
+
+const (
+	dingTalkLoginSuccessURL = "https://h5.dingtalk.com"
+	dingTalkLoginPageURL    = "https://login.dingtalk.com/oauth2/challenge.htm?client_id=dingavo6at488jbofmjs&response_type=code&scope=openid&redirect_uri=https%3A%2F%2Flv.dingtalk.com%2Fsso%2Flogin%3Fcontinue%3Dhttps%253A%252F%252Fh5.dingtalk.com%252Fgroup-live-share%252Findex.htm%253Ftype%253D2%2523%252F"
+)
+
+type pageRect struct {
+	X      float64 `json:"x"`
+	Y      float64 `json:"y"`
+	Width  float64 `json:"width"`
+	Height float64 `json:"height"`
+}
 
 type downloadHooks struct {
 	OnTitle    func(string)
@@ -64,6 +84,243 @@ func ffmpeg(ts, tempDir, saveDir string) error {
 	return nil
 }
 
+func chromeExecAllocatorOptions(headless bool) []chromedp.ExecAllocatorOption {
+	var opts []chromedp.ExecAllocatorOption
+	if headless {
+		opts = append(opts, chromedp.DefaultExecAllocatorOptions[:]...)
+	} else {
+		opts = append(opts, chromedp.DefaultExecAllocatorOptions[3:]...)
+	}
+
+	return append(opts,
+		chromedp.Flag("disable-blink-features", "AutomationControlled"),
+		chromedp.Flag("excludeSwitches", "enable-automation"),
+		chromedp.NoFirstRun,
+		chromedp.NoDefaultBrowserCheck,
+	)
+}
+
+func saveCookiesFile(path string, siteCookies []*network.Cookie) error {
+	cookies := make(map[string]string)
+	for _, cookie := range siteCookies {
+		cookies[cookie.Name] = cookie.Value
+	}
+
+	jsonCookies, err := json.Marshal(cookies)
+	if err != nil {
+		return fmt.Errorf("序列化 Cookies 失败: %w", err)
+	}
+
+	if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
+		return fmt.Errorf("创建 Cookies 目录失败: %w", err)
+	}
+
+	if err := os.WriteFile(path, jsonCookies, 0600); err != nil {
+		return fmt.Errorf("保存 Cookies 文件失败: %w", err)
+	}
+
+	return nil
+}
+
+func waitForLoginSuccess(ctx context.Context) error {
+	for {
+		select {
+		case <-ctx.Done():
+			return fmt.Errorf("等待扫码登录超时: %w", ctx.Err())
+		default:
+		}
+
+		var currentURL string
+		if err := chromedp.Evaluate(`window.location.href`, &currentURL).Do(ctx); err != nil {
+			return err
+		}
+
+		if strings.Contains(currentURL, dingTalkLoginSuccessURL) {
+			fmt.Println("登录成功，正在获取Cookies...")
+			return nil
+		}
+
+		time.Sleep(2 * time.Second)
+	}
+}
+
+func decodeQRCodeFromImage(pngBytes []byte) (string, error) {
+	img, _, err := image.Decode(bytes.NewReader(pngBytes))
+	if err != nil {
+		return "", err
+	}
+
+	bmp, err := gozxing.NewBinaryBitmapFromImage(img)
+	if err != nil {
+		return "", err
+	}
+
+	result, err := zxingqrcode.NewQRCodeReader().Decode(bmp, nil)
+	if err != nil {
+		return "", err
+	}
+
+	return strings.TrimSpace(result.GetText()), nil
+}
+
+func captureQRCodeScreenshot(ctx context.Context) ([]byte, error) {
+	var rect pageRect
+	err := chromedp.Evaluate(`(() => {
+		const candidates = Array.from(document.querySelectorAll('img'))
+		  .map((img) => {
+		    const rect = img.getBoundingClientRect();
+		    const style = window.getComputedStyle(img);
+		    const area = rect.width * rect.height;
+		    const squareRatio = rect.width > 0 && rect.height > 0
+		      ? Math.min(rect.width, rect.height) / Math.max(rect.width, rect.height)
+		      : 0;
+		    return {
+		      x: rect.left,
+		      y: rect.top,
+		      width: rect.width,
+		      height: rect.height,
+		      area,
+		      squareRatio,
+		      visible: rect.width >= 120 && rect.height >= 120 && style.visibility !== 'hidden' && style.display !== 'none'
+		    };
+		  })
+		  .filter((item) => item.visible && item.squareRatio >= 0.75)
+		  .sort((a, b) => b.area - a.area);
+
+		return candidates[0] || null;
+	})()`, &rect).Do(ctx)
+	if err == nil && rect.Width > 0 && rect.Height > 0 {
+		padding := 12.0
+		clip := &cdpage.Viewport{
+			X:      maxFloat(rect.X-padding, 0),
+			Y:      maxFloat(rect.Y-padding, 0),
+			Width:  rect.Width + padding*2,
+			Height: rect.Height + padding*2,
+			Scale:  2,
+		}
+		if screenshot, shotErr := cdpage.CaptureScreenshot().WithFormat(cdpage.CaptureScreenshotFormatPng).WithClip(clip).Do(ctx); shotErr == nil {
+			return screenshot, nil
+		}
+	}
+
+	var screenshot []byte
+	if err := chromedp.FullScreenshot(&screenshot, 100).Do(ctx); err != nil {
+		return nil, err
+	}
+	return screenshot, nil
+}
+
+func waitForLoginQRCodeURL(ctx context.Context) (string, []byte, error) {
+	deadline := time.Now().Add(45 * time.Second)
+	var lastErr error
+
+	for time.Now().Before(deadline) {
+		screenshot, err := captureQRCodeScreenshot(ctx)
+		if err == nil {
+			qrURL, decodeErr := decodeQRCodeFromImage(screenshot)
+			if decodeErr == nil && qrURL != "" {
+				return qrURL, screenshot, nil
+			}
+			lastErr = decodeErr
+		} else {
+			lastErr = err
+		}
+
+		time.Sleep(1500 * time.Millisecond)
+	}
+
+	if lastErr == nil {
+		lastErr = fmt.Errorf("未识别到登录二维码")
+	}
+	return "", nil, lastErr
+}
+
+func writeLoginQRCodeArtifacts(qrURL, outputPath string) error {
+	if strings.TrimSpace(outputPath) == "" {
+		outputPath = "login-qr.png"
+	}
+	outputPath = filepath.Clean(outputPath)
+
+	if err := os.MkdirAll(filepath.Dir(outputPath), 0755); err != nil {
+		return fmt.Errorf("创建二维码输出目录失败: %w", err)
+	}
+
+	qrCode, err := qrencode.New(qrURL, qrencode.Medium)
+	if err != nil {
+		return fmt.Errorf("生成二维码失败: %w", err)
+	}
+
+	if err := qrCode.WriteFile(320, outputPath); err != nil {
+		return fmt.Errorf("写入二维码图片失败: %w", err)
+	}
+
+	fmt.Println("扫码登录链接:")
+	fmt.Println(qrURL)
+	fmt.Println()
+	fmt.Println("请使用钉钉扫一扫扫描下面的二维码完成登录:")
+	fmt.Println(qrCode.ToSmallString(false))
+	fmt.Printf("二维码图片已生成: %s\n", outputPath)
+
+	return nil
+}
+
+func maxFloat(a, b float64) float64 {
+	if a > b {
+		return a
+	}
+	return b
+}
+
+func startChromeQRLogin(config *Config, qrOutputPath string) error {
+	fmt.Println("正在启动无头Chrome生成登录二维码...")
+
+	log.SetOutput(io.Discard)
+	defer log.SetOutput(os.Stderr)
+
+	parentCtx, cancel := chromedp.NewExecAllocator(context.Background(), chromeExecAllocatorOptions(true)...)
+	defer cancel()
+
+	ctx, cancel := chromedp.NewContext(parentCtx)
+	defer cancel()
+
+	ctx, cancel = context.WithTimeout(ctx, time.Duration(config.ChromeTimeout)*time.Minute)
+	defer cancel()
+
+	if err := chromedp.Run(ctx,
+		network.Enable(),
+		chromedp.Navigate(dingTalkLoginPageURL),
+		chromedp.WaitVisible(`body`, chromedp.ByQuery),
+	); err != nil {
+		return fmt.Errorf("打开登录页失败: %w", err)
+	}
+
+	qrURL, _, err := waitForLoginQRCodeURL(ctx)
+	if err != nil {
+		return fmt.Errorf("提取登录二维码失败: %w", err)
+	}
+
+	if err := writeLoginQRCodeArtifacts(qrURL, qrOutputPath); err != nil {
+		return err
+	}
+
+	fmt.Println("等待扫码确认...")
+	if err := waitForLoginSuccess(ctx); err != nil {
+		return err
+	}
+
+	siteCookies, err := network.GetCookies().Do(ctx)
+	if err != nil {
+		return fmt.Errorf("获取 Cookies 失败: %w", err)
+	}
+
+	if err := saveCookiesFile(config.CookiesFile, siteCookies); err != nil {
+		return err
+	}
+
+	fmt.Println("Cookies保存成功")
+	return nil
+}
+
 // startChrome 函数启动Chrome浏览器，访问钉钉登录页面，获取并保存Cookies到本地文件。
 func startChrome(config *Config) error {
 	fmt.Println("正在启动Chrome获取Cookies...")
@@ -72,17 +329,8 @@ func startChrome(config *Config) error {
 	log.SetOutput(io.Discard)
 	defer log.SetOutput(os.Stderr)
 
-	opts := append(
-		// 跳过前3个选项以禁用 headless 模式，让浏览器可见
-		chromedp.DefaultExecAllocatorOptions[3:],
-		chromedp.Flag("disable-blink-features", "AutomationControlled"),
-		chromedp.Flag("excludeSwitches", "enable-automation"),
-		chromedp.NoFirstRun,
-		chromedp.NoDefaultBrowserCheck,
-	)
-
 	var siteCookies []*network.Cookie
-	parentCtx, cancel := chromedp.NewExecAllocator(context.Background(), opts...)
+	parentCtx, cancel := chromedp.NewExecAllocator(context.Background(), chromeExecAllocatorOptions(false)...)
 	defer cancel()
 
 	ctx, cancel := chromedp.NewContext(parentCtx)
@@ -92,29 +340,13 @@ func startChrome(config *Config) error {
 	ctx, cancel = context.WithTimeout(ctx, time.Duration(config.ChromeTimeout)*time.Minute)
 	defer cancel()
 
-	// 访问钉钉登录页面
-	H5url := "https://h5.dingtalk.com"
-	Lurl := "https://login.dingtalk.com/oauth2/challenge.htm?client_id=dingavo6at488jbofmjs&response_type=code&scope=openid&redirect_uri=https%3A%2F%2Flv.dingtalk.com%2Fsso%2Flogin%3Fcontinue%3Dhttps%253A%252F%252Fh5.dingtalk.com%252Fgroup-live-share%252Findex.htm%253Ftype%253D2%2523%252F"
-
 	fmt.Println("请在浏览器中完成登录...")
 	err := chromedp.Run(ctx,
 		network.Enable(), // 启用网络事件
-		chromedp.Navigate(Lurl),
+		chromedp.Navigate(dingTalkLoginPageURL),
 		chromedp.WaitVisible(`body`, chromedp.ByQuery),
 		chromedp.ActionFunc(func(ctx context.Context) error {
-			var currentURL string
-			for {
-				if err := chromedp.Evaluate(`window.location.href`, &currentURL).Do(ctx); err != nil {
-					return err
-				}
-
-				if strings.Contains(currentURL, H5url) {
-					fmt.Println("登录成功，正在获取Cookies...")
-					break
-				}
-				time.Sleep(2 * time.Second)
-			}
-			return nil
+			return waitForLoginSuccess(ctx)
 		}),
 		chromedp.ActionFunc(func(ctx context.Context) error {
 			// 到达此处，说明已经跳转到了指定的URL
@@ -131,18 +363,8 @@ func startChrome(config *Config) error {
 		return fmt.Errorf("Chrome 自动化操作失败: %w", err)
 	}
 
-	// 保存cookies到文件
-	cookies := make(map[string]string)
-	for _, cookie := range siteCookies {
-		cookies[cookie.Name] = cookie.Value
-	}
-	jsonCookies, err := json.Marshal(cookies)
-	if err != nil {
-		return fmt.Errorf("序列化 Cookies 失败: %w", err)
-	}
-
-	if err := os.WriteFile(config.CookiesFile, jsonCookies, 0600); err != nil {
-		return fmt.Errorf("保存 Cookies 文件失败: %w", err)
+	if err := saveCookiesFile(config.CookiesFile, siteCookies); err != nil {
+		return err
 	}
 
 	fmt.Println("Cookies保存成功")
@@ -465,6 +687,8 @@ func main() {
 	jobIDFlag := flag.String("jobID", "", "远程任务 ID")
 	resultFileFlag := flag.String("resultFile", "", "远程任务结果清单输出路径")
 	loginFlag := flag.Bool("login", false, "强制重新登录获取Cookies")
+	loginQRFlag := flag.Bool("loginQR", false, "无头模式生成钉钉登录二维码，适合 GitHub Actions / 远程环境")
+	loginQRFileFlag := flag.String("loginQRFile", "login-qr.png", "二维码登录模式输出的二维码图片路径")
 	urlFlag := flag.String("url", "", "需要下载的回放URL，格式为 -url \"https://n.dingtalk.com/dingding/live-room/index.html?roomId=XXXX&liveUuid=XXXX\"")
 	urlFile := flag.String("urlFile", "", "包含需要下载的回放URL的文件路径，格式为 -urlFile \"/path/to/file\"")
 	Thread := flag.Int("thread", 0, "下载线程数 (默认: 10)")
@@ -552,7 +776,7 @@ func main() {
 	}
 
 	// 参数验证
-	if *urlFlag == "" && *urlFile == "" && !*loginFlag {
+	if *urlFlag == "" && *urlFile == "" && !*loginFlag && !*loginQRFlag {
 		fmt.Println("错误: 未提供 URL 或 URL 文件路径")
 		flag.Usage()
 		os.Exit(1)
@@ -567,7 +791,12 @@ func main() {
 	*saveDir = filepath.Clean(*saveDir) + string(filepath.Separator)
 
 	// 检查cookies是否有效，无效则重新登录
-	if *loginFlag || !checkCookiesValid(config.CookiesFile) {
+	if *loginQRFlag {
+		if err := startChromeQRLogin(config, *loginQRFileFlag); err != nil {
+			fmt.Printf("错误: 二维码登录失败: %v\n", err)
+			os.Exit(1)
+		}
+	} else if *loginFlag || !checkCookiesValid(config.CookiesFile) {
 		if *loginFlag {
 			fmt.Println("强制重新登录...")
 		} else {

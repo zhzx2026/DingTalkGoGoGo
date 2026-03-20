@@ -1,0 +1,47 @@
+name: Windows Login
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  login:
+    runs-on: windows-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.25'
+
+      - name: Build GoDingtalk
+        run: go build -o GoDingtalk.exe .
+
+      - name: Generate DingTalk login QR
+        shell: powershell
+        run: |
+          New-Item -ItemType Directory -Force -Path "$env:RUNNER_TEMP\godingtalk-login" | Out-Null
+          .\GoDingtalk.exe `
+            -loginQR `
+            -chromeTimeout 20 `
+            -cookies "$env:RUNNER_TEMP\godingtalk-login\cookies.json" `
+            -loginQRFile "$env:RUNNER_TEMP\godingtalk-login\login-qr.png"
+
+      - name: Upload login QR
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-login-qr
+          path: ${{ runner.temp }}/godingtalk-login/login-qr.png
+          if-no-files-found: warn
+
+      - name: Upload login cookies
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-login-cookies
+          path: ${{ runner.temp }}/godingtalk-login/cookies.json
+          if-no-files-found: warn
