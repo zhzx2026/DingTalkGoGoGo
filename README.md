@@ -215,6 +215,11 @@ go build -o GoDingtalk .
 3. 在日志里查看二维码链接 / 终端二维码，或下载 `windows-login-qr` artifact
 4. 扫码完成后下载 `windows-login-cookies` artifact
 
+注意：
+
+- 这条 workflow 需要运行在中国网络环境下的 `self-hosted Windows runner`
+- GitHub 托管的 `windows-latest` 位于美国网络，打开的是国际版登录页，和中国网络下的钉钉扫码链路不一致，不适合这条登录流程
+
 ## GitHub Runner 远程执行
 
 `remote-runner.yml` 实际调用的是新的 runner 模式：
