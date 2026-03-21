@@ -19,11 +19,11 @@ jobs:
       JOB_ID: ${{ inputs.job_id }}
       CONTROL_URL: ${{ secrets.GODINGTALK_CONTROL_URL }}
       INTERNAL_TOKEN: ${{ secrets.GODINGTALK_INTERNAL_TOKEN }}
-      R2_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-      R2_BUCKET: ${{ secrets.GODINGTALK_R2_BUCKET }}
-      AWS_ACCESS_KEY_ID: ${{ secrets.GODINGTALK_R2_ACCESS_KEY_ID }}
-      AWS_SECRET_ACCESS_KEY: ${{ secrets.GODINGTALK_R2_SECRET_ACCESS_KEY }}
-      AWS_DEFAULT_REGION: auto
+      S3_ENDPOINT: ${{ secrets.GODINGTALK_S3_ENDPOINT }}
+      S3_BUCKET: ${{ secrets.GODINGTALK_S3_BUCKET }}
+      AWS_ACCESS_KEY_ID: ${{ secrets.GODINGTALK_S3_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.GODINGTALK_S3_SECRET_ACCESS_KEY }}
+      AWS_DEFAULT_REGION: ${{ secrets.GODINGTALK_S3_REGION }}
     steps:
       - uses: actions/checkout@v4
 
@@ -43,15 +43,13 @@ jobs:
         continue-on-error: true
         run: |
           : > "${RUNNER_TEMP}/upload-error.txt"
-          if [ -z "${R2_BUCKET}" ]; then
-            echo "R2_BUCKET is empty, fallback to godingtalk-files"
-            echo "R2_BUCKET=godingtalk-files" >> "$GITHUB_ENV"
-          fi
-          if [ -z "${R2_ACCOUNT_ID}" ] || [ -z "${AWS_ACCESS_KEY_ID}" ] || [ -z "${AWS_SECRET_ACCESS_KEY}" ]; then
-            echo "Missing Cloudflare R2 credentials. Please set CLOUDFLARE_ACCOUNT_ID, GODINGTALK_R2_ACCESS_KEY_ID, GODINGTALK_R2_SECRET_ACCESS_KEY." > "${RUNNER_TEMP}/upload-error.txt"
+          if [ -z "${S3_ENDPOINT}" ] || [ -z "${S3_BUCKET}" ] || [ -z "${AWS_ACCESS_KEY_ID}" ] || [ -z "${AWS_SECRET_ACCESS_KEY}" ]; then
+            echo "Missing S3 credentials. Please set GODINGTALK_S3_ENDPOINT, GODINGTALK_S3_BUCKET, GODINGTALK_S3_ACCESS_KEY_ID, GODINGTALK_S3_SECRET_ACCESS_KEY." > "${RUNNER_TEMP}/upload-error.txt"
             exit 0
           fi
-          echo "R2_ENDPOINT=https://${R2_ACCOUNT_ID}.r2.cloudflarestorage.com" >> "$GITHUB_ENV"
+          if [ -z "${AWS_DEFAULT_REGION}" ]; then
+            echo "AWS_DEFAULT_REGION=us-east-1" >> "$GITHUB_ENV"
+          fi
 
       - name: Run remote job
         id: remote_job
@@ -65,7 +63,7 @@ jobs:
             -saveDir "${RUNNER_TEMP}/godingtalk" \
             -resultFile "${RUNNER_TEMP}/job-result.json"
 
-      - name: Upload output files to private R2
+      - name: Upload output files to private S3
         if: always()
         continue-on-error: true
         run: |
@@ -131,13 +129,13 @@ jobs:
             fi
 
             if ! aws s3api head-object \
-              --bucket "${R2_BUCKET}" \
+              --bucket "${S3_BUCKET}" \
               --key "${OBJECT_KEY}" \
-              --endpoint-url "${R2_ENDPOINT}" >/dev/null 2>&1; then
-              if ! aws s3 cp "${LOCAL_PATH}" "s3://${R2_BUCKET}/${OBJECT_KEY}" \
-                --endpoint-url "${R2_ENDPOINT}" \
+              --endpoint-url "${S3_ENDPOINT}" >/dev/null 2>&1; then
+              if ! aws s3 cp "${LOCAL_PATH}" "s3://${S3_BUCKET}/${OBJECT_KEY}" \
+                --endpoint-url "${S3_ENDPOINT}" \
                 --no-progress; then
-                echo "failed to upload ${NAME} to R2" > "${ERROR_FILE}"
+                echo "failed to upload ${NAME} to S3" > "${ERROR_FILE}"
                 break
               fi
             fi

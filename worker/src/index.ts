@@ -15,6 +15,11 @@ interface Env {
   BOOTSTRAP_USERNAME?: string;
   BOOTSTRAP_PASSWORD?: string;
   ALLOW_PUBLIC_REGISTRATION?: string;
+  S3_ENDPOINT?: string;
+  S3_BUCKET?: string;
+  S3_ACCESS_KEY_ID?: string;
+  S3_SECRET_ACCESS_KEY?: string;
+  S3_REGION?: string;
 }
 
 interface JobFileRecord {
@@ -225,6 +230,7 @@ const DEFAULT_LEGAL_TEXT = `## 一、用途限制
 ## 七、法律提示
 本免责声明旨在强化风险提示、授权确认和责任分配，但其具体法律效力仍受适用法律、事实背景及司法解释影响。若要获得可执行、完整且适用于你业务场景的法律文本，应由持牌律师审阅并定稿。`;
 const FILE_RETENTION_HOURS = 24;
+const EMPTY_SHA256_HEX = "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855";
 
 function jsonResponse(body: unknown, init?: ResponseInit): Response {
   const headers = new Headers(init?.headers);
@@ -331,6 +337,97 @@ function jobFileDownloadURL(jobID: string, relativePath: string): string {
   return `/api/files?${params.toString()}`;
 }
 
+function storageUsesS3(env: Env): boolean {
+  return Boolean(
+    env.S3_ENDPOINT?.trim()
+    && env.S3_BUCKET?.trim()
+    && env.S3_ACCESS_KEY_ID?.trim()
+    && env.S3_SECRET_ACCESS_KEY?.trim(),
+  );
+}
+
+function s3Region(env: Env): string {
+  return env.S3_REGION?.trim() || "us-east-1";
+}
+
+function s3ObjectURL(env: Env, bucketKey: string): URL {
+  const endpoint = env.S3_ENDPOINT?.trim() || "";
+  const bucket = env.S3_BUCKET?.trim() || "";
+  const base = new URL(endpoint.endsWith("/") ? endpoint : `${endpoint}/`);
+  const encodedKey = bucketKey.split("/").map((part) => encodeURIComponent(part)).join("/");
+  base.pathname = `/${encodeURIComponent(bucket)}/${encodedKey}`;
+  return base;
+}
+
+async function signedS3Request(env: Env, method: "GET" | "DELETE", bucketKey: string): Promise<Response> {
+  const endpoint = env.S3_ENDPOINT?.trim() || "";
+  const accessKeyID = env.S3_ACCESS_KEY_ID?.trim() || "";
+  const secretAccessKey = env.S3_SECRET_ACCESS_KEY?.trim() || "";
+  const region = s3Region(env);
+  if (!endpoint || !accessKeyID || !secretAccessKey || !env.S3_BUCKET?.trim()) {
+    throw new Error("S3 storage is not configured");
+  }
+
+  const url = s3ObjectURL(env, bucketKey);
+  const currentTime = new Date();
+  const amzDate = currentTime.toISOString().replace(/[:-]|\.\d{3}/g, "");
+  const shortDate = amzDate.slice(0, 8);
+  const payloadHash = EMPTY_SHA256_HEX;
+  const canonicalHeaders = `host:${url.host}\nx-amz-content-sha256:${payloadHash}\nx-amz-date:${amzDate}\n`;
+  const signedHeaders = "host;x-amz-content-sha256;x-amz-date";
+  const canonicalRequest = [
+    method,
+    url.pathname,
+    "",
+    canonicalHeaders,
+    signedHeaders,
+    payloadHash,
+  ].join("\n");
+
+  const credentialScope = `${shortDate}/${region}/s3/aws4_request`;
+  const stringToSign = [
+    "AWS4-HMAC-SHA256",
+    amzDate,
+    credentialScope,
+    await sha256Hex(canonicalRequest),
+  ].join("\n");
+
+  const kDate = await hmacSha256Raw(new TextEncoder().encode(`AWS4${secretAccessKey}`), shortDate);
+  const kRegion = await hmacSha256Raw(kDate, region);
+  const kService = await hmacSha256Raw(kRegion, "s3");
+  const kSigning = await hmacSha256Raw(kService, "aws4_request");
+  const signature = await hmacSha256Hex(kSigning, stringToSign);
+
+  const headers = new Headers();
+  headers.set("x-amz-content-sha256", payloadHash);
+  headers.set("x-amz-date", amzDate);
+  headers.set(
+    "Authorization",
+    `AWS4-HMAC-SHA256 Credential=${accessKeyID}/${credentialScope}, SignedHeaders=${signedHeaders}, Signature=${signature}`,
+  );
+
+  return fetch(url.toString(), {
+    method,
+    headers,
+  });
+}
+
+async function deleteStorageObjects(env: Env, keys: string[]): Promise<void> {
+  if (keys.length === 0) {
+    return;
+  }
+  if (storageUsesS3(env)) {
+    for (const key of keys) {
+      const response = await signedS3Request(env, "DELETE", key);
+      if (!response.ok && response.status !== 404) {
+        throw new Error(`failed to delete object from S3: ${key}`);
+      }
+    }
+    return;
+  }
+  await (env.FILES as unknown as { delete(names: string[]): Promise<void> }).delete(keys);
+}
+
 function githubWorkflowURL(repository: string, workflowFile: string): string {
   return `https://github.com/${repository}/actions/workflows/${workflowFile}`;
 }
@@ -407,6 +504,33 @@ async function sha256Hex(input: string): Promise<string> {
   const hash = await crypto.subtle.digest("SHA-256", data);
   const bytes = Array.from(new Uint8Array(hash));
   return bytes.map((b) => b.toString(16).padStart(2, "0")).join("");
+}
+
+function hexToBytes(hex: string): Uint8Array {
+  const normalized = hex.trim();
+  const bytes = new Uint8Array(normalized.length / 2);
+  for (let index = 0; index < bytes.length; index += 1) {
+    bytes[index] = Number.parseInt(normalized.slice(index * 2, (index * 2) + 2), 16);
+  }
+  return bytes;
+}
+
+async function hmacSha256Raw(key: ArrayBuffer | Uint8Array, message: string): Promise<ArrayBuffer> {
+  const rawBytes = key instanceof Uint8Array ? key : new Uint8Array(key);
+  const rawKey = rawBytes.slice();
+  const importedKey = await crypto.subtle.importKey(
+    "raw",
+    rawKey,
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    ["sign"],
+  );
+  return crypto.subtle.sign("HMAC", importedKey, new TextEncoder().encode(message));
+}
+
+async function hmacSha256Hex(key: ArrayBuffer | Uint8Array, message: string): Promise<string> {
+  const signature = await hmacSha256Raw(key, message);
+  return Array.from(new Uint8Array(signature)).map((b) => b.toString(16).padStart(2, "0")).join("");
 }
 
 async function passwordHash(env: Env, username: string, password: string): Promise<string> {
@@ -1131,7 +1255,7 @@ async function cleanupExpiredFiles(env: Env): Promise<{ jobs: number; files: num
       .filter((key) => key.length > 0);
 
     if (keys.length > 0) {
-      await (env.FILES as unknown as { delete(keys: string[]): Promise<void> }).delete(keys);
+      await deleteStorageObjects(env, keys);
       deletedFiles += keys.length;
     }
 
@@ -1150,7 +1274,7 @@ async function cleanupExpiredFiles(env: Env): Promise<{ jobs: number; files: num
 
     const nextErrors = Array.from(new Set([
       ...parseJSON<string[]>(row.errors_json, []),
-      `files older than ${FILE_RETENTION_HOURS} hours were deleted from R2 because total storage exceeded 2 GB`,
+      `files older than ${FILE_RETENTION_HOURS} hours were deleted from storage because total usage exceeded 2 GB`,
     ]));
 
     await env.DB
@@ -1736,6 +1860,31 @@ async function handleFileDownload(request: Request, env: Env, user: AuthUser): P
 
   if (!file.bucket_key) {
     return jsonResponse({ error: "file is missing storage metadata" }, { status: 404 });
+  }
+
+  if (storageUsesS3(env)) {
+    const response = await signedS3Request(env, "GET", file.bucket_key);
+    if (response.status === 404) {
+      return jsonResponse({ error: "object not found in bucket" }, { status: 404 });
+    }
+    if (!response.ok || !response.body) {
+      return jsonResponse({ error: "failed to fetch object from storage" }, { status: 502 });
+    }
+
+    const headers = new Headers();
+    const contentType = response.headers.get("content-type");
+    if (contentType) {
+      headers.set("content-type", contentType);
+    } else {
+      headers.set("content-type", file.content_type || "application/octet-stream");
+    }
+    const etag = response.headers.get("etag");
+    if (etag) {
+      headers.set("etag", etag);
+    }
+    headers.set("cache-control", "private, max-age=120");
+    headers.set("content-disposition", `attachment; filename*=UTF-8''${encodeURIComponent(file.name)}`);
+    return new Response(response.body, { headers });
   }
 
   const object = await env.FILES.get(file.bucket_key);
