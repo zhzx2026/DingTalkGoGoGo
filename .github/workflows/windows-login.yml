@@ -38,6 +38,14 @@ jobs:
           path: ${{ runner.temp }}/godingtalk-login/login-qr.png
           if-no-files-found: warn
 
+      - name: Upload login debug bundle
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-login-debug
+          path: ${{ runner.temp }}/godingtalk-login
+          if-no-files-found: warn
+
       - name: Upload login cookies
         if: always()
         uses: actions/upload-artifact@v4

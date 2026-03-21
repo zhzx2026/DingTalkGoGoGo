@@ -17,6 +17,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
+	"strconv"
 	"strings"
 	"time"
 
@@ -202,6 +203,24 @@ func decodeQRCodeFromSource(src string) (string, error) {
 	return decodeQRCodeFromImage(content)
 }
 
+func saveDebugFile(path string, data []byte) error {
+	if len(data) == 0 {
+		return nil
+	}
+	if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
+		return err
+	}
+	return os.WriteFile(path, data, 0644)
+}
+
+func saveDebugJSON(path string, value any) error {
+	content, err := json.MarshalIndent(value, "", "  ")
+	if err != nil {
+		return err
+	}
+	return saveDebugFile(path, content)
+}
+
 func extractQRCodeImageSources(ctx context.Context) ([]string, error) {
 	var sources []string
 	err := chromedp.Evaluate(`(() => {
@@ -284,33 +303,87 @@ func captureQRCodeScreenshot(ctx context.Context) ([]byte, error) {
 	return screenshot, nil
 }
 
-func waitForLoginQRCodeURL(ctx context.Context) (string, []byte, error) {
+func captureViewportScreenshot(ctx context.Context) ([]byte, error) {
+	return cdpage.CaptureScreenshot().WithFormat(cdpage.CaptureScreenshotFormatPng).Do(ctx)
+}
+
+func waitForLoginQRCodeURL(ctx context.Context, debugDir string) (string, []byte, error) {
 	deadline := time.Now().Add(45 * time.Second)
 	var lastErr error
+	var attempt int
+	var attemptLogs []string
+
+	appendLog := func(message string) {
+		line := fmt.Sprintf("%s %s", time.Now().Format(time.RFC3339), message)
+		fmt.Println(line)
+		attemptLogs = append(attemptLogs, line)
+		if strings.TrimSpace(debugDir) != "" {
+			_ = saveDebugFile(filepath.Join(debugDir, "login-qr-debug.log"), []byte(strings.Join(attemptLogs, "\n")+"\n"))
+		}
+	}
 
 	for time.Now().Before(deadline) {
+		attempt++
+		appendLog("二维码识别尝试 #" + strconv.Itoa(attempt))
+
+		screenshot, err := captureViewportScreenshot(ctx)
+		if err == nil {
+			if strings.TrimSpace(debugDir) != "" {
+				_ = saveDebugFile(filepath.Join(debugDir, "login-page-latest.png"), screenshot)
+			}
+			qrURL, decodeErr := decodeQRCodeFromImage(screenshot)
+			if decodeErr == nil && qrURL != "" {
+				appendLog("通过整页截图识别到登录二维码")
+				return qrURL, screenshot, nil
+			}
+			appendLog("整页截图未识别到二维码: " + decodeErr.Error())
+			lastErr = decodeErr
+		} else if !strings.Contains(strings.ToLower(err.Error()), "invalid context") {
+			appendLog("整页截图失败: " + err.Error())
+			lastErr = err
+		} else {
+			appendLog("整页截图命中 invalid context，等待页面稳定后重试")
+		}
+
 		sources, err := extractQRCodeImageSources(ctx)
 		if err == nil {
+			if strings.TrimSpace(debugDir) != "" {
+				_ = saveDebugJSON(filepath.Join(debugDir, "login-qr-sources-latest.json"), sources)
+			}
+			appendLog("发现候选二维码源数量: " + strconv.Itoa(len(sources)))
 			for _, src := range sources {
 				qrURL, decodeErr := decodeQRCodeFromSource(src)
 				if decodeErr == nil && qrURL != "" {
+					appendLog("通过页面二维码源识别到登录二维码")
 					return qrURL, nil, nil
 				}
+				appendLog("页面二维码源识别失败: " + decodeErr.Error())
 				lastErr = decodeErr
 			}
-		} else {
+		} else if !strings.Contains(strings.ToLower(err.Error()), "invalid context") {
+			appendLog("读取页面二维码源失败: " + err.Error())
 			lastErr = err
+		} else {
+			appendLog("读取页面二维码源命中 invalid context，等待页面稳定后重试")
 		}
 
-		screenshot, err := captureQRCodeScreenshot(ctx)
+		screenshot, err = captureQRCodeScreenshot(ctx)
 		if err == nil {
+			if strings.TrimSpace(debugDir) != "" {
+				_ = saveDebugFile(filepath.Join(debugDir, "login-page-crop-latest.png"), screenshot)
+			}
 			qrURL, decodeErr := decodeQRCodeFromImage(screenshot)
 			if decodeErr == nil && qrURL != "" {
+				appendLog("通过裁切二维码区域识别到登录二维码")
 				return qrURL, screenshot, nil
 			}
+			appendLog("裁切二维码区域未识别到二维码: " + decodeErr.Error())
 			lastErr = decodeErr
-		} else {
+		} else if !strings.Contains(strings.ToLower(err.Error()), "invalid context") {
+			appendLog("裁切二维码区域失败: " + err.Error())
 			lastErr = err
+		} else {
+			appendLog("裁切二维码区域命中 invalid context，等待页面稳定后重试")
 		}
 
 		time.Sleep(1500 * time.Millisecond)
@@ -319,6 +392,7 @@ func waitForLoginQRCodeURL(ctx context.Context) (string, []byte, error) {
 	if lastErr == nil {
 		lastErr = fmt.Errorf("未识别到登录二维码")
 	}
+	appendLog("二维码识别结束，最终失败: " + lastErr.Error())
 	return "", nil, lastErr
 }
 
@@ -360,6 +434,11 @@ func maxFloat(a, b float64) float64 {
 
 func startChromeQRLogin(config *Config, qrOutputPath string) error {
 	fmt.Println("正在启动无头Chrome生成登录二维码...")
+	debugDir := filepath.Dir(filepath.Clean(qrOutputPath))
+	if err := os.MkdirAll(debugDir, 0755); err != nil {
+		return fmt.Errorf("创建调试目录失败: %w", err)
+	}
+	fmt.Printf("二维码调试产物目录: %s\n", debugDir)
 
 	log.SetOutput(io.Discard)
 	defer log.SetOutput(os.Stderr)
@@ -375,20 +454,28 @@ func startChromeQRLogin(config *Config, qrOutputPath string) error {
 
 	if err := chromedp.Run(ctx,
 		network.Enable(),
+		chromedp.EmulateViewport(1440, 1100),
 		chromedp.Navigate(dingTalkLoginPageURL),
 		chromedp.WaitVisible(`body`, chromedp.ByQuery),
 	); err != nil {
 		return fmt.Errorf("打开登录页失败: %w", err)
 	}
+	_ = saveDebugFile(filepath.Join(debugDir, "login-qr-debug.log"), []byte(time.Now().Format(time.RFC3339)+" 登录页已打开，开始识别二维码\n"))
 
-	qrURL, _, err := waitForLoginQRCodeURL(ctx)
+	qrURL, rawQRImage, err := waitForLoginQRCodeURL(ctx, debugDir)
 	if err != nil {
 		return fmt.Errorf("提取登录二维码失败: %w", err)
 	}
+	if len(rawQRImage) > 0 {
+		_ = saveDebugFile(filepath.Join(debugDir, "login-qr-raw-success.png"), rawQRImage)
+	}
+	_ = saveDebugFile(filepath.Join(debugDir, "login-qr-url.txt"), []byte(qrURL+"\n"))
 
 	if err := writeLoginQRCodeArtifacts(qrURL, qrOutputPath); err != nil {
 		return err
 	}
+	fmt.Printf("二维码图片路径: %s\n", qrOutputPath)
+	fmt.Printf("二维码原始链接已保存: %s\n", filepath.Join(debugDir, "login-qr-url.txt"))
 
 	fmt.Println("等待扫码确认...")
 	if err := waitForLoginSuccess(ctx); err != nil {
@@ -403,6 +490,7 @@ func startChromeQRLogin(config *Config, qrOutputPath string) error {
 	if err := saveCookiesFile(config.CookiesFile, siteCookies); err != nil {
 		return err
 	}
+	fmt.Printf("Cookies 文件已保存: %s\n", config.CookiesFile)
 
 	fmt.Println("Cookies保存成功")
 	return nil
