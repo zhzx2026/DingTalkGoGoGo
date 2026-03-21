@@ -217,8 +217,8 @@ go build -o GoDingtalk .
 
 注意：
 
-- 这条 workflow 需要运行在中国网络环境下的 `self-hosted Windows runner`
-- GitHub 托管的 `windows-latest` 位于美国网络，打开的是国际版登录页，和中国网络下的钉钉扫码链路不一致，不适合这条登录流程
+- `windows-latest` 位于美国网络，打开的通常是国际版 DingTalk 登录页
+- 如果你希望复用中国网络下的登录链路，可以再切回中国网络环境的 `self-hosted Windows runner`
 
 ## GitHub Runner 远程执行
 

@@ -320,24 +320,82 @@ func captureViewportScreenshot(ctx context.Context) ([]byte, error) {
 }
 
 func ensureQRCodeTab(ctx context.Context, debugDir string) error {
-	var clicked bool
+	type tabTarget struct {
+		Clicked bool    `json:"clicked"`
+		X       float64 `json:"x"`
+		Y       float64 `json:"y"`
+	}
+
+	var target tabTarget
 	err := chromedp.Run(ctx, chromedp.Evaluate(`(() => {
-		const candidates = Array.from(document.querySelectorAll('button, a, div, span'))
-		  .filter((node) => {
-		    const text = (node.textContent || '').trim().toLowerCase();
-		    return text === 'qr code' || text.includes('qr code') || text.includes('扫码');
-		  });
-		const target = candidates.find((node) => typeof node.click === 'function');
-		if (!target) return false;
-		target.click();
-		return true;
-	})()`, &clicked))
+		const labels = ['qr code', 'scan', '扫码'];
+		const textMatches = (node) => {
+		  const text = (node.textContent || '').trim().toLowerCase();
+		  return labels.some((label) => text === label || text.includes(label));
+		};
+		const isVisible = (node) => {
+		  const rect = node.getBoundingClientRect();
+		  const style = window.getComputedStyle(node);
+		  return rect.width > 8 && rect.height > 8 && style.display !== 'none' && style.visibility !== 'hidden';
+		};
+		const scoreNode = (node) => {
+		  const rect = node.getBoundingClientRect();
+		  const text = (node.textContent || '').trim().toLowerCase();
+		  let score = 0;
+		  if (text === 'qr code' || text === '扫码') score += 100;
+		  if (text.includes('qr code') || text.includes('扫码')) score += 50;
+		  if (node.getAttribute('role') === 'tab') score += 40;
+		  if (node.tagName === 'BUTTON') score += 20;
+		  if (rect.width < 260 && rect.height < 80) score += 20;
+		  return score;
+		};
+
+		const elements = Array.from(document.querySelectorAll('*')).filter((node) => textMatches(node) && isVisible(node));
+		let best = null;
+		let bestScore = -1;
+
+		for (const node of elements) {
+		  let current = node;
+		  for (let depth = 0; current && depth < 4; depth += 1) {
+		    if (!isVisible(current)) {
+		      current = current.parentElement;
+		      continue;
+		    }
+		    const rect = current.getBoundingClientRect();
+		    if (rect.width > 320 || rect.height > 120) {
+		      current = current.parentElement;
+		      continue;
+		    }
+		    const score = scoreNode(current);
+		    if (score > bestScore) {
+		      best = current;
+		      bestScore = score;
+		    }
+		    current = current.parentElement;
+		  }
+		}
+
+		if (!best) return { clicked: false, x: 0, y: 0 };
+		const rect = best.getBoundingClientRect();
+		return {
+		  clicked: true,
+		  x: rect.left + rect.width / 2,
+		  y: rect.top + rect.height / 2
+		};
+	})()`, &target))
 	if err != nil {
 		return err
 	}
 
+	if target.Clicked {
+		if err := chromedp.Run(ctx, chromedp.MouseClickXY(target.X, target.Y)); err != nil {
+			return err
+		}
+	}
+
 	if strings.TrimSpace(debugDir) != "" {
-		message := time.Now().Format(time.RFC3339) + " 尝试切换到二维码登录页签: " + strconv.FormatBool(clicked) + "\n"
+		message := time.Now().Format(time.RFC3339) + " 尝试切换到二维码登录页签: " + strconv.FormatBool(target.Clicked) +
+			" @" + strconv.FormatFloat(target.X, 'f', 1, 64) + "," + strconv.FormatFloat(target.Y, 'f', 1, 64) + "\n"
 		_ = saveDebugFile(filepath.Join(debugDir, "login-qr-tab.log"), []byte(message))
 	}
 
