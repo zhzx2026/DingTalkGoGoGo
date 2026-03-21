@@ -199,6 +199,7 @@ const SESSION_COOKIE_NAME = "godingtalk_session";
 const SESSION_TTL_SECONDS = 60 * 60 * 24 * 14;
 const DEFAULT_THREAD = 100;
 const MAX_THREAD = 100;
+const FILE_RETENTION_LIMIT_BYTES = 2 * 1024 * 1024 * 1024;
 const DEFAULT_LEGAL_VERSION = "2026-03-21";
 const DEFAULT_LEGAL_TEXT = `## 一、用途限制
 本系统仅可在你对相关内容拥有合法访问权、下载权、保存权或内部归档权的前提下使用。你不得将本系统用于任何违反适用法律法规、平台规则、合同约定、保密义务或知识产权规则的用途。
@@ -907,18 +908,15 @@ async function getJob(env: Env, jobID: string, ownerUserID?: string): Promise<Jo
   return row ? parseJobRow(row) : null;
 }
 
-async function listJobs(env: Env, ownerUserID: string, limit = 5, windowMinutes = 20): Promise<JobRecord[]> {
-  const cutoff = new Date(Date.now() - (windowMinutes * 60 * 1000)).toISOString();
+async function listJobs(env: Env, ownerUserID: string): Promise<JobRecord[]> {
   const result = await env.DB
     .prepare(
       `SELECT *
        FROM jobs
        WHERE owner_user_id = ?1
-         AND updated_at >= ?2
-       ORDER BY updated_at DESC
-       LIMIT ?3`,
+       ORDER BY updated_at DESC`,
     )
-    .bind(ownerUserID, cutoff, limit)
+    .bind(ownerUserID)
     .all<JobRow>();
   const rows = Array.isArray(result.results) ? result.results : [];
   return rows.map(parseJobRow);
@@ -1045,6 +1043,29 @@ async function completeJob(env: Env, jobID: string, payload: CompletePayload): P
 }
 
 async function cleanupExpiredFiles(env: Env): Promise<{ jobs: number; files: number }> {
+  const usageResult = await env.DB
+    .prepare(
+      `SELECT files_json
+       FROM jobs
+       WHERE files_json IS NOT NULL
+         AND files_json != '[]'`,
+    )
+    .all<{ files_json: string }>();
+
+  const usageRows = Array.isArray(usageResult.results) ? usageResult.results : [];
+  let totalBytes = 0;
+  for (const row of usageRows) {
+    const files = parseJSON<JobFileRecord[]>(row.files_json, []);
+    totalBytes += files.reduce((sum, file) => sum + toNumber(file.size_bytes), 0);
+  }
+
+  if (totalBytes <= FILE_RETENTION_LIMIT_BYTES) {
+    return {
+      jobs: 0,
+      files: 0,
+    };
+  }
+
   const cutoff = new Date(Date.now() - (FILE_RETENTION_HOURS * 60 * 60 * 1000)).toISOString();
   const result = await env.DB
     .prepare(
@@ -1053,7 +1074,8 @@ async function cleanupExpiredFiles(env: Env): Promise<{ jobs: number; files: num
        WHERE finished_at IS NOT NULL
          AND finished_at <= ?1
          AND files_json IS NOT NULL
-         AND files_json != '[]'`,
+         AND files_json != '[]'
+       ORDER BY finished_at ASC`,
     )
     .bind(cutoff)
     .all<JobRow>();
@@ -1063,10 +1085,15 @@ async function cleanupExpiredFiles(env: Env): Promise<{ jobs: number; files: num
   let deletedFiles = 0;
 
   for (const row of rows) {
+    if (totalBytes <= FILE_RETENTION_LIMIT_BYTES) {
+      break;
+    }
+
     const files = parseJSON<JobFileRecord[]>(row.files_json, []);
     const keys = files
       .map((file) => file.bucket_key || "")
       .filter((key) => key.trim().length > 0);
+    const releasedBytes = files.reduce((sum, file) => sum + toNumber(file.size_bytes), 0);
 
     if (keys.length > 0) {
       await (env.FILES as unknown as { delete(keys: string[]): Promise<void> }).delete(keys);
@@ -1075,7 +1102,7 @@ async function cleanupExpiredFiles(env: Env): Promise<{ jobs: number; files: num
 
     const nextErrors = Array.from(new Set([
       ...parseJSON<string[]>(row.errors_json, []),
-      `files expired and were deleted from R2 after ${FILE_RETENTION_HOURS} hours`,
+      `files older than ${FILE_RETENTION_HOURS} hours were deleted from R2 because total storage exceeded 2 GB`,
     ]));
 
     await env.DB
@@ -1090,6 +1117,7 @@ async function cleanupExpiredFiles(env: Env): Promise<{ jobs: number; files: num
       .run();
 
     cleanedJobs++;
+    totalBytes = Math.max(0, totalBytes - releasedBytes);
   }
 
   return {

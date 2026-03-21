@@ -16,7 +16,7 @@ function renderDownloadPage(): string {
   return `
       <section class="card">
         <h2>创建下载任务</h2>
-        <p class="muted">先确认已接受免责声明并准备好 Cookies，然后再提交链接。</p>
+        <p class="muted">先确认已接受免责声明并准备好 Cookies，然后再提交链接。每行一个链接，会拆成多个独立任务。</p>
         <div id="legal-warning" class="notice error hidden"></div>
         <div class="field">
           <label for="urls">回放链接</label>
@@ -39,7 +39,8 @@ function renderDownloadPage(): string {
       </section>
 
       <section class="card">
-        <h2>最近任务</h2>
+        <h2>全部记录</h2>
+        <p class="muted">这里会显示全部下载记录；成功任务会直接显示直播 MP4 下载链接。</p>
         <div id="jobs" class="jobs" style="margin-top:14px;"><div class="empty">暂无任务</div></div>
       </section>`;
 }
@@ -58,12 +59,12 @@ function renderLoginPage(): string {
           <div class="hero-badges">
             <span>自动回传 Cookies</span>
             <span>二维码约 1 分钟</span>
-            <span>R2 文件 24h 清理</span>
+            <span>超 2GB 再清理</span>
           </div>
           <div class="feature-list">
             <div class="feature-item"><strong>自动二维码登录</strong><span>通常约 1 分钟出二维码，扫码后再约 1 分钟回传 Cookies。</span></div>
             <div class="feature-item"><strong>私有下载链路</strong><span>任务、Cookies 和下载结果按用户隔离。</span></div>
-            <div class="feature-item"><strong>到期自动清理</strong><span>上传到 R2 的下载文件会在 24 小时后自动删除。</span></div>
+            <div class="feature-item"><strong>条件清理</strong><span>仅当 R2 总占用超过 2GB 时，系统才会清理已超过 24 小时的旧文件。</span></div>
           </div>
           <div class="mini-steps">
             <div class="mini-step"><strong>1</strong><span>登录账号</span></div>
@@ -283,6 +284,8 @@ export function renderApp(appOrigin: string, page: AppPage): string {
       .progress > div { height: 100%; background: var(--primary); }
       .files { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
       .files a { padding: 6px 10px; border-radius: 999px; background: #eff6ff; color: var(--primary); text-decoration: none; font-weight: 600; }
+      .file-block { margin-top: 12px; }
+      .file-title { color: var(--muted); font-size: 13px; font-weight: 700; margin-bottom: 8px; }
       .empty { padding: 14px; border-radius: 12px; border: 1px dashed var(--line); color: var(--muted); background: #fafafa; }
       .login-box { margin-top: 14px; padding: 14px; border-radius: 12px; background: #f8fafc; border: 1px solid var(--line); }
       .login-status { font-weight: 600; }
@@ -601,6 +604,7 @@ export function renderApp(appOrigin: string, page: AppPage): string {
           const title = job.current_title || (Array.isArray(job.titles) && job.titles[0]) || "下载任务";
           const progress = Math.max(0, Math.min(100, Number(job.progress_percent || 0)));
           const files = Array.isArray(job.files) ? job.files : [];
+          const mp4Files = files.filter((file) => String(file.name || "").toLowerCase().endsWith(".mp4"));
           const errors = Array.isArray(job.errors) ? job.errors : [];
           return [
             '<section class="job">',
@@ -610,7 +614,8 @@ export function renderApp(appOrigin: string, page: AppPage): string {
             '</div>',
             '<div class="job-meta">阶段：' + escapeHTML(formatStage(job.stage)) + ' · 创建时间：' + escapeHTML(formatTime(job.created_at)) + '</div>',
             '<div class="progress"><div style="width:' + escapeHTML(progress.toFixed(1)) + '%"></div></div>',
-            files.length ? '<div class="files">' + files.map((file) => '<a href="' + escapeHTML(file.download_url || '#') + '" target="_blank" rel="noreferrer">' + escapeHTML(file.name) + '</a>').join('') + '</div>' : '',
+            mp4Files.length ? '<div class="file-block"><div class="file-title">直播 MP4 下载链接</div><div class="files">' + mp4Files.map((file) => '<a href="' + escapeHTML(file.download_url || '#') + '" target="_blank" rel="noreferrer">' + escapeHTML(file.name) + '</a>').join('') + '</div></div>' : '',
+            files.length ? '<div class="file-block"><div class="file-title">全部文件</div><div class="files">' + files.map((file) => '<a href="' + escapeHTML(file.download_url || '#') + '" target="_blank" rel="noreferrer">' + escapeHTML(file.name) + '</a>').join('') + '</div></div>' : '',
             errors.length ? '<div class="job-errors">' + errors.map(escapeHTML).join('<br/>') + '</div>' : '',
             '</section>'
           ].join('');
