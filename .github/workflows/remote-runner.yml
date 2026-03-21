@@ -50,7 +50,6 @@ jobs:
           if [ -z "${AWS_DEFAULT_REGION}" ]; then
             echo "AWS_DEFAULT_REGION=us-east-1" >> "$GITHUB_ENV"
           fi
-          aws configure set default.s3.addressing_style path
 
       - name: Run remote job
         id: remote_job
@@ -129,28 +128,26 @@ jobs:
               OBJECT_KEY="dedup/${MD5_FULL}"
             fi
 
-            if ! aws s3api head-object \
+            CONTENT_TYPE="$(file --brief --mime-type "${LOCAL_PATH}" 2>/dev/null || true)"
+            if [ -z "${CONTENT_TYPE}" ]; then
+              case "${EXTENSION}" in
+                mp4) CONTENT_TYPE="video/mp4" ;;
+                m4a) CONTENT_TYPE="audio/mp4" ;;
+                txt) CONTENT_TYPE="text/plain; charset=utf-8" ;;
+                *) CONTENT_TYPE="application/octet-stream" ;;
+              esac
+            fi
+            if ! python3 scripts/s3_put.py \
+              --endpoint "${S3_ENDPOINT}" \
               --bucket "${S3_BUCKET}" \
               --key "${OBJECT_KEY}" \
-              --endpoint-url "${S3_ENDPOINT}" >/dev/null 2>&1; then
-              CONTENT_TYPE="$(file --brief --mime-type "${LOCAL_PATH}" 2>/dev/null || true)"
-              if [ -z "${CONTENT_TYPE}" ]; then
-                case "${EXTENSION}" in
-                  mp4) CONTENT_TYPE="video/mp4" ;;
-                  m4a) CONTENT_TYPE="audio/mp4" ;;
-                  txt) CONTENT_TYPE="text/plain; charset=utf-8" ;;
-                  *) CONTENT_TYPE="application/octet-stream" ;;
-                esac
-              fi
-              if ! aws s3api put-object \
-                --bucket "${S3_BUCKET}" \
-                --key "${OBJECT_KEY}" \
-                --body "${LOCAL_PATH}" \
-                --content-type "${CONTENT_TYPE}" \
-                --endpoint-url "${S3_ENDPOINT}" >/dev/null; then
-                echo "failed to upload ${NAME} to S3" > "${ERROR_FILE}"
-                break
-              fi
+              --file "${LOCAL_PATH}" \
+              --access-key "${AWS_ACCESS_KEY_ID}" \
+              --secret-key "${AWS_SECRET_ACCESS_KEY}" \
+              --region "${AWS_DEFAULT_REGION}" \
+              --content-type "${CONTENT_TYPE}"; then
+              echo "failed to upload ${NAME} to S3" > "${ERROR_FILE}"
+              break
             fi
 
             TMP_FILE="$(mktemp)"
