@@ -132,6 +132,10 @@ interface AuthPasswordPayload {
   new_password?: string;
 }
 
+interface AdminLegalPayload {
+  text?: string;
+}
+
 interface AuthUser {
   id: string;
   username: string;
@@ -195,7 +199,30 @@ const SESSION_COOKIE_NAME = "godingtalk_session";
 const SESSION_TTL_SECONDS = 60 * 60 * 24 * 14;
 const DEFAULT_THREAD = 100;
 const MAX_THREAD = 100;
-const LEGAL_VERSION = "2026-03-21";
+const DEFAULT_LEGAL_VERSION = "2026-03-21";
+const DEFAULT_LEGAL_TEXT = `## 一、用途限制
+本系统仅可在你对相关内容拥有合法访问权、下载权、保存权或内部归档权的前提下使用。你不得将本系统用于任何违反适用法律法规、平台规则、合同约定、保密义务或知识产权规则的用途。
+
+## 二、授权保证
+你声明并保证：你提交的账号、Cookies、二维码登录、链接及相关内容，均已获得合法授权；你有权访问、处理、下载、保存和使用相应直播回放或文件。
+
+## 三、禁止行为
+你不得使用本系统实施未授权下载、批量抓取、绕过访问控制、规避安全限制、侵犯隐私、侵犯知识产权、传播违法内容、或从事任何可能引发第三方索赔、行政处罚或刑事风险的行为。
+
+## 四、责任承担
+你应独立承担因你的使用行为所引发的一切责任、损失、处罚、赔偿、争议、索赔、律师费及维权成本；若系统提供方因此遭受损失，你同意进行足额赔偿。
+
+## 四点一、风控与封禁风险
+你理解并同意：若因你使用本系统、重复登录、频繁扫码、批量操作、异常请求或其他与你的使用行为相关的原因，导致第三方平台对你的账号、设备、网络环境或访问权限采取风控、限制、冻结、封禁、降权、验证升级、访问拒绝或其他不利措施，相关后果均由你自行承担，系统提供方不承担任何责任。
+
+## 五、服务免责
+本系统按“现状”提供，不对可用性、稳定性、连续性、适法性、特定目的适用性、结果准确性或第三方平台兼容性作任何明示或默示保证。系统提供方有权随时中断、限制、修改或终止服务。
+
+## 六、证据与记录
+你同意系统记录你的接受时间、账号标识及后续操作，以作为你已阅读并接受本声明的电子记录。该记录可用于内部合规、争议处理与安全审计。
+
+## 七、法律提示
+本免责声明旨在强化风险提示、授权确认和责任分配，但其具体法律效力仍受适用法律、事实背景及司法解释影响。若要获得可执行、完整且适用于你业务场景的法律文本，应由持牌律师审阅并定稿。`;
 const FILE_RETENTION_HOURS = 24;
 
 function jsonResponse(body: unknown, init?: ResponseInit): Response {
@@ -406,6 +433,52 @@ async function listUsersCount(env: Env): Promise<number> {
   return toNumber(row?.c);
 }
 
+async function getAppSetting(env: Env, key: string): Promise<string | null> {
+  const row = await env.DB
+    .prepare("SELECT value FROM settings WHERE key = ?1")
+    .bind(key)
+    .first<{ value: string | null }>();
+  return row?.value ?? null;
+}
+
+async function setAppSetting(env: Env, key: string, value: string): Promise<void> {
+  await env.DB
+    .prepare(
+      `INSERT INTO settings (key, value, updated_at)
+       VALUES (?1, ?2, ?3)
+       ON CONFLICT(key) DO UPDATE SET
+         value = excluded.value,
+         updated_at = excluded.updated_at`,
+    )
+    .bind(key, value, nowISO())
+    .run();
+}
+
+async function ensureDefaultLegalConfig(env: Env): Promise<void> {
+  const [version, text] = await Promise.all([
+    getAppSetting(env, "legal_version"),
+    getAppSetting(env, "legal_text"),
+  ]);
+  if (!version) {
+    await setAppSetting(env, "legal_version", DEFAULT_LEGAL_VERSION);
+  }
+  if (!text) {
+    await setAppSetting(env, "legal_text", DEFAULT_LEGAL_TEXT);
+  }
+}
+
+async function getLegalConfig(env: Env): Promise<{ version: string; text: string }> {
+  await ensureDefaultLegalConfig(env);
+  const [version, text] = await Promise.all([
+    getAppSetting(env, "legal_version"),
+    getAppSetting(env, "legal_text"),
+  ]);
+  return {
+    version: version || DEFAULT_LEGAL_VERSION,
+    text: text || DEFAULT_LEGAL_TEXT,
+  };
+}
+
 async function getUserByUsername(env: Env, username: string): Promise<UserRow | null> {
   return env.DB
     .prepare("SELECT id, username, password_hash, is_sudo, created_at FROM users WHERE username = ?1")
@@ -418,6 +491,7 @@ async function getUserLegalState(env: Env, userID: string): Promise<{
   acceptedAt: string | null;
   version: string;
 }> {
+  const legalConfig = await getLegalConfig(env);
   const row = await env.DB
     .prepare("SELECT legal_version, legal_accepted_at FROM users WHERE id = ?1")
     .bind(userID)
@@ -426,9 +500,9 @@ async function getUserLegalState(env: Env, userID: string): Promise<{
   const version = row?.legal_version || "";
   const acceptedAt = row?.legal_accepted_at || null;
   return {
-    accepted: version === LEGAL_VERSION && Boolean(acceptedAt),
+    accepted: version === legalConfig.version && Boolean(acceptedAt),
     acceptedAt,
-    version: LEGAL_VERSION,
+    version: legalConfig.version,
   };
 }
 
@@ -437,6 +511,7 @@ async function acceptLegalTerms(env: Env, userID: string): Promise<{
   acceptedAt: string | null;
   version: string;
 }> {
+  const legalConfig = await getLegalConfig(env);
   const acceptedAt = nowISO();
   await env.DB
     .prepare(
@@ -445,12 +520,12 @@ async function acceptLegalTerms(env: Env, userID: string): Promise<{
            legal_accepted_at = ?3
        WHERE id = ?1`,
     )
-    .bind(userID, LEGAL_VERSION, acceptedAt)
+    .bind(userID, legalConfig.version, acceptedAt)
     .run();
   return {
     accepted: true,
     acceptedAt,
-    version: LEGAL_VERSION,
+    version: legalConfig.version,
   };
 }
 
@@ -462,6 +537,7 @@ async function updateUserPassword(env: Env, userID: string, newPasswordHash: str
 }
 
 async function listAdminUsers(env: Env): Promise<AdminUserRecord[]> {
+  const legalConfig = await getLegalConfig(env);
   const result = await env.DB
     .prepare(
       `SELECT
@@ -490,7 +566,7 @@ async function listAdminUsers(env: Env): Promise<AdminUserRecord[]> {
       username: row.username,
       is_sudo: toNumber(row.is_sudo) === 1,
       created_at: row.created_at,
-      legal_accepted: row.legal_version === LEGAL_VERSION && Boolean(row.legal_accepted_at),
+      legal_accepted: row.legal_version === legalConfig.version && Boolean(row.legal_accepted_at),
       legal_accepted_at: row.legal_accepted_at || null,
       cookies_ready: cookiesReady,
       total_jobs: toNumber(row.total_jobs),
@@ -503,6 +579,23 @@ function requireSudo(user: AuthUser): Response | null {
     return jsonResponse({ error: "sudo required" }, { status: 403 });
   }
   return null;
+}
+
+async function getAdminLegalConfig(env: Env): Promise<{ version: string; text: string }> {
+  return getLegalConfig(env);
+}
+
+async function updateAdminLegalConfig(env: Env, text: string): Promise<{ version: string; text: string }> {
+  const normalized = text.trim();
+  if (!normalized) {
+    throw new Error("legal text cannot be empty");
+  }
+  const version = nowISO();
+  await Promise.all([
+    setAppSetting(env, "legal_text", normalized),
+    setAppSetting(env, "legal_version", version),
+  ]);
+  return { version, text: normalized };
 }
 
 async function getAuthUser(request: Request, env: Env): Promise<AuthUser | null> {
@@ -1144,6 +1237,7 @@ function withSetCookie(response: Response, cookie: string): Response {
 
 async function handleAuthMe(request: Request, env: Env): Promise<Response> {
   await ensureBootstrapUser(env);
+  const legalConfig = await getLegalConfig(env);
   const user = await getAuthUser(request, env);
   const usersCount = await listUsersCount(env);
   const isRegistrationOpen = registrationOpen(env, usersCount);
@@ -1155,7 +1249,7 @@ async function handleAuthMe(request: Request, env: Env): Promise<Response> {
     return jsonResponse({
       authenticated: false,
       registration_open: isRegistrationOpen,
-      legal_version: LEGAL_VERSION,
+      legal_version: legalConfig.version,
       legal_accepted: false,
       legal_accepted_at: null,
       workflow_repository: workflowRepository,
@@ -1283,11 +1377,15 @@ async function handleAuthPassword(request: Request, env: Env, user: AuthUser): P
 
 async function handleLegal(request: Request, env: Env, user: AuthUser): Promise<Response> {
   if (request.method === "GET") {
-    const legalState = await getUserLegalState(env, user.id);
+    const [legalState, legalConfig] = await Promise.all([
+      getUserLegalState(env, user.id),
+      getLegalConfig(env),
+    ]);
     return jsonResponse({
-      version: LEGAL_VERSION,
+      version: legalState.version,
       accepted: legalState.accepted,
       accepted_at: legalState.acceptedAt,
+      text: legalConfig.text,
     });
   }
 
@@ -1315,6 +1413,33 @@ async function handleAdminUsers(request: Request, env: Env, user: AuthUser): Pro
   return jsonResponse({
     users: await listAdminUsers(env),
   });
+}
+
+async function handleAdminLegal(request: Request, env: Env, user: AuthUser): Promise<Response> {
+  const sudoError = requireSudo(user);
+  if (sudoError) {
+    return sudoError;
+  }
+
+  if (request.method === "GET") {
+    return jsonResponse(await getAdminLegalConfig(env));
+  }
+
+  if (request.method === "POST") {
+    const payload = (await request.json()) as AdminLegalPayload;
+    try {
+      const result = await updateAdminLegalConfig(env, payload.text || "");
+      return jsonResponse({
+        ok: true,
+        message: "legal disclaimer updated; all users must accept the new version again",
+        ...result,
+      });
+    } catch (error) {
+      return jsonResponse({ error: error instanceof Error ? error.message : "failed to update legal config" }, { status: 400 });
+    }
+  }
+
+  return jsonResponse({ error: "method not allowed" }, { status: 405 });
 }
 
 async function handleStatus(env: Env, user: AuthUser): Promise<Response> {
@@ -1727,6 +1852,15 @@ export default {
         } else {
           response = await handleAdminUsers(request, env, auth.user as AuthUser);
         }
+      } else if (url.pathname === "/api/admin/legal") {
+        const auth = await requireUserAuth(request, env);
+        if (auth.response) {
+          response = auth.response;
+        } else {
+          response = await handleAdminLegal(request, env, auth.user as AuthUser);
+        }
+      } else if (url.pathname === "/api/legal-config" && request.method === "GET") {
+        response = jsonResponse(await getLegalConfig(env));
       } else if (url.pathname === "/api/jobs") {
         const auth = await requireUserAuth(request, env);
         if (auth.response) {

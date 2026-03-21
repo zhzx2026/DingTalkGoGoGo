@@ -49,16 +49,26 @@ function renderLoginPage(): string {
       <section class="hero">
         <div class="hero-copy">
           <div class="hero-kicker">GoDingtalk Private Console</div>
-          <h2>把钉钉回放下载、二维码登录和账号管理放到一个简洁控制台里</h2>
-          <p class="muted">登录后即可创建下载任务、启动二维码登录，并由 Action 自动把 Cookies 回传到 Worker。</p>
+          <h2>更像正式产品首页的私有控制台</h2>
+          <p class="muted">登录后即可创建回放下载任务、启动二维码登录，并由 GitHub Action 自动把 Cookies 回传到 Worker，无需手动上传。</p>
           <div class="actions" style="margin-top:18px;">
             <a class="button-link primary" href="/legal">先看免责声明</a>
             <a class="button-link" href="/download">查看下载页</a>
+          </div>
+          <div class="hero-badges">
+            <span>自动回传 Cookies</span>
+            <span>二维码约 1 分钟</span>
+            <span>R2 文件 24h 清理</span>
           </div>
           <div class="feature-list">
             <div class="feature-item"><strong>自动二维码登录</strong><span>通常约 1 分钟出二维码，扫码后再约 1 分钟回传 Cookies。</span></div>
             <div class="feature-item"><strong>私有下载链路</strong><span>任务、Cookies 和下载结果按用户隔离。</span></div>
             <div class="feature-item"><strong>到期自动清理</strong><span>上传到 R2 的下载文件会在 24 小时后自动删除。</span></div>
+          </div>
+          <div class="mini-steps">
+            <div class="mini-step"><strong>1</strong><span>登录账号</span></div>
+            <div class="mini-step"><strong>2</strong><span>扫码获取 Cookies</span></div>
+            <div class="mini-step"><strong>3</strong><span>提交链接开始下载</span></div>
           </div>
         </div>
         <div class="card auth-card" id="auth-card">
@@ -98,7 +108,7 @@ function renderSettingsPage(installURL: string): string {
           <img id="login-qr-image" class="qr-image hidden" alt="登录二维码" />
           <div id="login-hint" class="muted small">点击按钮后请耐心等待，大多数情况下约 1 分钟内出现二维码。</div>
         </div>
-        <div class="notice warn" style="margin-top:14px;">不提供手动输入入口。请直接使用二维码登录流程。</div>
+        <div class="notice warn" style="margin-top:14px;">不提供手动输入入口。请直接使用二维码登录流程；若账号被风控、限制、冻结或封禁，系统不承担责任。</div>
       </section>`;
 }
 
@@ -133,6 +143,18 @@ function renderAccountPage(): string {
         <h2>用户管理</h2>
         <p class="muted">仅 sudo 用户可见。这里可以查看所有用户的注册、免责声明、Cookies 和任务状态。</p>
         <div id="admin-users" class="admin-users" style="margin-top:14px;"><div class="empty">暂无数据</div></div>
+        <div class="admin-legal-editor">
+          <h3>免责内容管理</h3>
+          <p class="muted">sudo 可在这里修改免责文本。保存后会自动生成新版本，所有用户需要重新接受一次。</p>
+          <div class="field">
+            <label for="admin-legal-text">免责文本</label>
+            <textarea id="admin-legal-text" class="legal-editor" placeholder="输入新的免责条款"></textarea>
+          </div>
+          <div class="actions">
+            <button id="save-legal-btn" class="primary" type="button">保存免责</button>
+          </div>
+          <p id="admin-legal-meta" class="muted small"></p>
+        </div>
       </section>`;
 }
 
@@ -142,24 +164,8 @@ function renderLegalPage(): string {
         <h2>法律免责声明与用户承诺</h2>
         <p class="muted">你必须先完整阅读并接受以下条款，系统才允许发起下载任务或二维码登录。</p>
         <div id="legal-state" class="notice ok hidden"></div>
-        <div class="legal-text">
-          <h3>一、用途限制</h3>
-          <p>本系统仅可在你对相关内容拥有合法访问权、下载权、保存权或内部归档权的前提下使用。你不得将本系统用于任何违反适用法律法规、平台规则、合同约定、保密义务或知识产权规则的用途。</p>
-          <h3>二、授权保证</h3>
-          <p>你声明并保证：你提交的账号、Cookies、二维码登录、链接及相关内容，均已获得合法授权；你有权访问、处理、下载、保存和使用相应直播回放或文件。</p>
-          <h3>三、禁止行为</h3>
-          <p>你不得使用本系统实施未授权下载、批量抓取、绕过访问控制、规避安全限制、侵犯隐私、侵犯知识产权、传播违法内容、或从事任何可能引发第三方索赔、行政处罚或刑事风险的行为。</p>
-          <h3>四、责任承担</h3>
-          <p>你应独立承担因你的使用行为所引发的一切责任、损失、处罚、赔偿、争议、索赔、律师费及维权成本；若系统提供方因此遭受损失，你同意进行足额赔偿。</p>
-          <h3>四点一、风控与封禁风险</h3>
-          <p>你理解并同意：若因你使用本系统、重复登录、频繁扫码、批量操作、异常请求或其他与你的使用行为相关的原因，导致第三方平台对你的账号、设备、网络环境或访问权限采取风控、限制、冻结、封禁、降权、验证升级、访问拒绝或其他不利措施，相关后果均由你自行承担，系统提供方不承担任何责任。</p>
-          <h3>五、服务免责</h3>
-          <p>本系统按“现状”提供，不对可用性、稳定性、连续性、适法性、特定目的适用性、结果准确性或第三方平台兼容性作任何明示或默示保证。系统提供方有权随时中断、限制、修改或终止服务。</p>
-          <h3>六、证据与记录</h3>
-          <p>你同意系统记录你的接受时间、账号标识及后续操作，以作为你已阅读并接受本声明的电子记录。该记录可用于内部合规、争议处理与安全审计。</p>
-          <h3>七、法律提示</h3>
-          <p>本免责声明旨在强化风险提示、授权确认和责任分配，但其具体法律效力仍受适用法律、事实背景及司法解释影响。若要获得可执行、完整且适用于你业务场景的法律文本，应由持牌律师审阅并定稿。</p>
-        </div>
+        <div id="legal-version-meta" class="muted small"></div>
+        <div id="legal-text" class="legal-text"><div class="empty">正在加载免责内容...</div></div>
         <label class="checkbox-row">
           <input id="legal-confirm-check" type="checkbox" />
           <span>我确认：我已完整阅读以上全部条款，理解风险，并自愿承担全部责任。</span>
@@ -223,10 +229,16 @@ export function renderApp(appOrigin: string, page: AppPage): string {
       .hero-copy { padding: 28px; border: 1px solid var(--line); border-radius: var(--radius); background: linear-gradient(135deg, #eef4ff 0%, #ffffff 100%); box-shadow: var(--shadow); }
       .hero-kicker { color: var(--primary); font-size: 12px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; }
       .hero-copy h2 { margin: 12px 0 0; font-size: 34px; line-height: 1.2; }
+      .hero-badges { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 18px; }
+      .hero-badges span { padding: 8px 12px; border-radius: 999px; background: #fff; border: 1px solid var(--line); color: var(--primary); font-size: 13px; font-weight: 700; }
       .feature-list { display: grid; gap: 12px; margin-top: 18px; }
       .feature-item { padding: 14px; border: 1px solid var(--line); border-radius: 14px; background: rgba(255,255,255,0.85); }
       .feature-item strong { display: block; }
       .feature-item span { display: block; margin-top: 6px; color: var(--muted); line-height: 1.6; }
+      .mini-steps { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-top: 18px; }
+      .mini-step { padding: 14px; border-radius: 14px; background: #0f172a; color: #fff; }
+      .mini-step strong { display: inline-flex; width: 28px; height: 28px; align-items: center; justify-content: center; border-radius: 999px; background: rgba(255,255,255,0.14); margin-bottom: 10px; }
+      .mini-step span { display: block; color: rgba(255,255,255,0.9); }
       .auth-card { align-self: stretch; }
       .topbar { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 20px; }
       .title h1 { margin: 0; font-size: 28px; }
@@ -283,6 +295,9 @@ export function renderApp(appOrigin: string, page: AppPage): string {
       .admin-user-top { display: flex; justify-content: space-between; gap: 12px; align-items: flex-start; }
       .admin-user-name { font-weight: 700; font-size: 16px; }
       .admin-user-meta { margin-top: 8px; color: var(--muted); line-height: 1.7; font-size: 14px; }
+      .admin-legal-editor { margin-top: 18px; padding-top: 18px; border-top: 1px solid var(--line); }
+      .legal-editor { min-height: 320px; }
+      .legal-actions { margin-top: 16px; }
       .checkbox-row { display: flex; gap: 10px; align-items: flex-start; margin-top: 16px; line-height: 1.7; }
       .checkbox-row input { width: 18px; height: 18px; margin-top: 3px; }
       .small { font-size: 13px; }
@@ -291,6 +306,7 @@ export function renderApp(appOrigin: string, page: AppPage): string {
         body { padding: 14px; }
         .topbar, .job-top, .hero { flex-direction: column; align-items: flex-start; }
         .hero { grid-template-columns: 1fr; }
+        .mini-steps,
         .auth-grid, .stats { grid-template-columns: 1fr; }
       }
     </style>
@@ -318,6 +334,8 @@ export function renderApp(appOrigin: string, page: AppPage): string {
         legalAccepted: false,
         legalAcceptedAt: "",
         legalVersion: "",
+        legalText: "",
+        legalConfirmVersion: "",
         user: null,
         loginSessionId: "",
         loginSessionStatus: "",
@@ -335,9 +353,6 @@ export function renderApp(appOrigin: string, page: AppPage): string {
         urls: document.getElementById("urls"),
         createJobBtn: document.getElementById("create-job-btn"),
         refreshBtn: document.getElementById("refresh-btn"),
-        cookies: document.getElementById("cookies"),
-        uploadCookiesBtn: document.getElementById("upload-cookies-btn"),
-        exampleCookiesBtn: document.getElementById("example-cookies-btn"),
         startLoginWorkflowBtn: document.getElementById("start-login-workflow-btn"),
         loginBox: document.getElementById("login-box"),
         loginStatus: document.getElementById("login-status"),
@@ -356,10 +371,15 @@ export function renderApp(appOrigin: string, page: AppPage): string {
         acceptLegalBtn: document.getElementById("accept-legal-btn"),
         legalConfirmCheck: document.getElementById("legal-confirm-check"),
         legalState: document.getElementById("legal-state"),
+        legalText: document.getElementById("legal-text"),
+        legalVersionMeta: document.getElementById("legal-version-meta"),
         legalWarning: document.getElementById("legal-warning"),
         loginLegalWarning: document.getElementById("login-legal-warning"),
         adminPanel: document.getElementById("admin-panel"),
         adminUsers: document.getElementById("admin-users"),
+        adminLegalText: document.getElementById("admin-legal-text"),
+        saveLegalBtn: document.getElementById("save-legal-btn"),
+        adminLegalMeta: document.getElementById("admin-legal-meta"),
         loginNavLink: document.querySelector('[data-nav="login"]'),
       };
 
@@ -416,6 +436,22 @@ export function renderApp(appOrigin: string, page: AppPage): string {
         return "https://api.qrserver.com/v1/create-qr-code/?size=320x320&data=" + encodeURIComponent(value);
       }
 
+      function renderLegalText(text) {
+        if (!el.legalText) return;
+        const source = String(text || "").trim();
+        if (!source) {
+          el.legalText.innerHTML = '<div class="empty">暂无免责内容</div>';
+          return;
+        }
+        const blocks = source.split(/\\n\\s*\\n/g).map((block) => block.trim()).filter(Boolean);
+        el.legalText.innerHTML = blocks.map((block) => {
+          if (block.startsWith("## ")) {
+            return "<h3>" + escapeHTML(block.slice(3).trim()) + "</h3>";
+          }
+          return "<p>" + escapeHTML(block).replaceAll("\\n", "<br/>") + "</p>";
+        }).join("");
+      }
+
       async function request(path, options) {
         const response = await fetch(path, {
           ...(options || {}),
@@ -431,39 +467,6 @@ export function renderApp(appOrigin: string, page: AppPage): string {
           throw new Error(message);
         }
         return payload;
-      }
-
-      function parseCookiesInput(raw) {
-        const input = (raw || "").trim();
-        if (!input) throw new Error("先粘贴 cookies 内容。");
-        if (input.startsWith("{")) {
-          const parsed = JSON.parse(input);
-          if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) return parsed;
-          throw new Error("JSON 对象格式不对。");
-        }
-        if (input.startsWith("[")) {
-          const parsed = JSON.parse(input);
-          if (!Array.isArray(parsed)) throw new Error("JSON 数组格式不对。");
-          return parsed.reduce((result, item) => {
-            if (!item || typeof item !== "object") return result;
-            const name = item.name || item.Name;
-            const value = item.value || item.Value;
-            if (typeof name === "string" && typeof value === "string") result[name] = value;
-            return result;
-          }, {});
-        }
-        const cookieMap = {};
-        input.split(";").forEach((part) => {
-          const chunk = part.trim();
-          if (!chunk) return;
-          const index = chunk.indexOf("=");
-          if (index === -1) return;
-          const name = chunk.slice(0, index).trim();
-          const value = chunk.slice(index + 1).trim();
-          if (name) cookieMap[name] = value;
-        });
-        if (Object.keys(cookieMap).length === 0) throw new Error("没解析出任何 cookie。");
-        return cookieMap;
       }
 
       function renderAuthState() {
@@ -518,6 +521,32 @@ export function renderApp(appOrigin: string, page: AppPage): string {
             el.loginLegalWarning.classList.remove("hidden");
           }
         }
+        if (el.legalVersionMeta) {
+          el.legalVersionMeta.textContent = state.legalVersion ? ("当前版本：" + state.legalVersion) : "";
+        }
+        if (el.legalConfirmCheck) {
+          if (state.legalAccepted) {
+            state.legalConfirmVersion = state.legalVersion || state.legalConfirmVersion;
+            el.legalConfirmCheck.checked = true;
+            el.legalConfirmCheck.disabled = true;
+            el.legalConfirmCheck.closest("label")?.classList.add("hidden");
+          } else {
+            el.legalConfirmCheck.checked = state.legalConfirmVersion === state.legalVersion && Boolean(state.legalVersion);
+            el.legalConfirmCheck.disabled = !state.authenticated;
+            el.legalConfirmCheck.closest("label")?.classList.remove("hidden");
+          }
+        }
+        if (el.acceptLegalBtn) {
+          if (state.legalAccepted) {
+            el.acceptLegalBtn.disabled = true;
+            el.acceptLegalBtn.textContent = "当前版本已接受";
+            el.acceptLegalBtn.classList.add("hidden");
+          } else {
+            el.acceptLegalBtn.classList.remove("hidden");
+            el.acceptLegalBtn.textContent = state.authenticated ? "我已阅读并接受" : "请先登录";
+            el.acceptLegalBtn.disabled = !state.authenticated || !el.legalConfirmCheck || state.legalConfirmVersion !== state.legalVersion;
+          }
+        }
       }
 
       function renderAccountState() {
@@ -550,6 +579,13 @@ export function renderApp(appOrigin: string, page: AppPage): string {
           '<div class="admin-user-meta">Cookies：' + escapeHTML(user.cookies_ready ? '已就绪' : '未准备') + ' · 任务数：' + escapeHTML(String(user.total_jobs || 0)) + '</div>',
           '</section>',
         ].join('')).join('');
+      }
+
+      function renderAdminLegal(version, text) {
+        if (el.adminLegalText) el.adminLegalText.value = text || "";
+        if (el.adminLegalMeta) {
+          el.adminLegalMeta.textContent = version ? ("当前免责版本：" + version + "；保存后会重置所有用户接受状态。") : "";
+        }
       }
 
       function renderJobs(jobs) {
@@ -620,15 +656,10 @@ export function renderApp(appOrigin: string, page: AppPage): string {
           const decoded = decodeURIComponent(escape(atob(encoded)));
           const payload = JSON.parse(decoded);
           if (payload.url && el.urls) el.urls.value = payload.url + (el.urls.value ? "\\n" + el.urls.value : "");
-          if (payload.cookies && el.cookies) {
-            el.cookies.value = JSON.stringify(payload.cookies, null, 2);
-          } else if (payload.cookie_header && el.cookies) {
-            el.cookies.value = payload.cookie_header;
-          }
-          setNotice("已导入链接和 Cookie。", "ok");
+          setNotice("已导入链接。", "ok");
           history.replaceState(null, "", window.location.pathname);
         } catch {
-          setNotice("导入失败，请手动粘贴。", "error");
+          setNotice("导入失败，请重试。", "error");
         }
       }
 
@@ -639,9 +670,20 @@ export function renderApp(appOrigin: string, page: AppPage): string {
         state.legalAccepted = Boolean(payload.legal_accepted);
         state.legalAcceptedAt = payload.legal_accepted_at || "";
         state.legalVersion = payload.legal_version || "";
+        if (state.legalConfirmVersion && state.legalConfirmVersion !== state.legalVersion) {
+          state.legalConfirmVersion = "";
+        }
         state.user = payload.user || null;
         renderAuthState();
         return payload;
+      }
+
+      async function refreshLegalConfig() {
+        const payload = await request("/api/legal-config");
+        state.legalVersion = payload.version || state.legalVersion;
+        state.legalText = payload.text || "";
+        renderLegalText(state.legalText);
+        renderLegalState();
       }
 
       async function refreshStatusAndJobs() {
@@ -674,6 +716,18 @@ export function renderApp(appOrigin: string, page: AppPage): string {
         renderAdminUsers(payload.users || []);
       }
 
+      async function refreshAdminLegal() {
+        if (!state.authenticated || !state.user || !state.user.is_sudo || !el.adminLegalText) return;
+        const payload = await request("/api/admin/legal");
+        state.legalVersion = payload.version || state.legalVersion;
+        state.legalText = payload.text || state.legalText;
+        renderAdminLegal(payload.version || "", payload.text || "");
+        if (PAGE === "legal") {
+          renderLegalText(state.legalText);
+          renderLegalState();
+        }
+      }
+
       async function login() {
         await request("/api/auth/login", { method: "POST", body: JSON.stringify({ username: (el.authUsername.value || "").trim(), password: (el.authPassword.value || "").trim() }) });
         await refreshAll();
@@ -701,13 +755,6 @@ export function renderApp(appOrigin: string, page: AppPage): string {
         if (urls.length === 1) body.url = urls[0]; else body.urls = urls;
         const payload = await request("/api/jobs", { method: "POST", body: JSON.stringify(body) });
         setNotice("任务已创建：" + payload.id, "ok");
-        await refreshStatusAndJobs();
-      }
-
-      async function uploadCookies() {
-        if (!state.authenticated) throw new Error("请先登录。");
-        const payload = await request("/api/cookies", { method: "POST", body: JSON.stringify({ cookies: parseCookiesInput(el.cookies.value) }) });
-        setNotice(payload.message || "Cookies 已上传。", "ok");
         await refreshStatusAndJobs();
       }
 
@@ -740,8 +787,29 @@ export function renderApp(appOrigin: string, page: AppPage): string {
         state.legalAccepted = Boolean(payload.accepted);
         state.legalAcceptedAt = payload.accepted_at || "";
         state.legalVersion = payload.version || state.legalVersion;
+        state.legalConfirmVersion = state.legalVersion;
         renderLegalState();
         setNotice("免责声明已接受。", "ok");
+      }
+
+      async function saveAdminLegal() {
+        if (!state.authenticated || !state.user || !state.user.is_sudo) throw new Error("需要 sudo 权限。");
+        const text = el.adminLegalText ? String(el.adminLegalText.value || "").trim() : "";
+        if (!text) throw new Error("免责内容不能为空。");
+        const payload = await request("/api/admin/legal", {
+          method: "POST",
+          body: JSON.stringify({ text }),
+        });
+        state.legalAccepted = false;
+        state.legalAcceptedAt = "";
+        state.legalVersion = payload.version || "";
+        state.legalText = payload.text || text;
+        state.legalConfirmVersion = "";
+        renderAdminLegal(state.legalVersion, state.legalText);
+        renderLegalText(state.legalText);
+        renderLegalState();
+        renderAuthState();
+        setNotice("免责内容已更新，所有用户需重新接受。", "ok");
       }
 
       if (el.loginBtn) el.loginBtn.addEventListener("click", async () => { setBusy(el.loginBtn, true); try { await login(); } catch (error) { setNotice(error.message, "error"); } finally { setBusy(el.loginBtn, false); } });
@@ -749,20 +817,26 @@ export function renderApp(appOrigin: string, page: AppPage): string {
       if (el.logoutBtn) el.logoutBtn.addEventListener("click", async () => { setBusy(el.logoutBtn, true); try { await logout(); setNotice("已退出登录。", "ok"); } catch (error) { setNotice(error.message, "error"); } finally { setBusy(el.logoutBtn, false); } });
       if (el.createJobBtn) el.createJobBtn.addEventListener("click", async () => { setBusy(el.createJobBtn, true); try { await createJob(); } catch (error) { setNotice(error.message, "error"); } finally { setBusy(el.createJobBtn, false); } });
       if (el.refreshBtn) el.refreshBtn.addEventListener("click", async () => { try { await refreshAll(); } catch (error) { setNotice(error.message, "error"); } });
-      if (el.uploadCookiesBtn) el.uploadCookiesBtn.addEventListener("click", async () => { setBusy(el.uploadCookiesBtn, true); try { await uploadCookies(); } catch (error) { setNotice(error.message, "error"); } finally { setBusy(el.uploadCookiesBtn, false); } });
       if (el.startLoginWorkflowBtn) el.startLoginWorkflowBtn.addEventListener("click", async () => { setBusy(el.startLoginWorkflowBtn, true); try { await startLoginWorkflow(); } catch (error) { setNotice(error.message, "error"); } finally { setBusy(el.startLoginWorkflowBtn, false); } });
       if (el.changePasswordBtn) el.changePasswordBtn.addEventListener("click", async () => { setBusy(el.changePasswordBtn, true); try { await changePassword(); } catch (error) { setNotice(error.message, "error"); } finally { setBusy(el.changePasswordBtn, false); } });
       if (el.acceptLegalBtn) el.acceptLegalBtn.addEventListener("click", async () => { setBusy(el.acceptLegalBtn, true); try { await acceptLegal(); } catch (error) { setNotice(error.message, "error"); } finally { setBusy(el.acceptLegalBtn, false); } });
-      if (el.legalConfirmCheck && el.acceptLegalBtn) el.legalConfirmCheck.addEventListener("change", () => { el.acceptLegalBtn.disabled = !el.legalConfirmCheck.checked; });
-      if (el.exampleCookiesBtn) el.exampleCookiesBtn.addEventListener("click", () => { if (!el.cookies) return; el.cookies.value = JSON.stringify({ LV_PC_SESSION: "replace-me" }, null, 2); });
+      if (el.legalConfirmCheck && el.acceptLegalBtn) el.legalConfirmCheck.addEventListener("change", () => {
+        state.legalConfirmVersion = el.legalConfirmCheck.checked ? (state.legalVersion || "") : "";
+        el.acceptLegalBtn.disabled = !state.authenticated || state.legalConfirmVersion !== state.legalVersion;
+      });
+      if (el.saveLegalBtn) el.saveLegalBtn.addEventListener("click", async () => { setBusy(el.saveLegalBtn, true); try { await saveAdminLegal(); } catch (error) { setNotice(error.message, "error"); } finally { setBusy(el.saveLegalBtn, false); } });
 
       decodeImportPayload();
 
       async function refreshAll() {
         await refreshAuth();
+        if (PAGE === "legal") await refreshLegalConfig();
         if (PAGE === "download") await refreshStatusAndJobs();
         if (PAGE === "settings" || state.loginSessionId) await refreshLoginSession();
-        if (PAGE === "account") await refreshAdminUsers();
+        if (PAGE === "account") {
+          await refreshAdminUsers();
+          await refreshAdminLegal();
+        }
       }
 
       refreshAll().catch((error) => setNotice(error.message, "error"));
