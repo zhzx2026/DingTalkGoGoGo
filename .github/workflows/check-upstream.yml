@@ -1,0 +1,58 @@
+name: Check Upstream Updates
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '17 */6 * * *'
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  check-upstream:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Compare upstream and current repository
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ISSUE_TITLE: Upstream sync available
+        run: |
+          set -euo pipefail
+
+          UPSTREAM_REPO="NAXG/GoDingtalk"
+          CURRENT_REPO="${GITHUB_REPOSITORY}"
+          CURRENT_BRANCH="main"
+
+          UPSTREAM_BRANCH="$(gh api repos/${UPSTREAM_REPO} -q '.default_branch')"
+          UPSTREAM_SHA="$(gh api repos/${UPSTREAM_REPO}/commits/${UPSTREAM_BRANCH} -q '.sha')"
+          CURRENT_SHA="$(gh api repos/${CURRENT_REPO}/commits/${CURRENT_BRANCH} -q '.sha')"
+          ISSUE_NUMBER="$(gh issue list --repo "${CURRENT_REPO}" --state open --search "${ISSUE_TITLE} in:title" --json number --jq '.[0].number // empty')"
+
+          if [ "${UPSTREAM_SHA}" = "${CURRENT_SHA}" ]; then
+            echo "No upstream update needed."
+            if [ -n "${ISSUE_NUMBER}" ]; then
+              gh issue comment "${ISSUE_NUMBER}" --repo "${CURRENT_REPO}" --body "Upstream and current repository are aligned again. Closing this reminder."
+              gh issue close "${ISSUE_NUMBER}" --repo "${CURRENT_REPO}"
+            fi
+            exit 0
+          fi
+
+          BODY=$(cat <<MSG
+Detected a newer upstream commit.
+
+- Upstream repo: https://github.com/${UPSTREAM_REPO}
+- Upstream branch: `${UPSTREAM_BRANCH}`
+- Upstream latest commit: https://github.com/${UPSTREAM_REPO}/commit/${UPSTREAM_SHA}
+- Current repo branch: `${CURRENT_BRANCH}`
+- Current repo latest commit: https://github.com/${CURRENT_REPO}/commit/${CURRENT_SHA}
+
+Please review whether to sync upstream changes.
+MSG
+)
+
+          if [ -n "${ISSUE_NUMBER}" ]; then
+            gh issue comment "${ISSUE_NUMBER}" --repo "${CURRENT_REPO}" --body "${BODY}"
+          else
+            gh issue create --repo "${CURRENT_REPO}" --title "${ISSUE_TITLE}" --body "${BODY}"
+          fi
