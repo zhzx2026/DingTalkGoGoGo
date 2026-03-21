@@ -336,6 +336,7 @@ export function renderApp(appOrigin: string, page: AppPage): string {
         legalVersion: "",
         legalText: "",
         legalConfirmVersion: "",
+        adminLegalDirty: false,
         user: null,
         loginSessionId: "",
         loginSessionStatus: "",
@@ -581,8 +582,10 @@ export function renderApp(appOrigin: string, page: AppPage): string {
         ].join('')).join('');
       }
 
-      function renderAdminLegal(version, text) {
-        if (el.adminLegalText) el.adminLegalText.value = text || "";
+      function renderAdminLegal(version, text, force) {
+        if (el.adminLegalText && (!state.adminLegalDirty || force)) {
+          el.adminLegalText.value = text || "";
+        }
         if (el.adminLegalMeta) {
           el.adminLegalMeta.textContent = version ? ("当前免责版本：" + version + "；保存后会重置所有用户接受状态。") : "";
         }
@@ -721,7 +724,7 @@ export function renderApp(appOrigin: string, page: AppPage): string {
         const payload = await request("/api/admin/legal");
         state.legalVersion = payload.version || state.legalVersion;
         state.legalText = payload.text || state.legalText;
-        renderAdminLegal(payload.version || "", payload.text || "");
+        renderAdminLegal(payload.version || "", payload.text || "", false);
         if (PAGE === "legal") {
           renderLegalText(state.legalText);
           renderLegalState();
@@ -751,10 +754,15 @@ export function renderApp(appOrigin: string, page: AppPage): string {
         if (!state.legalAccepted) throw new Error("请先接受免责声明。");
         const urls = (el.urls.value || "").split("\\n").map((item) => item.trim()).filter(Boolean);
         if (urls.length === 0) throw new Error("请先填链接。");
-        const body = { thread: 100, create_video_list: true, output_subdir: "" };
-        if (urls.length === 1) body.url = urls[0]; else body.urls = urls;
-        const payload = await request("/api/jobs", { method: "POST", body: JSON.stringify(body) });
-        setNotice("任务已创建：" + payload.id, "ok");
+        const jobIDs = [];
+        for (const url of urls) {
+          const payload = await request("/api/jobs", {
+            method: "POST",
+            body: JSON.stringify({ url, thread: 100, create_video_list: true, output_subdir: "" }),
+          });
+          jobIDs.push(payload.id);
+        }
+        setNotice(urls.length === 1 ? ("任务已创建：" + jobIDs[0]) : ("已创建 " + jobIDs.length + " 个任务。"), "ok");
         await refreshStatusAndJobs();
       }
 
@@ -805,7 +813,8 @@ export function renderApp(appOrigin: string, page: AppPage): string {
         state.legalVersion = payload.version || "";
         state.legalText = payload.text || text;
         state.legalConfirmVersion = "";
-        renderAdminLegal(state.legalVersion, state.legalText);
+        state.adminLegalDirty = false;
+        renderAdminLegal(state.legalVersion, state.legalText, true);
         renderLegalText(state.legalText);
         renderLegalState();
         renderAuthState();
@@ -824,6 +833,7 @@ export function renderApp(appOrigin: string, page: AppPage): string {
         state.legalConfirmVersion = el.legalConfirmCheck.checked ? (state.legalVersion || "") : "";
         el.acceptLegalBtn.disabled = !state.authenticated || state.legalConfirmVersion !== state.legalVersion;
       });
+      if (el.adminLegalText) el.adminLegalText.addEventListener("input", () => { state.adminLegalDirty = true; });
       if (el.saveLegalBtn) el.saveLegalBtn.addEventListener("click", async () => { setBusy(el.saveLegalBtn, true); try { await saveAdminLegal(); } catch (error) { setNotice(error.message, "error"); } finally { setBusy(el.saveLegalBtn, false); } });
 
       decodeImportPayload();
