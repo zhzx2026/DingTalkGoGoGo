@@ -229,10 +229,90 @@ export function renderApp(appOrigin: string, page: AppPage): string {
         cursor: wait;
       }
 
+      .button-link[aria-disabled="true"] {
+        pointer-events: none;
+        opacity: 0.6;
+      }
+
       .auth-grid {
         display: grid;
         gap: 12px;
         grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .settings-grid {
+        display: grid;
+        gap: 16px;
+        margin-top: 14px;
+      }
+
+      .settings-card {
+        padding: 18px;
+        border-radius: var(--radius-lg);
+        border: 1px solid var(--line);
+        background: linear-gradient(180deg, rgba(255, 253, 250, 0.98), rgba(247, 244, 236, 0.92));
+      }
+
+      .settings-card h3 {
+        margin: 0;
+        font-size: 18px;
+        font-family: "IBM Plex Serif", Georgia, serif;
+      }
+
+      .settings-card p {
+        margin-top: 8px;
+      }
+
+      .guide-list {
+        margin: 14px 0 0;
+        padding-left: 20px;
+        color: var(--muted);
+        line-height: 1.7;
+      }
+
+      .guide-list li + li {
+        margin-top: 6px;
+      }
+
+      .artifact-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-top: 14px;
+      }
+
+      .artifact-pill {
+        display: inline-flex;
+        align-items: center;
+        min-height: 34px;
+        padding: 0 12px;
+        border-radius: 999px;
+        background: rgba(15, 118, 106, 0.1);
+        color: var(--accent-2);
+        font-size: 13px;
+        font-weight: 700;
+      }
+
+      .login-art {
+        margin-top: 16px;
+        padding: 14px;
+        border-radius: var(--radius-lg);
+        border: 1px solid rgba(30, 38, 43, 0.08);
+        background:
+          radial-gradient(circle at top left, rgba(213, 95, 42, 0.08), transparent 35%),
+          linear-gradient(135deg, rgba(255, 255, 255, 0.96), rgba(247, 244, 236, 0.9));
+      }
+
+      .login-art svg {
+        display: block;
+        width: 100%;
+        height: auto;
+      }
+
+      .fine-print {
+        margin-top: 12px;
+        font-size: 13px;
+        color: var(--muted);
       }
 
       .stats {
@@ -401,19 +481,77 @@ export function renderApp(appOrigin: string, page: AppPage): string {
 
       <section id="settings-panel" class="panel ${isHome ? "hidden" : ""}">
         <h2>配置中心</h2>
-        <p>这里放脚本安装和 Cookies 上传。Tampermonkey 会把页面链接和可见 Cookie 传到这里。</p>
-        <div class="actions" style="margin-top:14px;">
-          <a class="button-link primary" href="${installURL}" target="_blank" rel="noreferrer">安装 Tampermonkey 脚本</a>
-        </div>
-        <div class="fields">
-          <div class="field">
-            <label for="cookies">Cookies 内容</label>
-            <textarea id="cookies" placeholder='{"cookie_name":"cookie_value"}'></textarea>
-          </div>
-          <div class="actions">
-            <button id="upload-cookies-btn" class="primary" type="button">上传 Cookies</button>
-            <button id="example-cookies-btn" class="secondary" type="button">填入示例</button>
-          </div>
+        <p>这里统一放浏览器脚本、Windows 二维码登录入口和 Cookies 上传。Tampermonkey 会把页面链接和可见 Cookie 传到这里。</p>
+        <div class="settings-grid">
+          <section class="settings-card">
+            <h3>远程二维码登录</h3>
+            <p>如果插件登录不方便，可以直接从网页触发 GitHub Hosted Windows 打开钉钉登录页。工作流会产出二维码图片、调试包和 cookies 文件。</p>
+            <div class="actions" style="margin-top:14px;">
+              <button id="start-login-workflow-btn" class="primary" type="button">启动 Windows 二维码登录</button>
+              <a id="login-workflow-link" class="button-link secondary" href="#" target="_blank" rel="noreferrer" aria-disabled="true">打开 Actions 工作流</a>
+              <a id="login-runs-link" class="button-link secondary" href="#" target="_blank" rel="noreferrer" aria-disabled="true">查看运行记录</a>
+            </div>
+            <div class="login-art" aria-hidden="true">
+              <svg viewBox="0 0 760 240" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <rect x="14" y="18" width="212" height="204" rx="26" fill="#FFF7EC" stroke="#E2D9CB"/>
+                <rect x="42" y="44" width="156" height="128" rx="20" fill="#FFFFFF" stroke="#D9CEC0"/>
+                <rect x="60" y="62" width="32" height="32" rx="6" fill="#1E262B"/>
+                <rect x="105" y="62" width="12" height="12" rx="3" fill="#1E262B"/>
+                <rect x="125" y="62" width="12" height="28" rx="3" fill="#1E262B"/>
+                <rect x="145" y="62" width="28" height="12" rx="3" fill="#1E262B"/>
+                <rect x="60" y="104" width="14" height="14" rx="3" fill="#1E262B"/>
+                <rect x="84" y="104" width="18" height="30" rx="3" fill="#1E262B"/>
+                <rect x="112" y="104" width="12" height="12" rx="3" fill="#1E262B"/>
+                <rect x="132" y="104" width="14" height="34" rx="3" fill="#1E262B"/>
+                <rect x="154" y="104" width="18" height="18" rx="3" fill="#1E262B"/>
+                <rect x="60" y="144" width="30" height="18" rx="3" fill="#1E262B"/>
+                <rect x="98" y="144" width="12" height="12" rx="3" fill="#1E262B"/>
+                <rect x="118" y="144" width="18" height="18" rx="3" fill="#1E262B"/>
+                <rect x="144" y="144" width="28" height="12" rx="3" fill="#1E262B"/>
+                <text x="42" y="198" fill="#67747D" font-size="15" font-family="IBM Plex Sans, Segoe UI, sans-serif">windows-login-qr</text>
+                <rect x="275" y="54" width="212" height="132" rx="26" fill="#F1FAF8" stroke="#D5E7E2"/>
+                <rect x="301" y="82" width="160" height="72" rx="18" fill="#FFFFFF" stroke="#CFE0DB"/>
+                <path d="M333 118H430" stroke="#0F766A" stroke-width="12" stroke-linecap="round"/>
+                <path d="M409 98L429 118L409 138" stroke="#0F766A" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"/>
+                <text x="307" y="176" fill="#67747D" font-size="15" font-family="IBM Plex Sans, Segoe UI, sans-serif">GitHub Actions hosted Windows</text>
+                <rect x="536" y="32" width="210" height="176" rx="26" fill="#FFFDF8" stroke="#E1D7C8"/>
+                <rect x="566" y="62" width="150" height="28" rx="10" fill="#1E262B" fill-opacity="0.06"/>
+                <rect x="566" y="102" width="120" height="24" rx="10" fill="#D55F2A" fill-opacity="0.16"/>
+                <rect x="566" y="136" width="132" height="24" rx="10" fill="#0F766A" fill-opacity="0.14"/>
+                <text x="566" y="186" fill="#67747D" font-size="15" font-family="IBM Plex Sans, Segoe UI, sans-serif">windows-login-cookies</text>
+              </svg>
+            </div>
+            <ol class="guide-list">
+              <li>登录后点击“启动 Windows 二维码登录”，Worker 会直接触发仓库里的 <code>windows-login.yml</code>。</li>
+              <li>打开 GitHub Actions 运行记录，查看日志里的链接或下载 <code>windows-login-qr</code> 图片扫码。</li>
+              <li>确认登录后，下载 <code>windows-login-cookies</code> artifact，再粘贴到下面的 Cookies 区域上传。</li>
+            </ol>
+            <div class="artifact-row">
+              <span class="artifact-pill">windows-login-qr</span>
+              <span class="artifact-pill">windows-login-debug</span>
+              <span class="artifact-pill">windows-login-cookies</span>
+            </div>
+            <div id="login-workflow-hint" class="fine-print">登录后会在这里显示当前 GitHub 仓库和工作流入口。</div>
+          </section>
+
+          <section class="settings-card">
+            <h3>浏览器脚本与 Cookies</h3>
+            <p>如果你仍然习惯在浏览器里操作，可以安装 Tampermonkey 脚本辅助导入链接和可见 Cookie；也可以直接手动粘贴 cookies.json / Cookie Header。</p>
+            <div class="actions" style="margin-top:14px;">
+              <a class="button-link primary" href="${installURL}" target="_blank" rel="noreferrer">安装 Tampermonkey 脚本</a>
+            </div>
+            <div class="fields">
+              <div class="field">
+                <label for="cookies">Cookies 内容</label>
+                <textarea id="cookies" placeholder='{"cookie_name":"cookie_value"}'></textarea>
+              </div>
+              <div class="actions">
+                <button id="upload-cookies-btn" class="primary" type="button">上传 Cookies</button>
+                <button id="example-cookies-btn" class="secondary" type="button">填入示例</button>
+              </div>
+            </div>
+            <div class="fine-print">支持三种格式：JSON 对象、浏览器导出的 Cookie 数组、或直接粘贴 <code>name=value; name2=value2</code>。</div>
+          </section>
         </div>
       </section>
 
@@ -454,6 +592,13 @@ export function renderApp(appOrigin: string, page: AppPage): string {
         authenticated: false,
         registrationOpen: false,
         user: null,
+        workflowRepository: "",
+        workflowFile: "",
+        workflowURL: "",
+        loginWorkflowFile: "",
+        loginWorkflowURL: "",
+        loginRunsURL: "",
+        workflowRef: "main",
       };
 
       const el = {
@@ -469,6 +614,10 @@ export function renderApp(appOrigin: string, page: AppPage): string {
         createJobBtn: document.getElementById("create-job-btn"),
         refreshBtn: document.getElementById("refresh-btn"),
         cookies: document.getElementById("cookies"),
+        startLoginWorkflowBtn: document.getElementById("start-login-workflow-btn"),
+        loginWorkflowLink: document.getElementById("login-workflow-link"),
+        loginRunsLink: document.getElementById("login-runs-link"),
+        loginWorkflowHint: document.getElementById("login-workflow-hint"),
         uploadCookiesBtn: document.getElementById("upload-cookies-btn"),
         exampleCookiesBtn: document.getElementById("example-cookies-btn"),
         statCookies: document.getElementById("stat-cookies"),
@@ -496,6 +645,17 @@ export function renderApp(appOrigin: string, page: AppPage): string {
       function setBusy(button, busy) {
         if (!button) return;
         button.disabled = busy;
+      }
+
+      function setLinkState(node, href) {
+        if (!node) return;
+        if (href) {
+          node.href = href;
+          node.removeAttribute("aria-disabled");
+        } else {
+          node.href = "#";
+          node.setAttribute("aria-disabled", "true");
+        }
       }
 
       function escapeHTML(value) {
@@ -589,12 +749,16 @@ export function renderApp(appOrigin: string, page: AppPage): string {
       }
 
       function renderAuthState() {
+        const canStartLoginWorkflow = state.authenticated && Boolean(state.workflowRepository);
         if (state.authenticated && state.user) {
           const roleSuffix = state.user.is_sudo ? " (sudo)" : "";
           el.userChip.textContent = "已登录: " + state.user.username + roleSuffix;
           el.logoutBtn.classList.remove("hidden");
           el.loginBtn.classList.add("hidden");
           el.registerBtn.classList.add("hidden");
+          if (el.startLoginWorkflowBtn) {
+            el.startLoginWorkflowBtn.disabled = !canStartLoginWorkflow;
+          }
           return;
         }
         el.userChip.textContent = "未登录";
@@ -605,6 +769,36 @@ export function renderApp(appOrigin: string, page: AppPage): string {
         } else {
           el.registerBtn.classList.add("hidden");
         }
+        if (el.startLoginWorkflowBtn) {
+          el.startLoginWorkflowBtn.disabled = true;
+        }
+      }
+
+      function renderWorkflowInfo(payload) {
+        if (!payload || typeof payload !== "object") return;
+        state.workflowRepository = payload.workflow_repository || state.workflowRepository || "";
+        state.workflowFile = payload.workflow_file || state.workflowFile || "";
+        state.workflowURL = payload.workflow_url || state.workflowURL || "";
+        state.loginWorkflowFile = payload.login_workflow_file || state.loginWorkflowFile || "";
+        state.loginWorkflowURL = payload.login_workflow_url || state.loginWorkflowURL || "";
+        state.loginRunsURL = payload.login_runs_url || state.loginRunsURL || "";
+        state.workflowRef = payload.workflow_ref || state.workflowRef || "main";
+
+        setLinkState(el.loginWorkflowLink, state.loginWorkflowURL);
+        setLinkState(el.loginRunsLink, state.loginRunsURL);
+
+        if (el.loginWorkflowHint) {
+          if (state.workflowRepository) {
+            el.loginWorkflowHint.textContent =
+              "当前仓库: " + state.workflowRepository +
+              " · 默认分支: " + state.workflowRef +
+              " · 登录工作流: " + (state.loginWorkflowFile || "windows-login.yml");
+          } else {
+            el.loginWorkflowHint.textContent = "当前未配置 GitHub Actions 仓库，无法触发远程二维码登录。";
+          }
+        }
+
+        renderAuthState();
       }
 
       function renderJobs(jobs) {
@@ -663,6 +857,7 @@ export function renderApp(appOrigin: string, page: AppPage): string {
         state.authenticated = Boolean(payload.authenticated);
         state.registrationOpen = Boolean(payload.registration_open);
         state.user = payload.user || null;
+        renderWorkflowInfo(payload);
         renderAuthState();
         return payload;
       }
@@ -682,6 +877,7 @@ export function renderApp(appOrigin: string, page: AppPage): string {
           request("/api/jobs"),
         ]);
 
+        renderWorkflowInfo(status);
         el.statCookies.textContent = status.cookies_ready ? "已就绪" : "未准备";
         el.statTotal.textContent = String(status.total_jobs || 0);
         el.statRunning.textContent = String(status.running_jobs || 0);
@@ -757,6 +953,16 @@ export function renderApp(appOrigin: string, page: AppPage): string {
         await refreshStatusAndJobs();
       }
 
+      async function startLoginWorkflow() {
+        if (!state.authenticated) throw new Error("请先登录后再触发远程二维码登录。");
+        const payload = await request("/api/login-workflow", {
+          method: "POST",
+          body: JSON.stringify({}),
+        });
+        renderWorkflowInfo(payload);
+        setNotice(payload.message || "Windows 二维码登录工作流已触发。", "ok");
+      }
+
       el.loginBtn.addEventListener("click", async () => {
         setBusy(el.loginBtn, true);
         try {
@@ -823,6 +1029,19 @@ export function renderApp(appOrigin: string, page: AppPage): string {
             setNotice(error.message, "error");
           } finally {
             setBusy(el.uploadCookiesBtn, false);
+          }
+        });
+      }
+
+      if (el.startLoginWorkflowBtn) {
+        el.startLoginWorkflowBtn.addEventListener("click", async () => {
+          setBusy(el.startLoginWorkflowBtn, true);
+          try {
+            await startLoginWorkflow();
+          } catch (error) {
+            setNotice(error.message, "error");
+          } finally {
+            renderAuthState();
           }
         });
       }

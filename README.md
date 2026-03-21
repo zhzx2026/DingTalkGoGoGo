@@ -99,6 +99,12 @@ npx wrangler deploy
 - `GODINGTALK_R2_ACCESS_KEY_ID` / `GODINGTALK_R2_SECRET_ACCESS_KEY`：给远程 runner 上传 R2
 - `GODINGTALK_R2_BUCKET`：真实的 R2 bucket 名称
 
+`worker/wrangler.toml` 里的 GitHub 变量建议保持：
+
+- `GITHUB_WORKFLOW_FILE = "remote-runner.yml"`
+- `GITHUB_LOGIN_WORKFLOW_FILE = "windows-login.yml"`
+- `GITHUB_REF = "main"`
+
 ### 4. 自动工作流
 
 仓库现在有这几条工作流：
@@ -124,6 +130,7 @@ npx wrangler deploy
 部署完成后，直接打开 Worker 根地址即可：
 
 - 注册/登录账号（默认开放注册）
+- 在“配置”页选择 Tampermonkey 导入，或点击 “Windows 二维码登录”
 - 上传 cookies
 - 粘贴一个或多个回放链接
 - 提交任务
@@ -219,6 +226,14 @@ go build -o GoDingtalk .
 
 - `windows-latest` 位于美国网络，打开的通常是国际版 DingTalk 登录页
 - 如果你希望复用中国网络下的登录链路，可以再切回中国网络环境的 `self-hosted Windows runner`
+
+现在 `/settings` 页面也支持这个流程：
+
+1. 登录后点击“启动 Windows 二维码登录”
+2. 页面会直接给出 GitHub Actions 工作流和运行记录入口
+3. 下载 `windows-login-qr` 图片扫码
+4. 登录成功后再下载 `windows-login-cookies` artifact
+5. 把 cookies 内容粘贴回配置页上传
 
 ## GitHub Runner 远程执行
 

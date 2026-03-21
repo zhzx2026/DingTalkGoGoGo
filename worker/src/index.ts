@@ -8,6 +8,7 @@ interface Env {
   INTERNAL_API_TOKEN?: string;
   GITHUB_REPOSITORY?: string;
   GITHUB_WORKFLOW_FILE?: string;
+  GITHUB_LOGIN_WORKFLOW_FILE?: string;
   GITHUB_REF?: string;
   GITHUB_ACTIONS_TOKEN?: string;
   AUTH_SALT?: string;
@@ -141,6 +142,7 @@ interface UserRow {
 }
 
 const DEFAULT_WORKFLOW_FILE = "remote-runner.yml";
+const DEFAULT_LOGIN_WORKFLOW_FILE = "windows-login.yml";
 const SESSION_COOKIE_NAME = "godingtalk_session";
 const SESSION_TTL_SECONDS = 60 * 60 * 24 * 14;
 const DEFAULT_THREAD = 100;
@@ -245,6 +247,14 @@ function jobFileDownloadURL(jobID: string, relativePath: string): string {
     path: relativePath,
   });
   return `/api/files?${params.toString()}`;
+}
+
+function githubWorkflowURL(repository: string, workflowFile: string): string {
+  return `https://github.com/${repository}/actions/workflows/${workflowFile}`;
+}
+
+function githubRunHistoryURL(repository: string, workflowFile: string): string {
+  return `${githubWorkflowURL(repository, workflowFile)}?query=event%3Aworkflow_dispatch`;
 }
 
 function parseCookieHeader(raw: string | null): Record<string, string> {
@@ -726,6 +736,18 @@ async function triggerGitHubRunner(env: Env, jobID: string): Promise<void> {
   }
 
   const workflowFile = env.GITHUB_WORKFLOW_FILE || DEFAULT_WORKFLOW_FILE;
+  await dispatchGitHubWorkflow(env, workflowFile, { job_id: jobID });
+}
+
+async function dispatchGitHubWorkflow(
+  env: Env,
+  workflowFile: string,
+  inputs?: Record<string, string>,
+): Promise<void> {
+  if (!env.GITHUB_REPOSITORY || !env.GITHUB_ACTIONS_TOKEN) {
+    throw new Error("GitHub Actions dispatch is not configured");
+  }
+
   const ref = env.GITHUB_REF || "main";
   const response = await fetch(
     `https://api.github.com/repos/${env.GITHUB_REPOSITORY}/actions/workflows/${workflowFile}/dispatches`,
@@ -739,7 +761,7 @@ async function triggerGitHubRunner(env: Env, jobID: string): Promise<void> {
       },
       body: JSON.stringify({
         ref,
-        inputs: { job_id: jobID },
+        inputs: inputs || {},
       }),
     },
   );
@@ -748,6 +770,28 @@ async function triggerGitHubRunner(env: Env, jobID: string): Promise<void> {
     const body = await response.text();
     throw new Error(`workflow dispatch failed (${response.status}): ${body.slice(0, 220)}`);
   }
+}
+
+async function triggerGitHubLogin(env: Env): Promise<{
+  ref: string;
+  workflow_file: string;
+  workflow_url: string;
+  runs_url: string;
+}> {
+  if (!env.GITHUB_REPOSITORY || !env.GITHUB_ACTIONS_TOKEN) {
+    throw new Error("GitHub Actions dispatch is not configured");
+  }
+
+  const workflowFile = env.GITHUB_LOGIN_WORKFLOW_FILE || DEFAULT_LOGIN_WORKFLOW_FILE;
+  const ref = env.GITHUB_REF || "main";
+  await dispatchGitHubWorkflow(env, workflowFile);
+
+  return {
+    ref,
+    workflow_file: workflowFile,
+    workflow_url: githubWorkflowURL(env.GITHUB_REPOSITORY, workflowFile),
+    runs_url: githubRunHistoryURL(env.GITHUB_REPOSITORY, workflowFile),
+  };
 }
 
 function withSetCookie(response: Response, cookie: string): Response {
@@ -765,10 +809,21 @@ async function handleAuthMe(request: Request, env: Env): Promise<Response> {
   const user = await getAuthUser(request, env);
   const usersCount = await listUsersCount(env);
   const isRegistrationOpen = registrationOpen(env, usersCount);
+  const workflowRepository = env.GITHUB_REPOSITORY || "";
+  const workflowFile = env.GITHUB_WORKFLOW_FILE || DEFAULT_WORKFLOW_FILE;
+  const loginWorkflowFile = env.GITHUB_LOGIN_WORKFLOW_FILE || DEFAULT_LOGIN_WORKFLOW_FILE;
+  const workflowRef = env.GITHUB_REF || "main";
   if (!user) {
     return jsonResponse({
       authenticated: false,
       registration_open: isRegistrationOpen,
+      workflow_repository: workflowRepository,
+      workflow_file: workflowFile,
+      workflow_url: workflowRepository ? githubWorkflowURL(workflowRepository, workflowFile) : "",
+      login_workflow_file: loginWorkflowFile,
+      login_workflow_url: workflowRepository ? githubWorkflowURL(workflowRepository, loginWorkflowFile) : "",
+      login_runs_url: workflowRepository ? githubRunHistoryURL(workflowRepository, loginWorkflowFile) : "",
+      workflow_ref: workflowRef,
     });
   }
 
@@ -779,6 +834,13 @@ async function handleAuthMe(request: Request, env: Env): Promise<Response> {
     user,
     cookies_ready: cookieState.cookiesReady,
     cookies_updated_at: cookieState.cookiesUpdatedAt,
+    workflow_repository: workflowRepository,
+    workflow_file: workflowFile,
+    workflow_url: workflowRepository ? githubWorkflowURL(workflowRepository, workflowFile) : "",
+    login_workflow_file: loginWorkflowFile,
+    login_workflow_url: workflowRepository ? githubWorkflowURL(workflowRepository, loginWorkflowFile) : "",
+    login_runs_url: workflowRepository ? githubRunHistoryURL(workflowRepository, loginWorkflowFile) : "",
+    workflow_ref: workflowRef,
   });
 }
 
@@ -862,6 +924,11 @@ async function handleStatus(env: Env, user: AuthUser): Promise<Response> {
     getUserCookieState(env, user.id),
   ]);
 
+  const workflowRepository = env.GITHUB_REPOSITORY || "";
+  const workflowFile = env.GITHUB_WORKFLOW_FILE || DEFAULT_WORKFLOW_FILE;
+  const loginWorkflowFile = env.GITHUB_LOGIN_WORKFLOW_FILE || DEFAULT_LOGIN_WORKFLOW_FILE;
+  const workflowRef = env.GITHUB_REF || "main";
+
   return jsonResponse({
     mode: "private-control-plane",
     user,
@@ -872,10 +939,33 @@ async function handleStatus(env: Env, user: AuthUser): Promise<Response> {
     running_jobs: toNumber(countsRow?.running_jobs),
     succeeded_jobs: toNumber(countsRow?.succeeded_jobs),
     failed_jobs: toNumber(countsRow?.failed_jobs),
-    workflow_repository: env.GITHUB_REPOSITORY || "",
-    workflow_file: env.GITHUB_WORKFLOW_FILE || DEFAULT_WORKFLOW_FILE,
+    workflow_repository: workflowRepository,
+    workflow_file: workflowFile,
+    workflow_url: workflowRepository ? githubWorkflowURL(workflowRepository, workflowFile) : "",
+    login_workflow_file: loginWorkflowFile,
+    login_workflow_url: workflowRepository ? githubWorkflowURL(workflowRepository, loginWorkflowFile) : "",
+    login_runs_url: workflowRepository ? githubRunHistoryURL(workflowRepository, loginWorkflowFile) : "",
+    workflow_ref: workflowRef,
     public_downloads: false,
     default_thread: DEFAULT_THREAD,
+  });
+}
+
+async function handleLoginWorkflow(request: Request, env: Env, _user: AuthUser): Promise<Response> {
+  if (request.method !== "POST") {
+    return jsonResponse({ error: "method not allowed" }, { status: 405 });
+  }
+
+  const payload = await triggerGitHubLogin(env);
+  return jsonResponse({
+    ok: true,
+    message: "Windows 二维码登录工作流已触发。请打开 GitHub Actions 查看二维码图片并扫码，完成后下载 windows-login-cookies artifact。",
+    ...payload,
+    artifacts: [
+      "windows-login-qr",
+      "windows-login-debug",
+      "windows-login-cookies",
+    ],
   });
 }
 
@@ -1123,6 +1213,13 @@ export default {
           response = auth.response;
         } else {
           response = await handleCookies(request, env, auth.user as AuthUser);
+        }
+      } else if (url.pathname === "/api/login-workflow") {
+        const auth = await requireUserAuth(request, env);
+        if (auth.response) {
+          response = auth.response;
+        } else {
+          response = await handleLoginWorkflow(request, env, auth.user as AuthUser);
         }
       } else if (url.pathname === "/api/jobs") {
         const auth = await requireUserAuth(request, env);
