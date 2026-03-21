@@ -627,7 +627,7 @@ export function renderApp(appOrigin: string, page: AppPage): string {
           const encoded = hash.slice("#import=".length);
           const decoded = decodeURIComponent(escape(atob(encoded)));
           const payload = JSON.parse(decoded);
-          if (payload.url && el.urls) el.urls.value = payload.url + (el.urls.value ? "\n" + el.urls.value : "");
+          if (payload.url && el.urls) el.urls.value = payload.url + (el.urls.value ? "\\n" + el.urls.value : "");
           if (payload.cookies && el.cookies) {
             el.cookies.value = JSON.stringify(payload.cookies, null, 2);
           } else if (payload.cookie_header && el.cookies) {
@@ -716,7 +716,7 @@ export function renderApp(appOrigin: string, page: AppPage): string {
 
       async function createJob() {
         if (!state.authenticated) throw new Error("请先登录。");
-        const urls = (el.urls.value || "").split("\n").map((item) => item.trim()).filter(Boolean);
+        const urls = (el.urls.value || "").split("\\n").map((item) => item.trim()).filter(Boolean);
         if (urls.length === 0) throw new Error("请先填链接。");
         const body = { thread: 100, create_video_list: true, output_subdir: "" };
         if (urls.length === 1) body.url = urls[0]; else body.urls = urls;
