@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"flag"
 	"fmt"
@@ -163,6 +164,79 @@ func decodeQRCodeFromImage(pngBytes []byte) (string, error) {
 	return strings.TrimSpace(result.GetText()), nil
 }
 
+func decodeQRCodeFromSource(src string) (string, error) {
+	src = strings.TrimSpace(src)
+	if src == "" {
+		return "", fmt.Errorf("empty QR source")
+	}
+
+	var content []byte
+	if strings.HasPrefix(src, "data:image/") {
+		parts := strings.SplitN(src, ",", 2)
+		if len(parts) != 2 {
+			return "", fmt.Errorf("invalid data URL")
+		}
+		decoded, err := base64.StdEncoding.DecodeString(parts[1])
+		if err != nil {
+			return "", err
+		}
+		content = decoded
+	} else {
+		response, err := httpClient.Get(src)
+		if err != nil {
+			return "", err
+		}
+		defer response.Body.Close()
+
+		if response.StatusCode < 200 || response.StatusCode >= 300 {
+			return "", fmt.Errorf("unexpected status %d", response.StatusCode)
+		}
+
+		body, err := io.ReadAll(response.Body)
+		if err != nil {
+			return "", err
+		}
+		content = body
+	}
+
+	return decodeQRCodeFromImage(content)
+}
+
+func extractQRCodeImageSources(ctx context.Context) ([]string, error) {
+	var sources []string
+	err := chromedp.Evaluate(`(() => {
+		const result = [];
+		const push = (value) => {
+		  if (typeof value === 'string' && value.trim() && !result.includes(value.trim())) {
+		    result.push(value.trim());
+		  }
+		};
+
+		const visibleSquares = (elements) => Array.from(elements)
+		  .map((node) => {
+		    const rect = node.getBoundingClientRect();
+		    const style = window.getComputedStyle(node);
+		    const squareRatio = rect.width > 0 && rect.height > 0
+		      ? Math.min(rect.width, rect.height) / Math.max(rect.width, rect.height)
+		      : 0;
+		    return { node, rect, style, squareRatio, area: rect.width * rect.height };
+		  })
+		  .filter((item) => item.rect.width >= 120 && item.rect.height >= 120 && item.squareRatio >= 0.75 && item.style.display !== 'none' && item.style.visibility !== 'hidden')
+		  .sort((a, b) => b.area - a.area)
+		  .slice(0, 5);
+
+		visibleSquares(document.querySelectorAll('img')).forEach((item) => push(item.node.currentSrc || item.node.src));
+		visibleSquares(document.querySelectorAll('canvas')).forEach((item) => {
+		  try {
+		    push(item.node.toDataURL('image/png'));
+		  } catch (error) {}
+		});
+
+		return result;
+	})()`, &sources).Do(ctx)
+	return sources, err
+}
+
 func captureQRCodeScreenshot(ctx context.Context) ([]byte, error) {
 	var rect pageRect
 	err := chromedp.Evaluate(`(() => {
@@ -215,6 +289,19 @@ func waitForLoginQRCodeURL(ctx context.Context) (string, []byte, error) {
 	var lastErr error
 
 	for time.Now().Before(deadline) {
+		sources, err := extractQRCodeImageSources(ctx)
+		if err == nil {
+			for _, src := range sources {
+				qrURL, decodeErr := decodeQRCodeFromSource(src)
+				if decodeErr == nil && qrURL != "" {
+					return qrURL, nil, nil
+				}
+				lastErr = decodeErr
+			}
+		} else {
+			lastErr = err
+		}
+
 		screenshot, err := captureQRCodeScreenshot(ctx)
 		if err == nil {
 			qrURL, decodeErr := decodeQRCodeFromImage(screenshot)
