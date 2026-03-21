@@ -50,6 +50,7 @@ jobs:
           if [ -z "${AWS_DEFAULT_REGION}" ]; then
             echo "AWS_DEFAULT_REGION=us-east-1" >> "$GITHUB_ENV"
           fi
+          aws configure set default.s3.addressing_style path
 
       - name: Run remote job
         id: remote_job
@@ -132,9 +133,21 @@ jobs:
               --bucket "${S3_BUCKET}" \
               --key "${OBJECT_KEY}" \
               --endpoint-url "${S3_ENDPOINT}" >/dev/null 2>&1; then
-              if ! aws s3 cp "${LOCAL_PATH}" "s3://${S3_BUCKET}/${OBJECT_KEY}" \
-                --endpoint-url "${S3_ENDPOINT}" \
-                --no-progress; then
+              CONTENT_TYPE="$(file --brief --mime-type "${LOCAL_PATH}" 2>/dev/null || true)"
+              if [ -z "${CONTENT_TYPE}" ]; then
+                case "${EXTENSION}" in
+                  mp4) CONTENT_TYPE="video/mp4" ;;
+                  m4a) CONTENT_TYPE="audio/mp4" ;;
+                  txt) CONTENT_TYPE="text/plain; charset=utf-8" ;;
+                  *) CONTENT_TYPE="application/octet-stream" ;;
+                esac
+              fi
+              if ! aws s3api put-object \
+                --bucket "${S3_BUCKET}" \
+                --key "${OBJECT_KEY}" \
+                --body "${LOCAL_PATH}" \
+                --content-type "${CONTENT_TYPE}" \
+                --endpoint-url "${S3_ENDPOINT}" >/dev/null; then
                 echo "failed to upload ${NAME} to S3" > "${ERROR_FILE}"
                 break
               fi
