@@ -133,7 +133,7 @@ func waitForLoginSuccess(ctx context.Context) error {
 		}
 
 		var currentURL string
-		if err := chromedp.Evaluate(`window.location.href`, &currentURL).Do(ctx); err != nil {
+		if err := chromedp.Run(ctx, chromedp.Evaluate(`window.location.href`, &currentURL)); err != nil {
 			return err
 		}
 
@@ -223,7 +223,7 @@ func saveDebugJSON(path string, value any) error {
 
 func extractQRCodeImageSources(ctx context.Context) ([]string, error) {
 	var sources []string
-	err := chromedp.Evaluate(`(() => {
+	err := chromedp.Run(ctx, chromedp.Evaluate(`(() => {
 		const result = [];
 		const push = (value) => {
 		  if (typeof value === 'string' && value.trim() && !result.includes(value.trim())) {
@@ -252,13 +252,13 @@ func extractQRCodeImageSources(ctx context.Context) ([]string, error) {
 		});
 
 		return result;
-	})()`, &sources).Do(ctx)
+	})()`, &sources))
 	return sources, err
 }
 
 func captureQRCodeScreenshot(ctx context.Context) ([]byte, error) {
 	var rect pageRect
-	err := chromedp.Evaluate(`(() => {
+	err := chromedp.Run(ctx, chromedp.Evaluate(`(() => {
 		const candidates = Array.from(document.querySelectorAll('img'))
 		  .map((img) => {
 		    const rect = img.getBoundingClientRect();
@@ -281,7 +281,7 @@ func captureQRCodeScreenshot(ctx context.Context) ([]byte, error) {
 		  .sort((a, b) => b.area - a.area);
 
 		return candidates[0] || null;
-	})()`, &rect).Do(ctx)
+	})()`, &rect))
 	if err == nil && rect.Width > 0 && rect.Height > 0 {
 		padding := 12.0
 		clip := &cdpage.Viewport{
@@ -291,20 +291,32 @@ func captureQRCodeScreenshot(ctx context.Context) ([]byte, error) {
 			Height: rect.Height + padding*2,
 			Scale:  2,
 		}
-		if screenshot, shotErr := cdpage.CaptureScreenshot().WithFormat(cdpage.CaptureScreenshotFormatPng).WithClip(clip).Do(ctx); shotErr == nil {
+		var screenshot []byte
+		shotErr := chromedp.Run(ctx, chromedp.ActionFunc(func(ctx context.Context) error {
+			var err error
+			screenshot, err = cdpage.CaptureScreenshot().WithFormat(cdpage.CaptureScreenshotFormatPng).WithClip(clip).Do(ctx)
+			return err
+		}))
+		if shotErr == nil {
 			return screenshot, nil
 		}
 	}
 
 	var screenshot []byte
-	if err := chromedp.FullScreenshot(&screenshot, 100).Do(ctx); err != nil {
+	if err := chromedp.Run(ctx, chromedp.FullScreenshot(&screenshot, 100)); err != nil {
 		return nil, err
 	}
 	return screenshot, nil
 }
 
 func captureViewportScreenshot(ctx context.Context) ([]byte, error) {
-	return cdpage.CaptureScreenshot().WithFormat(cdpage.CaptureScreenshotFormatPng).Do(ctx)
+	var screenshot []byte
+	err := chromedp.Run(ctx, chromedp.ActionFunc(func(ctx context.Context) error {
+		var err error
+		screenshot, err = cdpage.CaptureScreenshot().WithFormat(cdpage.CaptureScreenshotFormatPng).Do(ctx)
+		return err
+	}))
+	return screenshot, err
 }
 
 func waitForLoginQRCodeURL(ctx context.Context, debugDir string) (string, []byte, error) {
@@ -482,7 +494,12 @@ func startChromeQRLogin(config *Config, qrOutputPath string) error {
 		return err
 	}
 
-	siteCookies, err := network.GetCookies().Do(ctx)
+	var siteCookies []*network.Cookie
+	err = chromedp.Run(ctx, chromedp.ActionFunc(func(ctx context.Context) error {
+		var innerErr error
+		siteCookies, innerErr = network.GetCookies().Do(ctx)
+		return innerErr
+	}))
 	if err != nil {
 		return fmt.Errorf("获取 Cookies 失败: %w", err)
 	}
