@@ -50,26 +50,21 @@ function renderLoginPage(): string {
       <section class="hero">
         <div class="hero-copy">
           <div class="hero-kicker">GoDingtalk Private Console</div>
-          <h2>更像正式产品首页的私有控制台</h2>
-          <p class="muted">登录后即可创建回放下载任务、启动二维码登录，并由 GitHub Action 自动把 Cookies 回传到 Worker，无需手动上传。</p>
+          <h2>更简洁的登录入口</h2>
+          <p class="muted">登录后即可扫码获取 Cookies、提交直播链接并下载 MP4。</p>
           <div class="actions" style="margin-top:18px;">
             <a class="button-link primary" href="/legal">先看免责声明</a>
-            <a class="button-link" href="/download">查看下载页</a>
+            <a class="button-link" href="/download">进入下载页</a>
           </div>
           <div class="hero-badges">
             <span>自动回传 Cookies</span>
             <span>二维码约 1 分钟</span>
             <span>超 2GB 再清理</span>
           </div>
-          <div class="feature-list">
-            <div class="feature-item"><strong>自动二维码登录</strong><span>通常约 1 分钟出二维码，扫码后再约 1 分钟回传 Cookies。</span></div>
-            <div class="feature-item"><strong>私有下载链路</strong><span>任务、Cookies 和下载结果按用户隔离。</span></div>
-            <div class="feature-item"><strong>条件清理</strong><span>仅当 R2 总占用超过 2GB 时，系统才会清理已超过 24 小时的旧文件。</span></div>
-          </div>
           <div class="mini-steps">
-            <div class="mini-step"><strong>1</strong><span>登录账号</span></div>
-            <div class="mini-step"><strong>2</strong><span>扫码获取 Cookies</span></div>
-            <div class="mini-step"><strong>3</strong><span>提交链接开始下载</span></div>
+            <div class="mini-step"><strong>1</strong><span>登录</span></div>
+            <div class="mini-step"><strong>2</strong><span>扫码</span></div>
+            <div class="mini-step"><strong>3</strong><span>下载</span></div>
           </div>
         </div>
         <div class="card auth-card" id="auth-card">
@@ -232,10 +227,6 @@ export function renderApp(appOrigin: string, page: AppPage): string {
       .hero-copy h2 { margin: 12px 0 0; font-size: 34px; line-height: 1.2; }
       .hero-badges { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 18px; }
       .hero-badges span { padding: 8px 12px; border-radius: 999px; background: #fff; border: 1px solid var(--line); color: var(--primary); font-size: 13px; font-weight: 700; }
-      .feature-list { display: grid; gap: 12px; margin-top: 18px; }
-      .feature-item { padding: 14px; border: 1px solid var(--line); border-radius: 14px; background: rgba(255,255,255,0.85); }
-      .feature-item strong { display: block; }
-      .feature-item span { display: block; margin-top: 6px; color: var(--muted); line-height: 1.6; }
       .mini-steps { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-top: 18px; }
       .mini-step { padding: 14px; border-radius: 14px; background: #0f172a; color: #fff; }
       .mini-step strong { display: inline-flex; width: 28px; height: 28px; align-items: center; justify-content: center; border-radius: 999px; background: rgba(255,255,255,0.14); margin-bottom: 10px; }
@@ -245,6 +236,7 @@ export function renderApp(appOrigin: string, page: AppPage): string {
       .title h1 { margin: 0; font-size: 28px; }
       .title p, .muted { margin: 6px 0 0; color: var(--muted); }
       .nav { display: flex; flex-wrap: wrap; gap: 8px; }
+      .topbar-actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
       .nav a { padding: 10px 14px; border-radius: 999px; text-decoration: none; color: var(--muted); background: #f3f4f6; font-weight: 600; }
       .nav a.active { color: #fff; background: var(--primary); }
       .notice { padding: 12px 14px; border-radius: 12px; font-size: 14px; }
@@ -321,7 +313,10 @@ export function renderApp(appOrigin: string, page: AppPage): string {
           <h1>GoDingtalk</h1>
           <p id="user-chip">未登录</p>
         </div>
-        ${renderNav(page)}
+        <div class="topbar-actions">
+          ${renderNav(page)}
+          <button id="topbar-logout-btn" type="button" class="hidden">退出登录</button>
+        </div>
       </section>
 
       <div id="notice" class="notice ok hidden"></div>
@@ -354,6 +349,7 @@ export function renderApp(appOrigin: string, page: AppPage): string {
         loginBtn: document.getElementById("login-btn"),
         registerBtn: document.getElementById("register-btn"),
         logoutBtn: document.getElementById("logout-btn"),
+        topbarLogoutBtn: document.getElementById("topbar-logout-btn"),
         urls: document.getElementById("urls"),
         createJobBtn: document.getElementById("create-job-btn"),
         refreshBtn: document.getElementById("refresh-btn"),
@@ -479,12 +475,14 @@ export function renderApp(appOrigin: string, page: AppPage): string {
           if (el.loginBtn) el.loginBtn.classList.add("hidden");
           if (el.registerBtn) el.registerBtn.classList.add("hidden");
           if (el.logoutBtn) el.logoutBtn.classList.remove("hidden");
+          if (el.topbarLogoutBtn) el.topbarLogoutBtn.classList.remove("hidden");
           if (el.authCardHint) el.authCardHint.textContent = "你已登录，可以直接去下载、二维码登录或账号页操作。";
           if (el.loginNavLink) el.loginNavLink.classList.add("hidden");
         } else {
           if (el.userChip) el.userChip.textContent = "未登录";
           if (el.loginBtn) el.loginBtn.classList.remove("hidden");
           if (el.logoutBtn) el.logoutBtn.classList.add("hidden");
+          if (el.topbarLogoutBtn) el.topbarLogoutBtn.classList.add("hidden");
           if (el.authCardHint) el.authCardHint.textContent = "登录后才能使用下载、二维码登录和账号管理功能。";
           if (el.loginNavLink) el.loginNavLink.classList.remove("hidden");
           if (el.registerBtn) {
@@ -829,6 +827,7 @@ export function renderApp(appOrigin: string, page: AppPage): string {
       if (el.loginBtn) el.loginBtn.addEventListener("click", async () => { setBusy(el.loginBtn, true); try { await login(); } catch (error) { setNotice(error.message, "error"); } finally { setBusy(el.loginBtn, false); } });
       if (el.registerBtn) el.registerBtn.addEventListener("click", async () => { setBusy(el.registerBtn, true); try { await registerUser(); } catch (error) { setNotice(error.message, "error"); } finally { setBusy(el.registerBtn, false); } });
       if (el.logoutBtn) el.logoutBtn.addEventListener("click", async () => { setBusy(el.logoutBtn, true); try { await logout(); setNotice("已退出登录。", "ok"); } catch (error) { setNotice(error.message, "error"); } finally { setBusy(el.logoutBtn, false); } });
+      if (el.topbarLogoutBtn) el.topbarLogoutBtn.addEventListener("click", async () => { setBusy(el.topbarLogoutBtn, true); try { await logout(); setNotice("已退出登录。", "ok"); } catch (error) { setNotice(error.message, "error"); } finally { setBusy(el.topbarLogoutBtn, false); } });
       if (el.createJobBtn) el.createJobBtn.addEventListener("click", async () => { setBusy(el.createJobBtn, true); try { await createJob(); } catch (error) { setNotice(error.message, "error"); } finally { setBusy(el.createJobBtn, false); } });
       if (el.refreshBtn) el.refreshBtn.addEventListener("click", async () => { try { await refreshAll(); } catch (error) { setNotice(error.message, "error"); } });
       if (el.startLoginWorkflowBtn) el.startLoginWorkflowBtn.addEventListener("click", async () => { setBusy(el.startLoginWorkflowBtn, true); try { await startLoginWorkflow(); } catch (error) { setNotice(error.message, "error"); } finally { setBusy(el.startLoginWorkflowBtn, false); } });
