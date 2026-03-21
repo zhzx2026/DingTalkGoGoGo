@@ -72,7 +72,10 @@ jobs:
           RESULT_FILE="${RUNNER_TEMP}/job-result.json"
           UPLOAD_FILE="${RUNNER_TEMP}/uploaded-files.json"
           ERROR_FILE="${RUNNER_TEMP}/upload-error.txt"
+          MANIFEST_FILE="${RUNNER_TEMP}/upload-manifest.jsonl"
+          SAVE_DIR="${RUNNER_TEMP}/godingtalk"
           echo '[]' > "${UPLOAD_FILE}"
+          : > "${MANIFEST_FILE}"
 
           if [ ! -f "${RESULT_FILE}" ]; then
             exit 0
@@ -80,6 +83,27 @@ jobs:
 
           if [ -f "${ERROR_FILE}" ]; then
             exit 0
+          fi
+
+          jq -cr '.files[]? | {
+            local_path: .local_path,
+            relative_path: (.relative_path // .name // ""),
+            name: (.name // (.local_path | split("/") | last)),
+            size_bytes: (.size_bytes // 0)
+          }' "${RESULT_FILE}" >> "${MANIFEST_FILE}"
+
+          if [ ! -s "${MANIFEST_FILE}" ] && [ -d "${SAVE_DIR}" ]; then
+            while IFS= read -r -d '' file; do
+              rel="${file#"${SAVE_DIR}/"}"
+              name="$(basename "${file}")"
+              size="$(stat -c%s "${file}")"
+              jq -cn \
+                --arg local_path "${file}" \
+                --arg relative_path "${rel}" \
+                --arg name "${name}" \
+                --argjson size_bytes "${size:-0}" \
+                '{local_path:$local_path, relative_path:$relative_path, name:$name, size_bytes:$size_bytes}' >> "${MANIFEST_FILE}"
+            done < <(find "${SAVE_DIR}" -type f \( -iname '*.mp4' -o -iname '*.m4a' -o -iname '*.txt' \) -print0)
           fi
 
           while IFS= read -r entry; do
@@ -117,7 +141,7 @@ jobs:
               }]' \
               "${UPLOAD_FILE}" > "${TMP_FILE}"
             mv "${TMP_FILE}" "${UPLOAD_FILE}"
-          done < <(jq -r '.files[]? | @base64' "${RESULT_FILE}")
+          done < <(while IFS= read -r line; do printf '%s' "${line}" | base64 | tr -d '\n'; printf '\n'; done < "${MANIFEST_FILE}")
 
       - name: Finalize remote job
         if: always()
