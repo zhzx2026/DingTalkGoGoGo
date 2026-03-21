@@ -81,7 +81,7 @@ jobs:
             exit 0
           fi
 
-          if [ -f "${ERROR_FILE}" ]; then
+          if [ -s "${ERROR_FILE}" ]; then
             exit 0
           fi
 
@@ -112,8 +112,23 @@ jobs:
             RELATIVE_PATH="$(printf '%s' "${JSON}" | jq -r '.relative_path')"
             NAME="$(printf '%s' "${JSON}" | jq -r '.name')"
             SIZE_BYTES="$(printf '%s' "${JSON}" | jq -r '.size_bytes')"
-            SAFE_NAME="$(basename "${NAME}")"
-            OBJECT_KEY="dedup/${SAFE_NAME}"
+            BASENAME="$(basename "${NAME}")"
+            EXTENSION="${BASENAME##*.}"
+            if [ "${EXTENSION}" = "${BASENAME}" ]; then
+              EXTENSION=""
+              RAW_TITLE="${BASENAME}"
+            else
+              RAW_TITLE="${BASENAME%.*}"
+            fi
+            MD5_FULL="$(md5sum "${LOCAL_PATH}" | awk '{print $1}')"
+            MD5_SHORT="$(printf '%s' "${MD5_FULL}" | cut -c1-8)"
+            if [ -n "${EXTENSION}" ]; then
+              DISPLAY_NAME="${RAW_TITLE}-${MD5_SHORT}.${EXTENSION}"
+              OBJECT_KEY="dedup/${MD5_FULL}.${EXTENSION}"
+            else
+              DISPLAY_NAME="${RAW_TITLE}-${MD5_SHORT}"
+              OBJECT_KEY="dedup/${MD5_FULL}"
+            fi
 
             if ! aws s3api head-object \
               --bucket "${R2_BUCKET}" \
@@ -129,7 +144,7 @@ jobs:
 
             TMP_FILE="$(mktemp)"
             jq \
-              --arg name "${NAME}" \
+              --arg name "${DISPLAY_NAME}" \
               --arg relative_path "${RELATIVE_PATH}" \
               --arg bucket_key "${OBJECT_KEY}" \
               --argjson size_bytes "${SIZE_BYTES:-0}" \
