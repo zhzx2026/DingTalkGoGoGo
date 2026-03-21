@@ -31,7 +31,7 @@ def region_candidates(endpoint: str, configured: str) -> list[str]:
     return items
 
 
-def put_object(endpoint: str, bucket: str, key: str, body: bytes, content_type: str, access_key: str, secret_key: str, region: str, unsigned_payload: bool) -> tuple[int, str]:
+def put_object(endpoint: str, bucket: str, key: str, body: bytes, content_type: str, access_key: str, secret_key: str, region: str, unsigned_payload: bool, timeout_seconds: int) -> tuple[int, str]:
     amz_date = dt.datetime.utcnow().strftime("%Y%m%dT%H%M%SZ")
     short_date = amz_date[:8]
     parsed = urllib.parse.urlparse(endpoint)
@@ -78,10 +78,12 @@ def put_object(endpoint: str, bucket: str, key: str, body: bytes, content_type: 
     request.add_header("x-amz-date", amz_date)
     request.add_header("Authorization", authorization)
     try:
-        with urllib.request.urlopen(request, timeout=120) as response:
+        with urllib.request.urlopen(request, timeout=timeout_seconds) as response:
             return response.status, response.read(256).decode("utf-8", "ignore")
     except urllib.error.HTTPError as error:
         return error.code, error.read(512).decode("utf-8", "ignore")
+    except urllib.error.URLError as error:
+        return 599, str(error.reason)
 
 
 def main() -> int:
@@ -94,6 +96,7 @@ def main() -> int:
     parser.add_argument("--secret-key", required=True)
     parser.add_argument("--region", default="us-east-1")
     parser.add_argument("--content-type", default="application/octet-stream")
+    parser.add_argument("--timeout-seconds", type=int, default=3600)
     args = parser.parse_args()
 
     body = Path(args.file).read_bytes()
@@ -111,6 +114,7 @@ def main() -> int:
                 secret_key=args.secret_key,
                 region=region,
                 unsigned_payload=unsigned_payload,
+                timeout_seconds=max(300, args.timeout_seconds),
             )
             if 200 <= status < 300:
                 mode = "unsigned" if unsigned_payload else "hashed"
