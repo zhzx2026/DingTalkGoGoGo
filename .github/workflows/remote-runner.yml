@@ -88,14 +88,19 @@ jobs:
             RELATIVE_PATH="$(printf '%s' "${JSON}" | jq -r '.relative_path')"
             NAME="$(printf '%s' "${JSON}" | jq -r '.name')"
             SIZE_BYTES="$(printf '%s' "${JSON}" | jq -r '.size_bytes')"
-            SAFE_RELATIVE_PATH="$(printf '%s' "${RELATIVE_PATH}" | tr '/ ' '--')"
-            OBJECT_KEY="${JOB_ID}/${SAFE_RELATIVE_PATH}"
+            SAFE_NAME="$(basename "${NAME}")"
+            OBJECT_KEY="dedup/${SAFE_NAME}"
 
-            if ! aws s3 cp "${LOCAL_PATH}" "s3://${R2_BUCKET}/${OBJECT_KEY}" \
-              --endpoint-url "${R2_ENDPOINT}" \
-              --no-progress; then
-              echo "failed to upload ${NAME} to R2" > "${ERROR_FILE}"
-              break
+            if ! aws s3api head-object \
+              --bucket "${R2_BUCKET}" \
+              --key "${OBJECT_KEY}" \
+              --endpoint-url "${R2_ENDPOINT}" >/dev/null 2>&1; then
+              if ! aws s3 cp "${LOCAL_PATH}" "s3://${R2_BUCKET}/${OBJECT_KEY}" \
+                --endpoint-url "${R2_ENDPOINT}" \
+                --no-progress; then
+                echo "failed to upload ${NAME} to R2" > "${ERROR_FILE}"
+                break
+              fi
             fi
 
             TMP_FILE="$(mktemp)"

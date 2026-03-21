@@ -1053,10 +1053,25 @@ async function cleanupExpiredFiles(env: Env): Promise<{ jobs: number; files: num
     .all<{ files_json: string }>();
 
   const usageRows = Array.isArray(usageResult.results) ? usageResult.results : [];
+  const bucketStats = new Map<string, { refs: number; size: number }>();
   let totalBytes = 0;
+
   for (const row of usageRows) {
     const files = parseJSON<JobFileRecord[]>(row.files_json, []);
-    totalBytes += files.reduce((sum, file) => sum + toNumber(file.size_bytes), 0);
+    for (const file of files) {
+      const key = (file.bucket_key || "").trim();
+      if (!key) {
+        continue;
+      }
+      const current = bucketStats.get(key);
+      if (current) {
+        current.refs += 1;
+      } else {
+        const size = toNumber(file.size_bytes);
+        bucketStats.set(key, { refs: 1, size });
+        totalBytes += size;
+      }
+    }
   }
 
   if (totalBytes <= FILE_RETENTION_LIMIT_BYTES) {
@@ -1090,14 +1105,47 @@ async function cleanupExpiredFiles(env: Env): Promise<{ jobs: number; files: num
     }
 
     const files = parseJSON<JobFileRecord[]>(row.files_json, []);
-    const keys = files
-      .map((file) => file.bucket_key || "")
-      .filter((key) => key.trim().length > 0);
-    const releasedBytes = files.reduce((sum, file) => sum + toNumber(file.size_bytes), 0);
+    const deletableFiles: JobFileRecord[] = [];
+    const keptFiles: JobFileRecord[] = [];
+
+    for (const file of files) {
+      const key = (file.bucket_key || "").trim();
+      if (!key) {
+        keptFiles.push(file);
+        continue;
+      }
+      const stat = bucketStats.get(key);
+      if (stat && stat.refs <= 1) {
+        deletableFiles.push(file);
+      } else {
+        keptFiles.push(file);
+      }
+    }
+
+    if (deletableFiles.length === 0) {
+      continue;
+    }
+
+    const keys = deletableFiles
+      .map((file) => (file.bucket_key || "").trim())
+      .filter((key) => key.length > 0);
 
     if (keys.length > 0) {
       await (env.FILES as unknown as { delete(keys: string[]): Promise<void> }).delete(keys);
       deletedFiles += keys.length;
+    }
+
+    let releasedBytes = 0;
+    for (const file of deletableFiles) {
+      const key = (file.bucket_key || "").trim();
+      if (!key) {
+        continue;
+      }
+      const stat = bucketStats.get(key);
+      if (stat) {
+        releasedBytes += stat.size;
+        bucketStats.delete(key);
+      }
     }
 
     const nextErrors = Array.from(new Set([
@@ -1108,12 +1156,12 @@ async function cleanupExpiredFiles(env: Env): Promise<{ jobs: number; files: num
     await env.DB
       .prepare(
         `UPDATE jobs
-         SET files_json = '[]',
-             errors_json = ?2,
-             updated_at = ?3
+         SET files_json = ?2,
+             errors_json = ?3,
+             updated_at = ?4
          WHERE id = ?1`,
       )
-      .bind(row.id, JSON.stringify(nextErrors), nowISO())
+      .bind(row.id, JSON.stringify(keptFiles), JSON.stringify(nextErrors), nowISO())
       .run();
 
     cleanedJobs++;
