@@ -20,3 +20,6 @@ database_id = "12f5efa5-c6f4-4ac9-9089-620818102c5b"
 binding = "FILES"
 bucket_name = "godingtalk-files"
 preview_bucket_name = "godingtalk-files-preview"
+
+[triggers]
+crons = ["*/15 * * * *"]

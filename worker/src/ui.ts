@@ -46,23 +46,35 @@ function renderDownloadPage(): string {
 
 function renderLoginPage(): string {
   return `
-      <section class="card">
-        <h2>登录 / 注册</h2>
-        <p class="muted">登录后才能使用下载、二维码登录和账号管理功能。</p>
-        <div class="auth-grid">
-          <div class="field">
-            <label for="auth-username">用户名</label>
-            <input id="auth-username" placeholder="至少 3 位" />
-          </div>
-          <div class="field">
-            <label for="auth-password">密码</label>
-            <input id="auth-password" type="password" placeholder="至少 6 位" />
+      <section class="hero">
+        <div class="hero-copy">
+          <div class="hero-kicker">GoDingtalk Private Console</div>
+          <h2>把钉钉回放下载、二维码登录和账号管理放到一个简洁控制台里</h2>
+          <p class="muted">登录后即可创建下载任务、启动二维码登录，并由 Action 自动把 Cookies 回传到 Worker。</p>
+          <div class="feature-list">
+            <div class="feature-item"><strong>自动二维码登录</strong><span>通常约 1 分钟出二维码，扫码后再约 1 分钟回传 Cookies。</span></div>
+            <div class="feature-item"><strong>私有下载链路</strong><span>任务、Cookies 和下载结果按用户隔离。</span></div>
+            <div class="feature-item"><strong>到期自动清理</strong><span>上传到 R2 的下载文件会在 24 小时后自动删除。</span></div>
           </div>
         </div>
-        <div class="actions">
-          <button id="login-btn" class="primary" type="button">登录</button>
-          <button id="register-btn" type="button">注册</button>
-          <button id="logout-btn" type="button" class="hidden">退出登录</button>
+        <div class="card auth-card" id="auth-card">
+          <h2>登录 / 注册</h2>
+          <p class="muted" id="auth-card-hint">登录后才能使用下载、二维码登录和账号管理功能。</p>
+          <div class="auth-grid">
+            <div class="field">
+              <label for="auth-username">用户名</label>
+              <input id="auth-username" placeholder="至少 3 位" />
+            </div>
+            <div class="field">
+              <label for="auth-password">密码</label>
+              <input id="auth-password" type="password" placeholder="至少 6 位" />
+            </div>
+          </div>
+          <div class="actions">
+            <button id="login-btn" class="primary" type="button">登录</button>
+            <button id="register-btn" type="button">注册</button>
+            <button id="logout-btn" type="button" class="hidden">退出登录</button>
+          </div>
         </div>
       </section>`;
 }
@@ -118,6 +130,10 @@ function renderAccountPage(): string {
           <label for="new-password">新密码</label>
           <input id="new-password" type="password" placeholder="至少 6 位" />
         </div>
+        <div class="field">
+          <label for="confirm-new-password">确认新密码</label>
+          <input id="confirm-new-password" type="password" placeholder="再次输入新密码" />
+        </div>
         <div class="actions">
           <button id="change-password-btn" class="primary" type="button">修改密码</button>
         </div>
@@ -146,8 +162,13 @@ function renderLegalPage(): string {
           <h3>七、法律提示</h3>
           <p>本免责声明旨在强化风险提示、授权确认和责任分配，但其具体法律效力仍受适用法律、事实背景及司法解释影响。若要获得可执行、完整且适用于你业务场景的法律文本，应由持牌律师审阅并定稿。</p>
         </div>
+        <label class="checkbox-row">
+          <input id="legal-confirm-check" type="checkbox" />
+          <span>我确认：我已完整阅读以上全部条款，理解风险，并自愿承担全部责任。</span>
+        </label>
+        <div class="notice warn">重要提示：一旦点击“我已阅读并接受”，系统将记录你的接受时间和版本。该确认在系统内视为不可撤销。</div>
         <div class="actions">
-          <button id="accept-legal-btn" class="primary" type="button">我已阅读并接受</button>
+          <button id="accept-legal-btn" class="primary" type="button" disabled>我已阅读并接受</button>
         </div>
       </section>`;
 }
@@ -200,6 +221,15 @@ export function renderApp(appOrigin: string, page: AppPage): string {
       a { color: inherit; }
       .wrap { max-width: 1080px; margin: 0 auto; display: grid; gap: 16px; }
       .topbar, .card, .metric, .job { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow); }
+      .hero { display: grid; grid-template-columns: 1.2fr 0.9fr; gap: 16px; align-items: stretch; }
+      .hero-copy { padding: 28px; border: 1px solid var(--line); border-radius: var(--radius); background: linear-gradient(135deg, #eef4ff 0%, #ffffff 100%); box-shadow: var(--shadow); }
+      .hero-kicker { color: var(--primary); font-size: 12px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; }
+      .hero-copy h2 { margin: 12px 0 0; font-size: 34px; line-height: 1.2; }
+      .feature-list { display: grid; gap: 12px; margin-top: 18px; }
+      .feature-item { padding: 14px; border: 1px solid var(--line); border-radius: 14px; background: rgba(255,255,255,0.85); }
+      .feature-item strong { display: block; }
+      .feature-item span { display: block; margin-top: 6px; color: var(--muted); line-height: 1.6; }
+      .auth-card { align-self: stretch; }
       .topbar { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 20px; }
       .title h1 { margin: 0; font-size: 28px; }
       .title p, .muted { margin: 6px 0 0; color: var(--muted); }
@@ -250,11 +280,14 @@ export function renderApp(appOrigin: string, page: AppPage): string {
       .legal-text { margin-top: 14px; display: grid; gap: 10px; line-height: 1.75; }
       .legal-text h3 { margin: 12px 0 0; font-size: 16px; }
       .legal-text p { margin: 0; color: var(--text); }
+      .checkbox-row { display: flex; gap: 10px; align-items: flex-start; margin-top: 16px; line-height: 1.7; }
+      .checkbox-row input { width: 18px; height: 18px; margin-top: 3px; }
       .small { font-size: 13px; }
       .hidden { display: none !important; }
       @media (max-width: 760px) {
         body { padding: 14px; }
-        .topbar, .job-top { flex-direction: column; align-items: flex-start; }
+        .topbar, .job-top, .hero { flex-direction: column; align-items: flex-start; }
+        .hero { grid-template-columns: 1fr; }
         .auth-grid, .stats { grid-template-columns: 1fr; }
       }
     </style>
@@ -291,6 +324,7 @@ export function renderApp(appOrigin: string, page: AppPage): string {
         userChip: document.getElementById("user-chip"),
         authUsername: document.getElementById("auth-username"),
         authPassword: document.getElementById("auth-password"),
+        authCardHint: document.getElementById("auth-card-hint"),
         loginBtn: document.getElementById("login-btn"),
         registerBtn: document.getElementById("register-btn"),
         logoutBtn: document.getElementById("logout-btn"),
@@ -312,9 +346,11 @@ export function renderApp(appOrigin: string, page: AppPage): string {
         jobs: document.getElementById("jobs"),
         currentPassword: document.getElementById("current-password"),
         newPassword: document.getElementById("new-password"),
+        confirmNewPassword: document.getElementById("confirm-new-password"),
         changePasswordBtn: document.getElementById("change-password-btn"),
         accountSummary: document.getElementById("account-summary"),
         acceptLegalBtn: document.getElementById("accept-legal-btn"),
+        legalConfirmCheck: document.getElementById("legal-confirm-check"),
         legalState: document.getElementById("legal-state"),
         legalWarning: document.getElementById("legal-warning"),
         loginLegalWarning: document.getElementById("login-legal-warning"),
@@ -429,10 +465,12 @@ export function renderApp(appOrigin: string, page: AppPage): string {
           if (el.loginBtn) el.loginBtn.classList.add("hidden");
           if (el.registerBtn) el.registerBtn.classList.add("hidden");
           if (el.logoutBtn) el.logoutBtn.classList.remove("hidden");
+          if (el.authCardHint) el.authCardHint.textContent = "你已登录，可以直接去下载、二维码登录或账号页操作。";
         } else {
           if (el.userChip) el.userChip.textContent = "未登录";
           if (el.loginBtn) el.loginBtn.classList.remove("hidden");
           if (el.logoutBtn) el.logoutBtn.classList.add("hidden");
+          if (el.authCardHint) el.authCardHint.textContent = "登录后才能使用下载、二维码登录和账号管理功能。";
           if (el.registerBtn) {
             if (state.registrationOpen) el.registerBtn.classList.remove("hidden"); else el.registerBtn.classList.add("hidden");
           }
@@ -640,12 +678,16 @@ export function renderApp(appOrigin: string, page: AppPage): string {
 
       async function changePassword() {
         if (!state.authenticated) throw new Error("请先登录。");
+        if ((el.newPassword.value || "").trim() !== (el.confirmNewPassword.value || "").trim()) {
+          throw new Error("两次输入的新密码不一致。");
+        }
         const payload = await request("/api/auth/password", {
           method: "POST",
           body: JSON.stringify({ current_password: (el.currentPassword.value || "").trim(), new_password: (el.newPassword.value || "").trim() }),
         });
         if (el.currentPassword) el.currentPassword.value = "";
         if (el.newPassword) el.newPassword.value = "";
+        if (el.confirmNewPassword) el.confirmNewPassword.value = "";
         setNotice(payload.message || "密码已更新。", "ok");
       }
 
@@ -668,6 +710,7 @@ export function renderApp(appOrigin: string, page: AppPage): string {
       if (el.startLoginWorkflowBtn) el.startLoginWorkflowBtn.addEventListener("click", async () => { setBusy(el.startLoginWorkflowBtn, true); try { await startLoginWorkflow(); } catch (error) { setNotice(error.message, "error"); } finally { setBusy(el.startLoginWorkflowBtn, false); } });
       if (el.changePasswordBtn) el.changePasswordBtn.addEventListener("click", async () => { setBusy(el.changePasswordBtn, true); try { await changePassword(); } catch (error) { setNotice(error.message, "error"); } finally { setBusy(el.changePasswordBtn, false); } });
       if (el.acceptLegalBtn) el.acceptLegalBtn.addEventListener("click", async () => { setBusy(el.acceptLegalBtn, true); try { await acceptLegal(); } catch (error) { setNotice(error.message, "error"); } finally { setBusy(el.acceptLegalBtn, false); } });
+      if (el.legalConfirmCheck && el.acceptLegalBtn) el.legalConfirmCheck.addEventListener("change", () => { el.acceptLegalBtn.disabled = !el.legalConfirmCheck.checked; });
       if (el.exampleCookiesBtn) el.exampleCookiesBtn.addEventListener("click", () => { if (!el.cookies) return; el.cookies.value = JSON.stringify({ LV_PC_SESSION: "replace-me" }, null, 2); });
 
       decodeImportPayload();

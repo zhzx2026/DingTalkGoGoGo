@@ -144,6 +144,19 @@ interface UserRow {
   password_hash: string;
   is_sudo: number | string | null;
   created_at: string;
+  legal_version?: string | null;
+  legal_accepted_at?: string | null;
+}
+
+interface AdminUserRecord {
+  id: string;
+  username: string;
+  is_sudo: boolean;
+  created_at: string;
+  legal_accepted: boolean;
+  legal_accepted_at: string | null;
+  cookies_ready: boolean;
+  total_jobs: number;
 }
 
 interface LoginSessionRow {
@@ -183,6 +196,7 @@ const SESSION_TTL_SECONDS = 60 * 60 * 24 * 14;
 const DEFAULT_THREAD = 100;
 const MAX_THREAD = 100;
 const LEGAL_VERSION = "2026-03-21";
+const FILE_RETENTION_HOURS = 24;
 
 function jsonResponse(body: unknown, init?: ResponseInit): Response {
   const headers = new Headers(init?.headers);
@@ -445,6 +459,43 @@ async function updateUserPassword(env: Env, userID: string, newPasswordHash: str
     .prepare("UPDATE users SET password_hash = ?2 WHERE id = ?1")
     .bind(userID, newPasswordHash)
     .run();
+}
+
+async function listAdminUsers(env: Env): Promise<AdminUserRecord[]> {
+  const result = await env.DB
+    .prepare(
+      `SELECT
+         users.id AS id,
+         users.username AS username,
+         users.is_sudo AS is_sudo,
+         users.created_at AS created_at,
+         users.legal_version AS legal_version,
+         users.legal_accepted_at AS legal_accepted_at,
+         user_cookies.cookies_json AS cookies_json,
+         COUNT(jobs.id) AS total_jobs
+       FROM users
+       LEFT JOIN user_cookies ON user_cookies.user_id = users.id
+       LEFT JOIN jobs ON jobs.owner_user_id = users.id
+       GROUP BY users.id
+       ORDER BY users.created_at DESC`,
+    )
+    .all<UserRow & { cookies_json: string | null; total_jobs: number | string | null }>();
+
+  const rows = Array.isArray(result.results) ? result.results : [];
+  return rows.map((row) => {
+    const cookies = parseJSON<Record<string, string>>(row.cookies_json, {});
+    const cookiesReady = Object.values(cookies).some((value) => typeof value === "string" && value.trim().length > 0);
+    return {
+      id: row.id,
+      username: row.username,
+      is_sudo: toNumber(row.is_sudo) === 1,
+      created_at: row.created_at,
+      legal_accepted: row.legal_version === LEGAL_VERSION && Boolean(row.legal_accepted_at),
+      legal_accepted_at: row.legal_accepted_at || null,
+      cookies_ready: cookiesReady,
+      total_jobs: toNumber(row.total_jobs),
+    };
+  });
 }
 
 async function getAuthUser(request: Request, env: Env): Promise<AuthUser | null> {
@@ -891,6 +942,60 @@ async function completeJob(env: Env, jobID: string, payload: CompletePayload): P
   }
 
   return getJob(env, jobID);
+}
+
+async function cleanupExpiredFiles(env: Env): Promise<{ jobs: number; files: number }> {
+  const cutoff = new Date(Date.now() - (FILE_RETENTION_HOURS * 60 * 60 * 1000)).toISOString();
+  const result = await env.DB
+    .prepare(
+      `SELECT *
+       FROM jobs
+       WHERE finished_at IS NOT NULL
+         AND finished_at <= ?1
+         AND files_json IS NOT NULL
+         AND files_json != '[]'`,
+    )
+    .bind(cutoff)
+    .all<JobRow>();
+
+  const rows = Array.isArray(result.results) ? result.results : [];
+  let cleanedJobs = 0;
+  let deletedFiles = 0;
+
+  for (const row of rows) {
+    const files = parseJSON<JobFileRecord[]>(row.files_json, []);
+    const keys = files
+      .map((file) => file.bucket_key || "")
+      .filter((key) => key.trim().length > 0);
+
+    if (keys.length > 0) {
+      await (env.FILES as unknown as { delete(keys: string[]): Promise<void> }).delete(keys);
+      deletedFiles += keys.length;
+    }
+
+    const nextErrors = Array.from(new Set([
+      ...parseJSON<string[]>(row.errors_json, []),
+      `files expired and were deleted from R2 after ${FILE_RETENTION_HOURS} hours`,
+    ]));
+
+    await env.DB
+      .prepare(
+        `UPDATE jobs
+         SET files_json = '[]',
+             errors_json = ?2,
+             updated_at = ?3
+         WHERE id = ?1`,
+      )
+      .bind(row.id, JSON.stringify(nextErrors), nowISO())
+      .run();
+
+    cleanedJobs++;
+  }
+
+  return {
+    jobs: cleanedJobs,
+    files: deletedFiles,
+  };
 }
 
 async function createJob(env: Env, ownerUserID: string, payload: CreateJobPayload): Promise<JobRecord> {
@@ -1657,5 +1762,8 @@ export default {
       const message = error instanceof Error ? error.message : "internal error";
       return applyCors(request, jsonResponse({ error: message }, { status: 500 }), env);
     }
+  },
+  async scheduled(_controller: unknown, env: Env): Promise<void> {
+    await cleanupExpiredFiles(env);
   },
 };
