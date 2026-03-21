@@ -37,7 +37,7 @@ jobs:
         shell: powershell
         run: |
           if (-not $env:CONTROL_URL -or -not $env:INTERNAL_TOKEN -or -not $env:LOGIN_SESSION_ID) {
-            throw "Missing CONTROL_URL, INTERNAL_TOKEN, or LOGIN_SESSION_ID"
+            exit 0
           }
 
           $workDir = "$env:RUNNER_TEMP\godingtalk-login"
@@ -67,13 +67,29 @@ jobs:
             Stop-Process -Id $process.Id -Force -ErrorAction SilentlyContinue
             $body = @{ error = "QR URL not found" } | ConvertTo-Json -Compress
             Invoke-RestMethod -Method Post -Uri "$env:CONTROL_URL/internal/login-sessions/$env:LOGIN_SESSION_ID/complete" -Headers $headers -ContentType "application/json" -Body $body
-            throw "QR URL not found"
+            exit 0
           }
 
           $qrBody = @{ qr_url = $qrUrl } | ConvertTo-Json -Compress
           Invoke-RestMethod -Method Post -Uri "$env:CONTROL_URL/internal/login-sessions/$env:LOGIN_SESSION_ID/qr" -Headers $headers -ContentType "application/json" -Body $qrBody
 
-          Wait-Process -Id $process.Id
+          $loginSucceeded = $false
+          for ($i = 0; $i -lt 60; $i++) {
+            if (Test-Path $cookiesFile) {
+              $loginSucceeded = $true
+              break
+            }
+            if ($process.HasExited) { break }
+            Start-Sleep -Seconds 1
+            $process.Refresh()
+          }
+
+          if (-not $loginSucceeded) {
+            Stop-Process -Id $process.Id -Force -ErrorAction SilentlyContinue
+            $body = @{ error = "QR code expired after 60 seconds without a completed scan" } | ConvertTo-Json -Compress
+            Invoke-RestMethod -Method Post -Uri "$env:CONTROL_URL/internal/login-sessions/$env:LOGIN_SESSION_ID/complete" -Headers $headers -ContentType "application/json" -Body $body
+            exit 0
+          }
 
           if (Test-Path $cookiesFile) {
             $cookies = Get-Content $cookiesFile -Raw | ConvertFrom-Json
@@ -82,9 +98,5 @@ jobs:
           } else {
             $body = @{ error = "cookies file not found" } | ConvertTo-Json -Compress
             Invoke-RestMethod -Method Post -Uri "$env:CONTROL_URL/internal/login-sessions/$env:LOGIN_SESSION_ID/complete" -Headers $headers -ContentType "application/json" -Body $body
-            throw "cookies file not found"
-          }
-
-          if ($process.ExitCode -ne 0) {
-            throw "GoDingtalk exited with code $($process.ExitCode)"
+            exit 0
           }

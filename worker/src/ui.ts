@@ -51,6 +51,10 @@ function renderLoginPage(): string {
           <div class="hero-kicker">GoDingtalk Private Console</div>
           <h2>把钉钉回放下载、二维码登录和账号管理放到一个简洁控制台里</h2>
           <p class="muted">登录后即可创建下载任务、启动二维码登录，并由 Action 自动把 Cookies 回传到 Worker。</p>
+          <div class="actions" style="margin-top:18px;">
+            <a class="button-link primary" href="/legal">先看免责声明</a>
+            <a class="button-link" href="/download">查看下载页</a>
+          </div>
           <div class="feature-list">
             <div class="feature-item"><strong>自动二维码登录</strong><span>通常约 1 分钟出二维码，扫码后再约 1 分钟回传 Cookies。</span></div>
             <div class="feature-item"><strong>私有下载链路</strong><span>任务、Cookies 和下载结果按用户隔离。</span></div>
@@ -85,6 +89,7 @@ function renderSettingsPage(installURL: string): string {
         <h2>二维码登录</h2>
         <p class="muted">点击后会启动 Action。通常约 <strong>1 分钟</strong> 出二维码；扫码后通常约 <strong>1 分钟</strong> 内自动回传 Cookies。</p>
         <div id="login-legal-warning" class="notice error hidden"></div>
+        <div class="notice warn">如果当前 Cookies 仍然有效，请不要重复扫码登录，以免触发平台风控。</div>
         <div class="actions">
           <button id="start-login-workflow-btn" class="primary" type="button">启动二维码登录</button>
         </div>
@@ -313,6 +318,7 @@ export function renderApp(appOrigin: string, page: AppPage): string {
         legalVersion: "",
         user: null,
         loginSessionId: "",
+        loginSessionStatus: "",
       };
 
       const el = {
@@ -476,6 +482,10 @@ export function renderApp(appOrigin: string, page: AppPage): string {
             if (state.registrationOpen) el.registerBtn.classList.remove("hidden"); else el.registerBtn.classList.add("hidden");
           }
         }
+        if (el.startLoginWorkflowBtn) {
+          const busyLogin = state.loginSessionStatus === "pending" || state.loginSessionStatus === "qr_ready";
+          el.startLoginWorkflowBtn.disabled = !state.authenticated || !state.legalAccepted || busyLogin;
+        }
         renderLegalState();
         renderAccountState();
       }
@@ -572,9 +582,12 @@ export function renderApp(appOrigin: string, page: AppPage): string {
         if (!session) {
           el.loginBox.classList.add("hidden");
           el.loginQRImage.classList.add("hidden");
+          state.loginSessionStatus = "";
+          renderAuthState();
           return;
         }
         state.loginSessionId = session.id || state.loginSessionId;
+        state.loginSessionStatus = session.status || "";
         el.loginBox.classList.remove("hidden");
         if (session.status === "pending") {
           el.loginStatus.textContent = "已启动，等待二维码";
@@ -594,6 +607,7 @@ export function renderApp(appOrigin: string, page: AppPage): string {
           el.loginHint.textContent = session.error_message || "请重试。";
           el.loginQRImage.classList.add("hidden");
         }
+        renderAuthState();
       }
 
       function decodeImportPayload() {

@@ -40,14 +40,16 @@ jobs:
         run: go build -o GoDingtalk .
 
       - name: Validate private storage configuration
+        continue-on-error: true
         run: |
+          : > "${RUNNER_TEMP}/upload-error.txt"
           if [ -z "${R2_BUCKET}" ]; then
             echo "R2_BUCKET is empty, fallback to godingtalk-files"
             echo "R2_BUCKET=godingtalk-files" >> "$GITHUB_ENV"
           fi
           if [ -z "${R2_ACCOUNT_ID}" ] || [ -z "${AWS_ACCESS_KEY_ID}" ] || [ -z "${AWS_SECRET_ACCESS_KEY}" ]; then
-            echo "Missing Cloudflare R2 credentials. Please set CLOUDFLARE_ACCOUNT_ID, GODINGTALK_R2_ACCESS_KEY_ID, GODINGTALK_R2_SECRET_ACCESS_KEY."
-            exit 1
+            echo "Missing Cloudflare R2 credentials. Please set CLOUDFLARE_ACCOUNT_ID, GODINGTALK_R2_ACCESS_KEY_ID, GODINGTALK_R2_SECRET_ACCESS_KEY." > "${RUNNER_TEMP}/upload-error.txt"
+            exit 0
           fi
           echo "R2_ENDPOINT=https://${R2_ACCOUNT_ID}.r2.cloudflarestorage.com" >> "$GITHUB_ENV"
 
@@ -65,12 +67,18 @@ jobs:
 
       - name: Upload output files to private R2
         if: always()
+        continue-on-error: true
         run: |
           RESULT_FILE="${RUNNER_TEMP}/job-result.json"
           UPLOAD_FILE="${RUNNER_TEMP}/uploaded-files.json"
+          ERROR_FILE="${RUNNER_TEMP}/upload-error.txt"
           echo '[]' > "${UPLOAD_FILE}"
 
           if [ ! -f "${RESULT_FILE}" ]; then
+            exit 0
+          fi
+
+          if [ -f "${ERROR_FILE}" ]; then
             exit 0
           fi
 
@@ -83,9 +91,12 @@ jobs:
             SAFE_RELATIVE_PATH="$(printf '%s' "${RELATIVE_PATH}" | tr '/ ' '--')"
             OBJECT_KEY="${JOB_ID}/${SAFE_RELATIVE_PATH}"
 
-            aws s3 cp "${LOCAL_PATH}" "s3://${R2_BUCKET}/${OBJECT_KEY}" \
+            if ! aws s3 cp "${LOCAL_PATH}" "s3://${R2_BUCKET}/${OBJECT_KEY}" \
               --endpoint-url "${R2_ENDPOINT}" \
-              --no-progress
+              --no-progress; then
+              echo "failed to upload ${NAME} to R2" > "${ERROR_FILE}"
+              break
+            fi
 
             TMP_FILE="$(mktemp)"
             jq \
@@ -105,21 +116,24 @@ jobs:
 
       - name: Finalize remote job
         if: always()
+        continue-on-error: true
         run: |
           RESULT_FILE="${RUNNER_TEMP}/job-result.json"
           UPLOAD_FILE="${RUNNER_TEMP}/uploaded-files.json"
           COMPLETE_FILE="${RUNNER_TEMP}/job-complete.json"
+          ERROR_FILE="${RUNNER_TEMP}/upload-error.txt"
 
           if [ -f "${RESULT_FILE}" ]; then
             jq \
               --slurpfile files "${UPLOAD_FILE}" \
+              --rawfile upload_error "${ERROR_FILE}" \
               '{
-                status: .status,
-                stage: (if .status == "succeeded" then "completed" else "failed" end),
+                status: (if ($upload_error | length) > 0 then "failed" else .status end),
+                stage: (if (($upload_error | length) > 0 or .status != "succeeded") then "failed" else "completed" end),
                 titles: .titles,
-                errors: .errors,
-                files: $files[0],
-                progress_percent: (if .status == "succeeded" then 100 else 0 end)
+                errors: (if ($upload_error | length) > 0 then ((.errors // []) + [$upload_error]) else .errors end),
+                files: (if ($upload_error | length) > 0 then [] else $files[0] end),
+                progress_percent: (if (($upload_error | length) > 0 or .status != "succeeded") then 0 else 100 end)
               }' \
               "${RESULT_FILE}" > "${COMPLETE_FILE}"
           else
@@ -135,12 +149,3 @@ jobs:
             -H "Authorization: Bearer ${INTERNAL_TOKEN}" \
             -H "Content-Type: application/json" \
             --data @"${COMPLETE_FILE}"
-
-      - name: Mark workflow failed when download failed
-        if: always()
-        run: |
-          RESULT_FILE="${RUNNER_TEMP}/job-result.json"
-          if [ ! -f "${RESULT_FILE}" ]; then
-            exit 1
-          fi
-          jq -e '.status == "succeeded"' "${RESULT_FILE}" > /dev/null
