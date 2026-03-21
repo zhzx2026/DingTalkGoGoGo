@@ -127,6 +127,11 @@ interface AuthPayload {
   password?: string;
 }
 
+interface AuthPasswordPayload {
+  current_password?: string;
+  new_password?: string;
+}
+
 interface AuthUser {
   id: string;
   username: string;
@@ -177,6 +182,7 @@ const SESSION_COOKIE_NAME = "godingtalk_session";
 const SESSION_TTL_SECONDS = 60 * 60 * 24 * 14;
 const DEFAULT_THREAD = 100;
 const MAX_THREAD = 100;
+const LEGAL_VERSION = "2026-03-21";
 
 function jsonResponse(body: unknown, init?: ResponseInit): Response {
   const headers = new Headers(init?.headers);
@@ -391,6 +397,54 @@ async function getUserByUsername(env: Env, username: string): Promise<UserRow | 
     .prepare("SELECT id, username, password_hash, is_sudo, created_at FROM users WHERE username = ?1")
     .bind(username)
     .first<UserRow>();
+}
+
+async function getUserLegalState(env: Env, userID: string): Promise<{
+  accepted: boolean;
+  acceptedAt: string | null;
+  version: string;
+}> {
+  const row = await env.DB
+    .prepare("SELECT legal_version, legal_accepted_at FROM users WHERE id = ?1")
+    .bind(userID)
+    .first<{ legal_version: string | null; legal_accepted_at: string | null }>();
+
+  const version = row?.legal_version || "";
+  const acceptedAt = row?.legal_accepted_at || null;
+  return {
+    accepted: version === LEGAL_VERSION && Boolean(acceptedAt),
+    acceptedAt,
+    version: LEGAL_VERSION,
+  };
+}
+
+async function acceptLegalTerms(env: Env, userID: string): Promise<{
+  accepted: boolean;
+  acceptedAt: string | null;
+  version: string;
+}> {
+  const acceptedAt = nowISO();
+  await env.DB
+    .prepare(
+      `UPDATE users
+       SET legal_version = ?2,
+           legal_accepted_at = ?3
+       WHERE id = ?1`,
+    )
+    .bind(userID, LEGAL_VERSION, acceptedAt)
+    .run();
+  return {
+    accepted: true,
+    acceptedAt,
+    version: LEGAL_VERSION,
+  };
+}
+
+async function updateUserPassword(env: Env, userID: string, newPasswordHash: string): Promise<void> {
+  await env.DB
+    .prepare("UPDATE users SET password_hash = ?2 WHERE id = ?1")
+    .bind(userID, newPasswordHash)
+    .run();
 }
 
 async function getAuthUser(request: Request, env: Env): Promise<AuthUser | null> {
@@ -845,6 +899,11 @@ async function createJob(env: Env, ownerUserID: string, payload: CreateJobPayloa
     throw new Error("at least one url is required");
   }
 
+  const legalState = await getUserLegalState(env, ownerUserID);
+  if (!legalState.accepted) {
+    throw new Error("legal disclaimer must be accepted before creating jobs");
+  }
+
   const cookieState = await getUserCookieState(env, ownerUserID);
   if (!cookieState.cookiesReady) {
     throw new Error("cookies are missing or invalid");
@@ -984,6 +1043,9 @@ async function handleAuthMe(request: Request, env: Env): Promise<Response> {
     return jsonResponse({
       authenticated: false,
       registration_open: isRegistrationOpen,
+      legal_version: LEGAL_VERSION,
+      legal_accepted: false,
+      legal_accepted_at: null,
       workflow_repository: workflowRepository,
       workflow_file: workflowFile,
       workflow_url: workflowRepository ? githubWorkflowURL(workflowRepository, workflowFile) : "",
@@ -995,12 +1057,16 @@ async function handleAuthMe(request: Request, env: Env): Promise<Response> {
   }
 
   const cookieState = await getUserCookieState(env, user.id);
+  const legalState = await getUserLegalState(env, user.id);
   return jsonResponse({
     authenticated: true,
     registration_open: isRegistrationOpen,
     user,
     cookies_ready: cookieState.cookiesReady,
     cookies_updated_at: cookieState.cookiesUpdatedAt,
+    legal_version: legalState.version,
+    legal_accepted: legalState.accepted,
+    legal_accepted_at: legalState.acceptedAt,
     workflow_repository: workflowRepository,
     workflow_file: workflowFile,
     workflow_url: workflowRepository ? githubWorkflowURL(workflowRepository, workflowFile) : "",
@@ -1073,8 +1139,61 @@ async function handleAuthLogout(request: Request, env: Env): Promise<Response> {
   return withSetCookie(response, clearSessionCookie());
 }
 
+async function handleAuthPassword(request: Request, env: Env, user: AuthUser): Promise<Response> {
+  if (request.method !== "POST") {
+    return jsonResponse({ error: "method not allowed" }, { status: 405 });
+  }
+
+  const payload = (await request.json()) as AuthPasswordPayload;
+  const currentPassword = (payload.current_password || "").trim();
+  const newPassword = (payload.new_password || "").trim();
+  if (!currentPassword || !newPassword) {
+    return jsonResponse({ error: "current_password and new_password are required" }, { status: 400 });
+  }
+  if (newPassword.length < 6) {
+    return jsonResponse({ error: "new password must be at least 6 characters" }, { status: 400 });
+  }
+
+  const userRow = await getUserByUsername(env, user.username);
+  if (!userRow) {
+    return jsonResponse({ error: "user not found" }, { status: 404 });
+  }
+
+  const expected = await passwordHash(env, userRow.username, currentPassword);
+  if (expected !== userRow.password_hash) {
+    return jsonResponse({ error: "current password is incorrect" }, { status: 401 });
+  }
+
+  const nextHash = await passwordHash(env, userRow.username, newPassword);
+  await updateUserPassword(env, user.id, nextHash);
+  return jsonResponse({ ok: true, message: "password updated" });
+}
+
+async function handleLegal(request: Request, env: Env, user: AuthUser): Promise<Response> {
+  if (request.method === "GET") {
+    const legalState = await getUserLegalState(env, user.id);
+    return jsonResponse({
+      version: LEGAL_VERSION,
+      accepted: legalState.accepted,
+      accepted_at: legalState.acceptedAt,
+    });
+  }
+
+  if (request.method === "POST") {
+    const legalState = await acceptLegalTerms(env, user.id);
+    return jsonResponse({
+      ok: true,
+      version: legalState.version,
+      accepted: legalState.accepted,
+      accepted_at: legalState.acceptedAt,
+    });
+  }
+
+  return jsonResponse({ error: "method not allowed" }, { status: 405 });
+}
+
 async function handleStatus(env: Env, user: AuthUser): Promise<Response> {
-  const [countsRow, cookieState] = await Promise.all([
+  const [countsRow, cookieState, legalState] = await Promise.all([
     env.DB
       .prepare(
         `SELECT
@@ -1089,6 +1208,7 @@ async function handleStatus(env: Env, user: AuthUser): Promise<Response> {
       .bind(user.id)
       .first<Record<string, number | string | null>>(),
     getUserCookieState(env, user.id),
+    getUserLegalState(env, user.id),
   ]);
 
   const workflowRepository = env.GITHUB_REPOSITORY || "";
@@ -1101,6 +1221,9 @@ async function handleStatus(env: Env, user: AuthUser): Promise<Response> {
     user,
     cookies_ready: cookieState.cookiesReady,
     cookies_updated_at: cookieState.cookiesUpdatedAt,
+    legal_version: legalState.version,
+    legal_accepted: legalState.accepted,
+    legal_accepted_at: legalState.acceptedAt,
     total_jobs: toNumber(countsRow?.total_jobs),
     queued_jobs: toNumber(countsRow?.queued_jobs),
     running_jobs: toNumber(countsRow?.running_jobs),
@@ -1134,6 +1257,11 @@ async function handleLoginWorkflow(request: Request, env: Env, user: AuthUser): 
 
   if (request.method !== "POST") {
     return jsonResponse({ error: "method not allowed" }, { status: 405 });
+  }
+
+  const legalState = await getUserLegalState(env, user.id);
+  if (!legalState.accepted) {
+    return jsonResponse({ error: "legal disclaimer must be accepted before starting QR login" }, { status: 403 });
   }
 
   const loginSession = await createLoginSession(env, user.id);
@@ -1407,10 +1535,16 @@ export default {
     try {
       let response: Response;
 
-      if (url.pathname === "/") {
-        response = htmlResponse(renderApp(url.origin, "home"));
+      if (url.pathname === "/" || url.pathname === "/download") {
+        response = htmlResponse(renderApp(url.origin, "download"));
+      } else if (url.pathname === "/login") {
+        response = htmlResponse(renderApp(url.origin, "login"));
       } else if (url.pathname === "/settings") {
         response = htmlResponse(renderApp(url.origin, "settings"));
+      } else if (url.pathname === "/account") {
+        response = htmlResponse(renderApp(url.origin, "account"));
+      } else if (url.pathname === "/legal") {
+        response = htmlResponse(renderApp(url.origin, "legal"));
       } else if (url.pathname === "/tampermonkey/godingtalk-helper.user.js") {
         response = textResponse(renderTampermonkeyScript(url.origin), {
           headers: {
@@ -1426,6 +1560,13 @@ export default {
         response = await handleAuthLogin(request, env);
       } else if (url.pathname === "/api/auth/logout" && request.method === "POST") {
         response = await handleAuthLogout(request, env);
+      } else if (url.pathname === "/api/auth/password") {
+        const auth = await requireUserAuth(request, env);
+        if (auth.response) {
+          response = auth.response;
+        } else {
+          response = await handleAuthPassword(request, env, auth.user as AuthUser);
+        }
       } else if (url.pathname === "/api/status" && request.method === "GET") {
         const auth = await requireUserAuth(request, env);
         if (auth.response) {
@@ -1446,6 +1587,13 @@ export default {
           response = auth.response;
         } else {
           response = await handleLoginWorkflow(request, env, auth.user as AuthUser);
+        }
+      } else if (url.pathname === "/api/legal" && (request.method === "GET" || request.method === "POST")) {
+        const auth = await requireUserAuth(request, env);
+        if (auth.response) {
+          response = auth.response;
+        } else {
+          response = await handleLegal(request, env, auth.user as AuthUser);
         }
       } else if (url.pathname === "/api/jobs") {
         const auth = await requireUserAuth(request, env);
