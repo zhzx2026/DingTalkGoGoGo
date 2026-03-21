@@ -141,6 +141,36 @@ interface UserRow {
   created_at: string;
 }
 
+interface LoginSessionRow {
+  id: string;
+  user_id: string;
+  status: string;
+  qr_url: string | null;
+  error_message: string | null;
+  created_at: string;
+  updated_at: string;
+  completed_at: string | null;
+}
+
+interface LoginSessionRecord {
+  id: string;
+  status: string;
+  qr_url: string;
+  error_message: string;
+  created_at: string;
+  updated_at: string;
+  completed_at: string | null;
+}
+
+interface LoginSessionQRPayload {
+  qr_url?: string;
+}
+
+interface LoginSessionCompletePayload {
+  cookies?: Record<string, string>;
+  error?: string;
+}
+
 const DEFAULT_WORKFLOW_FILE = "remote-runner.yml";
 const DEFAULT_LOGIN_WORKFLOW_FILE = "windows-login.yml";
 const SESSION_COOKIE_NAME = "godingtalk_session";
@@ -205,6 +235,10 @@ function nowISO(): string {
 
 function nextJobID(): string {
   return `job-${Date.now()}-${crypto.randomUUID().split("-")[0]}`;
+}
+
+function nextLoginSessionID(): string {
+  return `login-${Date.now()}-${crypto.randomUUID().split("-")[0]}`;
 }
 
 function toNumber(value: number | string | null | undefined): number {
@@ -485,6 +519,136 @@ async function saveUserCookies(env: Env, userID: string, cookies: Record<string,
     )
     .bind(userID, JSON.stringify(cookies), nowISO())
     .run();
+}
+
+function parseLoginSessionRow(row: LoginSessionRow): LoginSessionRecord {
+  return {
+    id: row.id,
+    status: row.status || "pending",
+    qr_url: row.qr_url || "",
+    error_message: row.error_message || "",
+    created_at: row.created_at,
+    updated_at: row.updated_at,
+    completed_at: row.completed_at,
+  };
+}
+
+async function createLoginSession(env: Env, userID: string): Promise<LoginSessionRecord> {
+  const now = nowISO();
+  const id = nextLoginSessionID();
+  await env.DB
+    .prepare(
+      `INSERT INTO login_sessions (id, user_id, status, qr_url, error_message, created_at, updated_at, completed_at)
+       VALUES (?1, ?2, 'pending', '', '', ?3, ?3, NULL)`,
+    )
+    .bind(id, userID, now)
+    .run();
+  return {
+    id,
+    status: "pending",
+    qr_url: "",
+    error_message: "",
+    created_at: now,
+    updated_at: now,
+    completed_at: null,
+  };
+}
+
+async function getLoginSession(env: Env, loginSessionID: string, userID?: string): Promise<LoginSessionRecord | null> {
+  const row = userID
+    ? await env.DB
+      .prepare("SELECT * FROM login_sessions WHERE id = ?1 AND user_id = ?2")
+      .bind(loginSessionID, userID)
+      .first<LoginSessionRow>()
+    : await env.DB
+      .prepare("SELECT * FROM login_sessions WHERE id = ?1")
+      .bind(loginSessionID)
+      .first<LoginSessionRow>();
+  return row ? parseLoginSessionRow(row) : null;
+}
+
+async function getLatestLoginSession(env: Env, userID: string): Promise<LoginSessionRecord | null> {
+  const row = await env.DB
+    .prepare(
+      `SELECT *
+       FROM login_sessions
+       WHERE user_id = ?1
+       ORDER BY updated_at DESC
+       LIMIT 1`,
+    )
+    .bind(userID)
+    .first<LoginSessionRow>();
+  return row ? parseLoginSessionRow(row) : null;
+}
+
+async function updateLoginSessionQR(env: Env, loginSessionID: string, qrURL: string): Promise<LoginSessionRecord | null> {
+  await env.DB
+    .prepare(
+      `UPDATE login_sessions
+       SET status = 'qr_ready',
+           qr_url = ?2,
+           error_message = '',
+           updated_at = ?3
+       WHERE id = ?1`,
+    )
+    .bind(loginSessionID, qrURL, nowISO())
+    .run();
+  return getLoginSession(env, loginSessionID);
+}
+
+async function completeLoginSession(
+  env: Env,
+  loginSessionID: string,
+  payload: LoginSessionCompletePayload,
+): Promise<LoginSessionRecord | null> {
+  const sessionRow = await env.DB
+    .prepare("SELECT * FROM login_sessions WHERE id = ?1")
+    .bind(loginSessionID)
+    .first<LoginSessionRow>();
+  if (!sessionRow) {
+    return null;
+  }
+
+  const cookies = payload.cookies && typeof payload.cookies === "object" && !Array.isArray(payload.cookies)
+    ? Object.fromEntries(
+      Object.entries(payload.cookies).filter(([name, value]) => (
+        typeof name === "string"
+        && name.trim().length > 0
+        && typeof value === "string"
+        && value.trim().length > 0
+      )),
+    )
+    : {};
+
+  const currentTime = nowISO();
+  if (Object.keys(cookies).length > 0) {
+    await saveUserCookies(env, sessionRow.user_id, cookies);
+    await env.DB
+      .prepare(
+        `UPDATE login_sessions
+         SET status = 'completed',
+             error_message = '',
+             updated_at = ?2,
+             completed_at = ?2
+         WHERE id = ?1`,
+      )
+      .bind(loginSessionID, currentTime)
+      .run();
+  } else {
+    await env.DB
+      .prepare(
+        `UPDATE login_sessions
+         SET status = 'failed',
+             error_message = ?2,
+             updated_at = ?3,
+             completed_at = ?3
+         WHERE id = ?1`,
+      )
+      .bind(loginSessionID, (payload.error || "login failed").trim(), currentTime)
+      .run();
+  }
+
+  return getLoginSession(env, loginSessionID);
 }
 
 function parseJobRow(row: JobRow): JobRecord {
@@ -772,7 +936,7 @@ async function dispatchGitHubWorkflow(
   }
 }
 
-async function triggerGitHubLogin(env: Env): Promise<{
+async function triggerGitHubLogin(env: Env, loginSessionID: string, userID: string): Promise<{
   ref: string;
   workflow_file: string;
   workflow_url: string;
@@ -784,7 +948,10 @@ async function triggerGitHubLogin(env: Env): Promise<{
 
   const workflowFile = env.GITHUB_LOGIN_WORKFLOW_FILE || DEFAULT_LOGIN_WORKFLOW_FILE;
   const ref = env.GITHUB_REF || "main";
-  await dispatchGitHubWorkflow(env, workflowFile);
+  await dispatchGitHubWorkflow(env, workflowFile, {
+    login_session_id: loginSessionID,
+    owner_user_id: userID,
+  });
 
   return {
     ref,
@@ -951,21 +1118,80 @@ async function handleStatus(env: Env, user: AuthUser): Promise<Response> {
   });
 }
 
-async function handleLoginWorkflow(request: Request, env: Env, _user: AuthUser): Promise<Response> {
+async function handleLoginWorkflow(request: Request, env: Env, user: AuthUser): Promise<Response> {
+  if (request.method === "GET") {
+    const url = new URL(request.url);
+    const loginSessionID = (url.searchParams.get("id") || "").trim();
+    const loginSession = loginSessionID
+      ? await getLoginSession(env, loginSessionID, user.id)
+      : await getLatestLoginSession(env, user.id);
+
+    return jsonResponse({
+      ok: true,
+      login_session: loginSession,
+    });
+  }
+
   if (request.method !== "POST") {
     return jsonResponse({ error: "method not allowed" }, { status: 405 });
   }
 
-  const payload = await triggerGitHubLogin(env);
+  const loginSession = await createLoginSession(env, user.id);
+
+  try {
+    const payload = await triggerGitHubLogin(env, loginSession.id, user.id);
+    return jsonResponse({
+      ok: true,
+      message: "已启动远程登录，请等待二维码。",
+      login_session: loginSession,
+      ...payload,
+    });
+  } catch (error) {
+    await completeLoginSession(env, loginSession.id, {
+      error: error instanceof Error ? error.message : "failed to start login workflow",
+    });
+    throw error;
+  }
+}
+
+async function handleInternalLoginSessionQR(request: Request, env: Env, loginSessionID: string): Promise<Response> {
+  const authError = await requireInternalAuth(request, env);
+  if (authError) {
+    return authError;
+  }
+
+  const payload = (await request.json()) as LoginSessionQRPayload;
+  const qrURL = (payload.qr_url || "").trim();
+  if (!qrURL) {
+    return jsonResponse({ error: "qr_url is required" }, { status: 400 });
+  }
+
+  const session = await updateLoginSessionQR(env, loginSessionID, qrURL);
+  if (!session) {
+    return jsonResponse({ error: "login session not found" }, { status: 404 });
+  }
+
   return jsonResponse({
     ok: true,
-    message: "Windows 二维码登录工作流已触发。请打开 GitHub Actions 查看二维码图片并扫码，完成后下载 windows-login-cookies artifact。",
-    ...payload,
-    artifacts: [
-      "windows-login-qr",
-      "windows-login-debug",
-      "windows-login-cookies",
-    ],
+    login_session: session,
+  });
+}
+
+async function handleInternalLoginSessionComplete(request: Request, env: Env, loginSessionID: string): Promise<Response> {
+  const authError = await requireInternalAuth(request, env);
+  if (authError) {
+    return authError;
+  }
+
+  const payload = (await request.json()) as LoginSessionCompletePayload;
+  const session = await completeLoginSession(env, loginSessionID, payload);
+  if (!session) {
+    return jsonResponse({ error: "login session not found" }, { status: 404 });
+  }
+
+  return jsonResponse({
+    ok: true,
+    login_session: session,
   });
 }
 
@@ -1214,7 +1440,7 @@ export default {
         } else {
           response = await handleCookies(request, env, auth.user as AuthUser);
         }
-      } else if (url.pathname === "/api/login-workflow") {
+      } else if (url.pathname === "/api/login-workflow" && (request.method === "GET" || request.method === "POST")) {
         const auth = await requireUserAuth(request, env);
         if (auth.response) {
           response = auth.response;
@@ -1253,6 +1479,21 @@ export default {
             response = await handleInternalProgress(request, env, jobID);
           } else if (action === "complete" && request.method === "POST") {
             response = await handleInternalComplete(request, env, jobID);
+          } else {
+            response = jsonResponse({ error: "method not allowed" }, { status: 405 });
+          }
+        } else {
+          response = jsonResponse({ error: "not found" }, { status: 404 });
+        }
+      } else if (url.pathname.startsWith("/internal/login-sessions/")) {
+        const parts = url.pathname.split("/").filter(Boolean);
+        if (parts.length === 4 && parts[0] === "internal" && parts[1] === "login-sessions") {
+          const loginSessionID = parts[2];
+          const action = parts[3];
+          if (action === "qr" && request.method === "POST") {
+            response = await handleInternalLoginSessionQR(request, env, loginSessionID);
+          } else if (action === "complete" && request.method === "POST") {
+            response = await handleInternalLoginSessionComplete(request, env, loginSessionID);
           } else {
             response = jsonResponse({ error: "method not allowed" }, { status: 405 });
           }

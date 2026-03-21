@@ -1,5 +1,38 @@
 type AppPage = "home" | "settings";
 
+function renderHomeContent(): string {
+  return `
+      <section class="card">
+        <h2>下载</h2>
+        <p class="muted">粘贴回放链接，直接创建任务。</p>
+        <div class="field">
+          <label for="urls">回放链接</label>
+          <textarea id="urls" placeholder="每行一个钉钉回放链接"></textarea>
+        </div>
+        <div class="actions">
+          <button id="create-job-btn" class="primary" type="button">开始下载</button>
+          <button id="refresh-btn" type="button">刷新</button>
+        </div>
+      </section>`;
+}
+
+function renderSettingsContent(installURL: string): string {
+  return `
+      <section class="card">
+        <h2>二维码登录</h2>
+        <p class="muted">点击开始后，Action 会自动生成二维码；前端直接显示；扫码成功后 Cookies 会自动写回 Worker。</p>
+        <div class="actions">
+          <button id="start-login-workflow-btn" class="primary" type="button">启动二维码登录</button>
+        </div>
+        <div id="login-box" class="login-box hidden">
+          <div id="login-status" class="login-status">等待开始</div>
+          <img id="login-qr-image" class="qr-image hidden" alt="登录二维码" />
+          <div id="login-hint" class="muted small">用户只需要点击开始并扫码。</div>
+        </div>
+        <p class="muted small" style="margin-top:12px;">如需兜底，仍可用 <a href="${installURL}" target="_blank" rel="noreferrer">Tampermonkey</a> 或手动 Cookie 接口，但默认流程不需要。</p>
+      </section>`;
+}
+
 export function renderApp(appOrigin: string, page: AppPage): string {
   const installURL = `${appOrigin.replace(/\/$/, "")}/tampermonkey/godingtalk-helper.user.js`;
   const isHome = page === "home";
@@ -10,578 +43,350 @@ export function renderApp(appOrigin: string, page: AppPage): string {
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <link rel="icon" href="data:," />
-    <title>GoDingtalk 私有下载台</title>
+    <title>GoDingtalk</title>
     <style>
       :root {
-        --bg: #f6f4ef;
-        --surface: #fffdfa;
-        --surface-soft: #f7f4ec;
-        --ink: #1e262b;
-        --muted: #67747d;
-        --line: rgba(30, 38, 43, 0.12);
-        --accent: #d55f2a;
-        --accent-2: #0f766a;
-        --danger: #b73a2f;
-        --ok: #0f766a;
-        --shadow: 0 18px 48px rgba(30, 38, 43, 0.08);
-        --radius-xl: 26px;
-        --radius-lg: 18px;
-        --radius-md: 14px;
+        --bg: #f5f7fb;
+        --card: #ffffff;
+        --line: #e6ebf2;
+        --text: #111827;
+        --muted: #6b7280;
+        --primary: #2563eb;
+        --primary-dark: #1d4ed8;
+        --danger: #dc2626;
+        --ok: #16a34a;
+        --shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+        --radius: 16px;
       }
 
       * { box-sizing: border-box; }
-
       html, body {
         margin: 0;
         min-height: 100%;
-        color: var(--ink);
-        font-family: "IBM Plex Sans", "Avenir Next", "Segoe UI", sans-serif;
-        background:
-          radial-gradient(circle at top left, rgba(213, 95, 42, 0.08), transparent 24%),
-          radial-gradient(circle at top right, rgba(15, 118, 106, 0.08), transparent 26%),
-          linear-gradient(180deg, #fbf9f4 0%, var(--bg) 100%);
+        background: var(--bg);
+        color: var(--text);
+        font-family: Inter, "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
       }
 
-      body { padding: 18px; }
+      body { padding: 24px; }
+      a { color: inherit; }
+      .wrap { max-width: 960px; margin: 0 auto; display: grid; gap: 16px; }
 
-      .shell {
-        max-width: 1080px;
-        margin: 0 auto;
-        display: grid;
-        gap: 16px;
+      .topbar, .card, .metric, .job {
+        background: var(--card);
+        border: 1px solid var(--line);
+        border-radius: var(--radius);
+        box-shadow: var(--shadow);
       }
 
       .topbar {
         display: flex;
-        align-items: center;
         justify-content: space-between;
+        align-items: center;
         gap: 12px;
-        padding: 18px;
-        border: 1px solid var(--line);
-        border-radius: 24px;
-        background: rgba(255, 253, 250, 0.9);
-        box-shadow: var(--shadow);
+        padding: 20px;
       }
 
-      .brand h1 {
+      .title h1 {
         margin: 0;
-        font-size: clamp(28px, 4vw, 42px);
-        line-height: 0.95;
-        font-family: "IBM Plex Serif", Georgia, serif;
-        letter-spacing: -0.03em;
+        font-size: 28px;
       }
 
-      .brand p {
-        margin: 8px 0 0;
+      .title p, .muted {
+        margin: 6px 0 0;
         color: var(--muted);
-        font-size: 14px;
       }
 
       .nav {
-        display: inline-flex;
+        display: flex;
         gap: 8px;
-        padding: 6px;
-        border-radius: 999px;
-        border: 1px solid var(--line);
-        background: var(--surface-soft);
       }
 
       .nav a {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        min-height: 40px;
-        padding: 0 14px;
+        padding: 10px 14px;
         border-radius: 999px;
         text-decoration: none;
         color: var(--muted);
-        font-weight: 700;
+        background: #f3f4f6;
+        font-weight: 600;
       }
 
       .nav a.active {
-        color: white;
-        background: linear-gradient(135deg, var(--ink), #37454d);
-      }
-
-      .user-chip {
-        display: inline-flex;
-        align-items: center;
-        gap: 8px;
-        padding: 8px 12px;
-        border-radius: 999px;
-        background: rgba(30, 38, 43, 0.06);
-        color: var(--muted);
-        font-size: 13px;
+        color: #fff;
+        background: var(--primary);
       }
 
       .notice {
         padding: 12px 14px;
-        border-radius: 14px;
+        border-radius: 12px;
         font-size: 14px;
       }
 
       .notice.ok {
-        background: rgba(15, 118, 106, 0.1);
+        background: #ecfdf5;
         color: var(--ok);
+        border: 1px solid #bbf7d0;
       }
 
       .notice.error {
-        background: rgba(183, 58, 47, 0.12);
+        background: #fef2f2;
         color: var(--danger);
+        border: 1px solid #fecaca;
       }
 
-      .panel {
-        padding: 20px;
-        border-radius: var(--radius-xl);
-        border: 1px solid var(--line);
-        background: rgba(255, 253, 250, 0.92);
-        box-shadow: var(--shadow);
-      }
+      .card { padding: 20px; }
+      .card h2 { margin: 0; font-size: 20px; }
 
-      .panel h2 {
-        margin: 0;
-        font-size: 22px;
-        font-family: "IBM Plex Serif", Georgia, serif;
-      }
-
-      .panel p {
-        margin: 8px 0 0;
-        color: var(--muted);
-        line-height: 1.65;
-      }
-
-      .fields {
-        display: grid;
-        gap: 12px;
-        margin-top: 14px;
-      }
-
-      .field {
-        display: grid;
-        gap: 8px;
-      }
-
-      label {
-        font-size: 13px;
-        font-weight: 700;
-        color: #36434b;
-      }
+      .field { display: grid; gap: 8px; margin-top: 14px; }
+      label { font-size: 14px; font-weight: 600; }
 
       input, textarea {
         width: 100%;
         border: 1px solid var(--line);
-        border-radius: var(--radius-md);
-        background: var(--surface);
-        color: var(--ink);
-        font: inherit;
-      }
-
-      input {
-        min-height: 46px;
+        border-radius: 12px;
         padding: 12px 14px;
+        font: inherit;
+        background: #fff;
+        color: var(--text);
       }
 
       textarea {
-        min-height: 150px;
-        padding: 14px;
-        line-height: 1.6;
+        min-height: 160px;
         resize: vertical;
+        line-height: 1.6;
       }
 
       input:focus, textarea:focus {
         outline: none;
-        border-color: rgba(15, 118, 106, 0.42);
-        box-shadow: 0 0 0 4px rgba(15, 118, 106, 0.08);
+        border-color: #93c5fd;
+        box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
       }
 
-      .actions {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 10px;
+      .auth-grid, .stats {
+        display: grid;
+        gap: 12px;
       }
+
+      .auth-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 14px; }
 
       button, .button-link {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
+        border: 1px solid var(--line);
+        background: #fff;
+        color: var(--text);
         min-height: 42px;
         padding: 0 14px;
-        border: 0;
-        border-radius: 999px;
+        border-radius: 10px;
         font: inherit;
-        font-weight: 700;
+        font-weight: 600;
         text-decoration: none;
         cursor: pointer;
       }
 
       button.primary, .button-link.primary {
-        background: linear-gradient(135deg, var(--accent), #e07c40);
-        color: white;
+        background: var(--primary);
+        border-color: var(--primary);
+        color: #fff;
       }
 
-      button.secondary, .button-link.secondary {
-        background: rgba(30, 38, 43, 0.08);
-        color: var(--ink);
+      button.primary:hover, .button-link.primary:hover { background: var(--primary-dark); }
+      button:disabled { opacity: 0.7; cursor: wait; }
+
+      .stats { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+
+      .metric {
+        padding: 16px;
       }
 
-      button:disabled {
-        opacity: 0.7;
-        cursor: wait;
-      }
-
-      .button-link[aria-disabled="true"] {
-        pointer-events: none;
-        opacity: 0.6;
-      }
-
-      .auth-grid {
-        display: grid;
-        gap: 12px;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-      }
-
-      .settings-grid {
-        display: grid;
-        gap: 16px;
-        margin-top: 14px;
-      }
-
-      .settings-card {
-        padding: 18px;
-        border-radius: var(--radius-lg);
-        border: 1px solid var(--line);
-        background: linear-gradient(180deg, rgba(255, 253, 250, 0.98), rgba(247, 244, 236, 0.92));
-      }
-
-      .settings-card h3 {
-        margin: 0;
-        font-size: 18px;
-        font-family: "IBM Plex Serif", Georgia, serif;
-      }
-
-      .settings-card p {
-        margin-top: 8px;
-      }
-
-      .guide-list {
-        margin: 14px 0 0;
-        padding-left: 20px;
-        color: var(--muted);
-        line-height: 1.7;
-      }
-
-      .guide-list li + li {
-        margin-top: 6px;
-      }
-
-      .artifact-row {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 8px;
-        margin-top: 14px;
-      }
-
-      .artifact-pill {
-        display: inline-flex;
-        align-items: center;
-        min-height: 34px;
-        padding: 0 12px;
-        border-radius: 999px;
-        background: rgba(15, 118, 106, 0.1);
-        color: var(--accent-2);
-        font-size: 13px;
-        font-weight: 700;
-      }
-
-      .login-art {
-        margin-top: 16px;
-        padding: 14px;
-        border-radius: var(--radius-lg);
-        border: 1px solid rgba(30, 38, 43, 0.08);
-        background:
-          radial-gradient(circle at top left, rgba(213, 95, 42, 0.08), transparent 35%),
-          linear-gradient(135deg, rgba(255, 255, 255, 0.96), rgba(247, 244, 236, 0.9));
-      }
-
-      .login-art svg {
-        display: block;
-        width: 100%;
-        height: auto;
-      }
-
-      .fine-print {
-        margin-top: 12px;
-        font-size: 13px;
-        color: var(--muted);
-      }
-
-      .stats {
-        display: grid;
-        gap: 10px;
-        grid-template-columns: repeat(4, minmax(0, 1fr));
-        margin-top: 14px;
-      }
-
-      .stat {
-        padding: 14px;
-        border-radius: var(--radius-lg);
-        border: 1px solid var(--line);
-        background: var(--surface);
-      }
-
-      .stat label {
+      .metric span {
         display: block;
         color: var(--muted);
-        font-size: 12px;
-        letter-spacing: 0.08em;
-        text-transform: uppercase;
+        font-size: 13px;
       }
 
-      .stat strong {
+      .metric strong {
         display: block;
         margin-top: 8px;
-        font-size: 20px;
+        font-size: 26px;
       }
 
-      .jobs {
-        display: grid;
-        gap: 10px;
-      }
+      .jobs { display: grid; gap: 12px; }
 
       .job {
-        padding: 14px;
-        border: 1px solid var(--line);
-        border-radius: var(--radius-lg);
-        background: var(--surface);
+        padding: 16px;
       }
 
       .job-top {
         display: flex;
-        align-items: flex-start;
         justify-content: space-between;
-        gap: 10px;
+        align-items: flex-start;
+        gap: 12px;
       }
 
       .job-id {
-        color: var(--muted);
         font-size: 12px;
-        letter-spacing: 0.08em;
-        text-transform: uppercase;
+        color: var(--muted);
       }
 
       .job-title {
         margin: 6px 0 0;
-        font-size: 17px;
+        font-size: 18px;
       }
 
-      .job-meta, .job-files, .job-errors {
+      .status {
+        padding: 4px 10px;
+        border-radius: 999px;
+        font-size: 12px;
+        font-weight: 700;
+        background: #eff6ff;
+        color: var(--primary);
+      }
+
+      .status.succeeded { background: #ecfdf5; color: var(--ok); }
+      .status.failed { background: #fef2f2; color: var(--danger); }
+      .status.queued { background: #fff7ed; color: #c2410c; }
+
+      .job-meta, .job-errors {
         margin-top: 8px;
         color: var(--muted);
+        line-height: 1.6;
         font-size: 14px;
-        line-height: 1.55;
       }
 
-      .job-files a {
-        color: var(--accent-2);
-        text-decoration: none;
-        font-weight: 700;
-      }
-
-      .job-files a:hover { text-decoration: underline; }
       .job-errors { color: var(--danger); }
 
-      .progress-track {
+      .progress {
         height: 8px;
-        margin-top: 8px;
+        margin-top: 10px;
         border-radius: 999px;
+        background: #eef2f7;
         overflow: hidden;
-        background: rgba(30, 38, 43, 0.08);
       }
 
-      .progress-fill {
+      .progress > div {
         height: 100%;
-        border-radius: inherit;
-        background: linear-gradient(135deg, var(--accent), var(--accent-2));
+        background: var(--primary);
+      }
+
+      .files {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-top: 10px;
+      }
+
+      .files a {
+        padding: 6px 10px;
+        border-radius: 999px;
+        background: #eff6ff;
+        color: var(--primary);
+        text-decoration: none;
+        font-weight: 600;
       }
 
       .empty {
         padding: 14px;
-        border-radius: var(--radius-lg);
-        border: 1px dashed rgba(30, 38, 43, 0.2);
+        border-radius: 12px;
+        border: 1px dashed var(--line);
         color: var(--muted);
-        background: var(--surface-soft);
-        line-height: 1.65;
+        background: #fafafa;
       }
 
+      .login-box {
+        margin-top: 14px;
+        padding: 14px;
+        border-radius: 12px;
+        background: #f8fafc;
+        border: 1px solid var(--line);
+      }
+
+      .login-status {
+        font-weight: 600;
+      }
+
+      .qr-image {
+        display: block;
+        width: 280px;
+        max-width: 100%;
+        margin-top: 12px;
+        border-radius: 12px;
+        border: 1px solid var(--line);
+        background: #fff;
+      }
+
+      .small { font-size: 13px; }
       .hidden { display: none !important; }
 
-      @media (max-width: 880px) {
-        body { padding: 12px; }
-        .topbar { flex-direction: column; align-items: flex-start; }
+      @media (max-width: 760px) {
+        body { padding: 14px; }
+        .topbar, .job-top { flex-direction: column; align-items: flex-start; }
         .auth-grid, .stats { grid-template-columns: 1fr; }
-        .nav { width: 100%; }
-        .nav a { flex: 1; }
       }
     </style>
   </head>
   <body>
-    <main class="shell">
+    <main class="wrap">
       <section class="topbar">
-        <div class="brand">
-          <h1>GoDingtalk 私有下载台</h1>
-          <p>${isHome ? "主页只保留下载流程和结果。" : "配置页集中管理登录、Cookies 与脚本安装。"}</p>
+        <div class="title">
+          <h1>GoDingtalk</h1>
+          <p>${isHome ? "只保留下载和结果。" : "只保留登录和 Cookies。"}</p>
         </div>
-        <div style="display:grid; gap:10px; justify-items:end;">
-          <nav class="nav">
-            <a class="${isHome ? "active" : ""}" href="/">下载</a>
-            <a class="${isHome ? "" : "active"}" href="/settings">配置</a>
-          </nav>
-          <div id="user-chip" class="user-chip">未登录</div>
-        </div>
+        <nav class="nav">
+          <a href="/" class="${isHome ? "active" : ""}">下载</a>
+          <a href="/settings" class="${isHome ? "" : "active"}">设置</a>
+        </nav>
       </section>
 
       <div id="notice" class="notice ok hidden"></div>
 
-      <section id="auth-panel" class="panel">
-        <h2>用户登录</h2>
-        <p>为了隔离隐私，Cookie 和视频都按登录用户独立保存。当前为开放注册模式。</p>
-        <div class="fields">
-          <div class="auth-grid">
-            <div class="field">
-              <label for="auth-username">用户名</label>
-              <input id="auth-username" placeholder="至少 3 位" />
-            </div>
-            <div class="field">
-              <label for="auth-password">密码</label>
-              <input id="auth-password" type="password" placeholder="至少 6 位" />
-            </div>
-          </div>
-          <div class="actions">
-            <button id="login-btn" class="primary" type="button">登录</button>
-            <button id="register-btn" class="secondary" type="button">注册</button>
-            <button id="logout-btn" class="secondary hidden" type="button">退出登录</button>
-          </div>
-        </div>
-      </section>
-
-      <section id="home-panel" class="panel ${isHome ? "" : "hidden"}">
-        <h2>开始下载</h2>
-        <p>默认线程已设为最大值 <code>100</code>。你只需要粘贴回放链接。</p>
-        <div class="fields">
+      <section class="card">
+        <h2>账号</h2>
+        <p id="user-chip" class="muted">未登录</p>
+        <div class="auth-grid">
           <div class="field">
-            <label for="urls">回放链接</label>
-            <textarea id="urls" placeholder="每行一个钉钉回放链接"></textarea>
+            <label for="auth-username">用户名</label>
+            <input id="auth-username" placeholder="至少 3 位" />
           </div>
-          <div class="actions">
-            <button id="create-job-btn" class="primary" type="button">开始远程下载</button>
-            <button id="refresh-btn" class="secondary" type="button">刷新状态</button>
+          <div class="field">
+            <label for="auth-password">密码</label>
+            <input id="auth-password" type="password" placeholder="至少 6 位" />
           </div>
+        </div>
+        <div class="actions">
+          <button id="login-btn" class="primary" type="button">登录</button>
+          <button id="register-btn" type="button">注册</button>
+          <button id="logout-btn" type="button" class="hidden">退出登录</button>
         </div>
       </section>
 
-      <section id="settings-panel" class="panel ${isHome ? "hidden" : ""}">
-        <h2>配置中心</h2>
-        <p>这里统一放浏览器脚本、Windows 二维码登录入口和 Cookies 上传。Tampermonkey 会把页面链接和可见 Cookie 传到这里。</p>
-        <div class="settings-grid">
-          <section class="settings-card">
-            <h3>远程二维码登录</h3>
-            <p>如果插件登录不方便，可以直接从网页触发 GitHub Hosted Windows 打开钉钉登录页。工作流会产出二维码图片、调试包和 cookies 文件。</p>
-            <div class="actions" style="margin-top:14px;">
-              <button id="start-login-workflow-btn" class="primary" type="button">启动 Windows 二维码登录</button>
-              <a id="login-workflow-link" class="button-link secondary" href="#" target="_blank" rel="noreferrer" aria-disabled="true">打开 Actions 工作流</a>
-              <a id="login-runs-link" class="button-link secondary" href="#" target="_blank" rel="noreferrer" aria-disabled="true">查看运行记录</a>
-            </div>
-            <div class="login-art" aria-hidden="true">
-              <svg viewBox="0 0 760 240" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <rect x="14" y="18" width="212" height="204" rx="26" fill="#FFF7EC" stroke="#E2D9CB"/>
-                <rect x="42" y="44" width="156" height="128" rx="20" fill="#FFFFFF" stroke="#D9CEC0"/>
-                <rect x="60" y="62" width="32" height="32" rx="6" fill="#1E262B"/>
-                <rect x="105" y="62" width="12" height="12" rx="3" fill="#1E262B"/>
-                <rect x="125" y="62" width="12" height="28" rx="3" fill="#1E262B"/>
-                <rect x="145" y="62" width="28" height="12" rx="3" fill="#1E262B"/>
-                <rect x="60" y="104" width="14" height="14" rx="3" fill="#1E262B"/>
-                <rect x="84" y="104" width="18" height="30" rx="3" fill="#1E262B"/>
-                <rect x="112" y="104" width="12" height="12" rx="3" fill="#1E262B"/>
-                <rect x="132" y="104" width="14" height="34" rx="3" fill="#1E262B"/>
-                <rect x="154" y="104" width="18" height="18" rx="3" fill="#1E262B"/>
-                <rect x="60" y="144" width="30" height="18" rx="3" fill="#1E262B"/>
-                <rect x="98" y="144" width="12" height="12" rx="3" fill="#1E262B"/>
-                <rect x="118" y="144" width="18" height="18" rx="3" fill="#1E262B"/>
-                <rect x="144" y="144" width="28" height="12" rx="3" fill="#1E262B"/>
-                <text x="42" y="198" fill="#67747D" font-size="15" font-family="IBM Plex Sans, Segoe UI, sans-serif">windows-login-qr</text>
-                <rect x="275" y="54" width="212" height="132" rx="26" fill="#F1FAF8" stroke="#D5E7E2"/>
-                <rect x="301" y="82" width="160" height="72" rx="18" fill="#FFFFFF" stroke="#CFE0DB"/>
-                <path d="M333 118H430" stroke="#0F766A" stroke-width="12" stroke-linecap="round"/>
-                <path d="M409 98L429 118L409 138" stroke="#0F766A" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"/>
-                <text x="307" y="176" fill="#67747D" font-size="15" font-family="IBM Plex Sans, Segoe UI, sans-serif">GitHub Actions hosted Windows</text>
-                <rect x="536" y="32" width="210" height="176" rx="26" fill="#FFFDF8" stroke="#E1D7C8"/>
-                <rect x="566" y="62" width="150" height="28" rx="10" fill="#1E262B" fill-opacity="0.06"/>
-                <rect x="566" y="102" width="120" height="24" rx="10" fill="#D55F2A" fill-opacity="0.16"/>
-                <rect x="566" y="136" width="132" height="24" rx="10" fill="#0F766A" fill-opacity="0.14"/>
-                <text x="566" y="186" fill="#67747D" font-size="15" font-family="IBM Plex Sans, Segoe UI, sans-serif">windows-login-cookies</text>
-              </svg>
-            </div>
-            <ol class="guide-list">
-              <li>登录后点击“启动 Windows 二维码登录”，Worker 会直接触发仓库里的 <code>windows-login.yml</code>。</li>
-              <li>打开 GitHub Actions 运行记录，查看日志里的链接或下载 <code>windows-login-qr</code> 图片扫码。</li>
-              <li>确认登录后，下载 <code>windows-login-cookies</code> artifact，再粘贴到下面的 Cookies 区域上传。</li>
-            </ol>
-            <div class="artifact-row">
-              <span class="artifact-pill">windows-login-qr</span>
-              <span class="artifact-pill">windows-login-debug</span>
-              <span class="artifact-pill">windows-login-cookies</span>
-            </div>
-            <div id="login-workflow-hint" class="fine-print">登录后会在这里显示当前 GitHub 仓库和工作流入口。</div>
-          </section>
+      ${isHome ? renderHomeContent() : renderSettingsContent(installURL)}
 
-          <section class="settings-card">
-            <h3>浏览器脚本与 Cookies</h3>
-            <p>如果你仍然习惯在浏览器里操作，可以安装 Tampermonkey 脚本辅助导入链接和可见 Cookie；也可以直接手动粘贴 cookies.json / Cookie Header。</p>
-            <div class="actions" style="margin-top:14px;">
-              <a class="button-link primary" href="${installURL}" target="_blank" rel="noreferrer">安装 Tampermonkey 脚本</a>
-            </div>
-            <div class="fields">
-              <div class="field">
-                <label for="cookies">Cookies 内容</label>
-                <textarea id="cookies" placeholder='{"cookie_name":"cookie_value"}'></textarea>
-              </div>
-              <div class="actions">
-                <button id="upload-cookies-btn" class="primary" type="button">上传 Cookies</button>
-                <button id="example-cookies-btn" class="secondary" type="button">填入示例</button>
-              </div>
-            </div>
-            <div class="fine-print">支持三种格式：JSON 对象、浏览器导出的 Cookie 数组、或直接粘贴 <code>name=value; name2=value2</code>。</div>
-          </section>
-        </div>
-      </section>
-
-      <section class="panel">
-        <h2>账户状态</h2>
-        <div class="stats">
-          <div class="stat">
-            <label>Cookies</label>
+      <section class="card">
+        <h2>概览</h2>
+        <div class="stats" style="margin-top:14px;">
+          <div class="metric">
+            <span>Cookies</span>
             <strong id="stat-cookies">-</strong>
           </div>
-          <div class="stat">
-            <label>总任务</label>
+          <div class="metric">
+            <span>总任务</span>
             <strong id="stat-total">0</strong>
           </div>
-          <div class="stat">
-            <label>运行中</label>
+          <div class="metric">
+            <span>运行中</span>
             <strong id="stat-running">0</strong>
           </div>
-          <div class="stat">
-            <label>已完成</label>
+          <div class="metric">
+            <span>已完成</span>
             <strong id="stat-success">0</strong>
           </div>
         </div>
       </section>
 
-      <section class="panel">
+      <section class="card">
         <h2>最近任务</h2>
-        <p>只显示最近 20 分钟内更新过的最新 5 条任务。</p>
         <div id="jobs" class="jobs" style="margin-top:14px;">
-          <div class="empty">暂无任务。</div>
+          <div class="empty">暂无任务</div>
         </div>
       </section>
     </main>
@@ -592,18 +397,12 @@ export function renderApp(appOrigin: string, page: AppPage): string {
         authenticated: false,
         registrationOpen: false,
         user: null,
-        workflowRepository: "",
-        workflowFile: "",
-        workflowURL: "",
-        loginWorkflowFile: "",
-        loginWorkflowURL: "",
-        loginRunsURL: "",
-        workflowRef: "main",
+        loginSessionId: "",
+        lastLoginSessionStatus: "",
       };
 
       const el = {
         notice: document.getElementById("notice"),
-        authPanel: document.getElementById("auth-panel"),
         userChip: document.getElementById("user-chip"),
         authUsername: document.getElementById("auth-username"),
         authPassword: document.getElementById("auth-password"),
@@ -614,12 +413,13 @@ export function renderApp(appOrigin: string, page: AppPage): string {
         createJobBtn: document.getElementById("create-job-btn"),
         refreshBtn: document.getElementById("refresh-btn"),
         cookies: document.getElementById("cookies"),
-        startLoginWorkflowBtn: document.getElementById("start-login-workflow-btn"),
-        loginWorkflowLink: document.getElementById("login-workflow-link"),
-        loginRunsLink: document.getElementById("login-runs-link"),
-        loginWorkflowHint: document.getElementById("login-workflow-hint"),
         uploadCookiesBtn: document.getElementById("upload-cookies-btn"),
         exampleCookiesBtn: document.getElementById("example-cookies-btn"),
+        startLoginWorkflowBtn: document.getElementById("start-login-workflow-btn"),
+        loginBox: document.getElementById("login-box"),
+        loginStatus: document.getElementById("login-status"),
+        loginQRImage: document.getElementById("login-qr-image"),
+        loginHint: document.getElementById("login-hint"),
         statCookies: document.getElementById("stat-cookies"),
         statTotal: document.getElementById("stat-total"),
         statRunning: document.getElementById("stat-running"),
@@ -647,17 +447,6 @@ export function renderApp(appOrigin: string, page: AppPage): string {
         button.disabled = busy;
       }
 
-      function setLinkState(node, href) {
-        if (!node) return;
-        if (href) {
-          node.href = href;
-          node.removeAttribute("aria-disabled");
-        } else {
-          node.href = "#";
-          node.setAttribute("aria-disabled", "true");
-        }
-      }
-
       function escapeHTML(value) {
         return String(value)
           .replaceAll("&", "&amp;")
@@ -667,23 +456,28 @@ export function renderApp(appOrigin: string, page: AppPage): string {
       }
 
       function formatTime(value) {
-        if (!value) return "未开始";
+        if (!value) return "-";
         const date = new Date(value);
         return Number.isNaN(date.getTime()) ? value : date.toLocaleString();
       }
 
       function formatStage(stage) {
         switch (stage) {
-          case "waiting_runner": return "等待远程 runner";
-          case "preparing": return "准备环境";
+          case "waiting_runner": return "等待 runner";
+          case "preparing": return "准备中";
           case "queued": return "排队中";
-          case "resolving": return "解析回放";
-          case "downloading": return "下载分片";
-          case "converting": return "转换 MP4";
+          case "resolving": return "解析中";
+          case "downloading": return "下载中";
+          case "converting": return "转码中";
           case "completed": return "已完成";
           case "failed": return "失败";
-          default: return stage || "未知";
+          default: return stage || "-";
         }
+      }
+
+      function qrImageURL(value) {
+        if (!value) return "";
+        return "https://api.qrserver.com/v1/create-qr-code/?size=280x280&data=" + encodeURIComponent(value);
       }
 
       async function request(path, options) {
@@ -698,7 +492,6 @@ export function renderApp(appOrigin: string, page: AppPage): string {
         const payload = contentType.includes("application/json")
           ? await response.json()
           : await response.text();
-
         if (!response.ok) {
           const message = typeof payload === "string"
             ? payload
@@ -725,9 +518,7 @@ export function renderApp(appOrigin: string, page: AppPage): string {
             if (!item || typeof item !== "object") return result;
             const name = item.name || item.Name;
             const value = item.value || item.Value;
-            if (typeof name === "string" && typeof value === "string") {
-              result[name] = value;
-            }
+            if (typeof name === "string" && typeof value === "string") result[name] = value;
             return result;
           }, {});
         }
@@ -742,90 +533,91 @@ export function renderApp(appOrigin: string, page: AppPage): string {
           const value = chunk.slice(index + 1).trim();
           if (name) cookieMap[name] = value;
         });
-        if (Object.keys(cookieMap).length === 0) {
-          throw new Error("没解析出任何 cookie 键值对。");
-        }
+        if (Object.keys(cookieMap).length === 0) throw new Error("没解析出任何 cookie。");
         return cookieMap;
       }
 
       function renderAuthState() {
-        const canStartLoginWorkflow = state.authenticated && Boolean(state.workflowRepository);
         if (state.authenticated && state.user) {
-          const roleSuffix = state.user.is_sudo ? " (sudo)" : "";
-          el.userChip.textContent = "已登录: " + state.user.username + roleSuffix;
-          el.logoutBtn.classList.remove("hidden");
+          el.userChip.textContent = "已登录：" + state.user.username + (state.user.is_sudo ? " (sudo)" : "");
           el.loginBtn.classList.add("hidden");
           el.registerBtn.classList.add("hidden");
-          if (el.startLoginWorkflowBtn) {
-            el.startLoginWorkflowBtn.disabled = !canStartLoginWorkflow;
-          }
+          el.logoutBtn.classList.remove("hidden");
+          if (el.startLoginWorkflowBtn) el.startLoginWorkflowBtn.disabled = false;
           return;
         }
+
         el.userChip.textContent = "未登录";
-        el.logoutBtn.classList.add("hidden");
         el.loginBtn.classList.remove("hidden");
+        el.logoutBtn.classList.add("hidden");
         if (state.registrationOpen) {
           el.registerBtn.classList.remove("hidden");
         } else {
           el.registerBtn.classList.add("hidden");
         }
-        if (el.startLoginWorkflowBtn) {
-          el.startLoginWorkflowBtn.disabled = true;
-        }
-      }
-
-      function renderWorkflowInfo(payload) {
-        if (!payload || typeof payload !== "object") return;
-        state.workflowRepository = payload.workflow_repository || state.workflowRepository || "";
-        state.workflowFile = payload.workflow_file || state.workflowFile || "";
-        state.workflowURL = payload.workflow_url || state.workflowURL || "";
-        state.loginWorkflowFile = payload.login_workflow_file || state.loginWorkflowFile || "";
-        state.loginWorkflowURL = payload.login_workflow_url || state.loginWorkflowURL || "";
-        state.loginRunsURL = payload.login_runs_url || state.loginRunsURL || "";
-        state.workflowRef = payload.workflow_ref || state.workflowRef || "main";
-
-        setLinkState(el.loginWorkflowLink, state.loginWorkflowURL);
-        setLinkState(el.loginRunsLink, state.loginRunsURL);
-
-        if (el.loginWorkflowHint) {
-          if (state.workflowRepository) {
-            el.loginWorkflowHint.textContent =
-              "当前仓库: " + state.workflowRepository +
-              " · 默认分支: " + state.workflowRef +
-              " · 登录工作流: " + (state.loginWorkflowFile || "windows-login.yml");
-          } else {
-            el.loginWorkflowHint.textContent = "当前未配置 GitHub Actions 仓库，无法触发远程二维码登录。";
-          }
-        }
-
-        renderAuthState();
+        if (el.startLoginWorkflowBtn) el.startLoginWorkflowBtn.disabled = true;
       }
 
       function renderJobs(jobs) {
         if (!Array.isArray(jobs) || jobs.length === 0) {
-          el.jobs.innerHTML = '<div class="empty">最近 20 分钟内没有任务。</div>';
+          el.jobs.innerHTML = '<div class="empty">暂无任务</div>';
           return;
         }
+
         el.jobs.innerHTML = jobs.map((job) => {
+          const title = job.current_title || (Array.isArray(job.titles) && job.titles[0]) || "下载任务";
+          const progress = Math.max(0, Math.min(100, Number(job.progress_percent || 0)));
           const files = Array.isArray(job.files) ? job.files : [];
           const errors = Array.isArray(job.errors) ? job.errors : [];
-          const progress = Math.max(0, Math.min(100, Number(job.progress_percent || 0)));
-          const title = job.current_title || (Array.isArray(job.titles) && job.titles[0]) || "下载任务";
           return [
             '<section class="job">',
             '<div class="job-top">',
-            '<div><div class="job-id">' + escapeHTML(job.id) + '</div><h3 class="job-title">' + escapeHTML(title) + '</h3></div>',
-            '<strong>' + escapeHTML(job.status || "unknown") + '</strong>',
+            '<div><div class="job-id">' + escapeHTML(job.id) + '</div><div class="job-title">' + escapeHTML(title) + '</div></div>',
+            '<span class="status ' + escapeHTML(String(job.status || '').toLowerCase()) + '">' + escapeHTML(job.status || '-') + '</span>',
             '</div>',
-            '<div class="job-meta">' + escapeHTML(formatStage(job.stage)) + " | " + escapeHTML(progress.toFixed(1)) + '%</div>',
-            '<div class="progress-track"><div class="progress-fill" style="width:' + escapeHTML(progress.toFixed(1)) + '%"></div></div>',
-            '<div class="job-meta">创建: ' + escapeHTML(formatTime(job.created_at)) + '</div>',
-            Number(job.total_parts || 0) > 0 ? '<div class="job-meta">分片: ' + escapeHTML(String(job.completed_parts || 0)) + ' / ' + escapeHTML(String(job.total_parts || 0)) + '</div>' : '',
-            files.length ? '<div class="job-files">' + files.map((file) => '<div><a href="' + escapeHTML(file.download_url || "#") + '" target="_blank" rel="noreferrer">' + escapeHTML(file.name) + '</a></div>').join("") + '</div>' : '',
-            errors.length ? '<div class="job-errors">' + errors.map(escapeHTML).join("<br/>") + '</div>' : '',
-            '</section>',
-          ].join("");
-        }).join("");
+            '<div class="job-meta">阶段：' + escapeHTML(formatStage(job.stage)) + ' · 创建时间：' + escapeHTML(formatTime(job.created_at)) + '</div>',
+            '<div class="progress"><div style="width:' + escapeHTML(progress.toFixed(1)) + '%"></div></div>',
+            files.length ? '<div class="files">' + files.map((file) => '<a href="' + escapeHTML(file.download_url || '#') + '" target="_blank" rel="noreferrer">' + escapeHTML(file.name) + '</a>').join('') + '</div>' : '',
+            errors.length ? '<div class="job-errors">' + errors.map(escapeHTML).join('<br/>') + '</div>' : '',
+            '</section>'
+          ].join('');
+        }).join('');
+      }
+
+      function renderLoginSession(payload) {
+        if (!el.loginBox || !el.loginStatus || !el.loginHint || !el.loginQRImage) return;
+        const session = payload && payload.login_session ? payload.login_session : null;
+        if (!session) {
+          el.loginBox.classList.add("hidden");
+          el.loginQRImage.classList.add("hidden");
+          return;
+        }
+
+        state.loginSessionId = session.id || state.loginSessionId;
+        state.lastLoginSessionStatus = session.status || "";
+        el.loginBox.classList.remove("hidden");
+
+        if (session.status === "pending") {
+          el.loginStatus.textContent = "已启动，等待二维码...";
+          el.loginHint.textContent = "Action 正在识别二维码。";
+          el.loginQRImage.classList.add("hidden");
+        } else if (session.status === "qr_ready") {
+          el.loginStatus.textContent = "请扫码登录";
+          el.loginHint.textContent = "二维码来自 Action 返回的 URL，前端已转成 PNG。";
+          el.loginQRImage.src = qrImageURL(session.qr_url || "");
+          el.loginQRImage.classList.remove("hidden");
+        } else if (session.status === "completed") {
+          el.loginStatus.textContent = "登录完成";
+          el.loginHint.textContent = "Cookies 已直接同步到 Worker。";
+          if (session.qr_url) {
+            el.loginQRImage.src = qrImageURL(session.qr_url);
+            el.loginQRImage.classList.remove("hidden");
+          }
+        } else {
+          el.loginStatus.textContent = "登录失败";
+          el.loginHint.textContent = session.error_message || "请重试。";
+          el.loginQRImage.classList.add("hidden");
+        }
       }
 
       function decodeImportPayload() {
@@ -835,20 +627,16 @@ export function renderApp(appOrigin: string, page: AppPage): string {
           const encoded = hash.slice("#import=".length);
           const decoded = decodeURIComponent(escape(atob(encoded)));
           const payload = JSON.parse(decoded);
-
-          if (payload.url && el.urls) {
-            el.urls.value = payload.url + (el.urls.value ? "\\n" + el.urls.value : "");
-          }
+          if (payload.url && el.urls) el.urls.value = payload.url + (el.urls.value ? "\n" + el.urls.value : "");
           if (payload.cookies && el.cookies) {
             el.cookies.value = JSON.stringify(payload.cookies, null, 2);
           } else if (payload.cookie_header && el.cookies) {
             el.cookies.value = payload.cookie_header;
           }
-
-          setNotice("已导入 Tampermonkey 的链接和可见 Cookie。", "ok");
+          setNotice("已导入链接和 Cookie。", "ok");
           history.replaceState(null, "", window.location.pathname);
         } catch {
-          setNotice("Tampermonkey 导入失败，请手动粘贴。", "error");
+          setNotice("导入失败，请手动粘贴。", "error");
         }
       }
 
@@ -857,7 +645,6 @@ export function renderApp(appOrigin: string, page: AppPage): string {
         state.authenticated = Boolean(payload.authenticated);
         state.registrationOpen = Boolean(payload.registration_open);
         state.user = payload.user || null;
-        renderWorkflowInfo(payload);
         renderAuthState();
         return payload;
       }
@@ -877,136 +664,103 @@ export function renderApp(appOrigin: string, page: AppPage): string {
           request("/api/jobs"),
         ]);
 
-        renderWorkflowInfo(status);
         el.statCookies.textContent = status.cookies_ready ? "已就绪" : "未准备";
         el.statTotal.textContent = String(status.total_jobs || 0);
-        el.statRunning.textContent = String(status.running_jobs || 0);
+        el.statRunning.textContent = String((status.running_jobs || 0) + (status.queued_jobs || 0));
         el.statSuccess.textContent = String(status.succeeded_jobs || 0);
         renderJobs(jobsPayload.jobs || []);
       }
 
+      async function refreshLoginSession() {
+        if (!state.authenticated || (!el.loginBox && !state.loginSessionId)) return;
+        const suffix = state.loginSessionId ? ("?id=" + encodeURIComponent(state.loginSessionId)) : "";
+        const payload = await request("/api/login-workflow" + suffix);
+        renderLoginSession(payload);
+      }
+
       async function login() {
-        const username = (el.authUsername.value || "").trim();
-        const password = (el.authPassword.value || "").trim();
         await request("/api/auth/login", {
           method: "POST",
-          body: JSON.stringify({ username, password }),
+          body: JSON.stringify({
+            username: (el.authUsername.value || "").trim(),
+            password: (el.authPassword.value || "").trim(),
+          }),
         });
         await refreshAuth();
         await refreshStatusAndJobs();
+        if (PAGE === "settings") await refreshLoginSession();
         clearNotice();
       }
 
-      async function registerFirstUser() {
-        const username = (el.authUsername.value || "").trim();
-        const password = (el.authPassword.value || "").trim();
+      async function registerUser() {
         await request("/api/auth/register", {
           method: "POST",
-          body: JSON.stringify({ username, password }),
+          body: JSON.stringify({
+            username: (el.authUsername.value || "").trim(),
+            password: (el.authPassword.value || "").trim(),
+          }),
         });
         await refreshAuth();
         await refreshStatusAndJobs();
-        setNotice("账号已创建并登录。", "ok");
+        setNotice("注册成功。", "ok");
       }
 
       async function logout() {
         await request("/api/auth/logout", { method: "POST" });
+        state.loginSessionId = "";
+        state.lastLoginSessionStatus = "";
         await refreshAuth();
         await refreshStatusAndJobs();
+        if (el.loginBox) el.loginBox.classList.add("hidden");
       }
 
       async function createJob() {
         if (!state.authenticated) throw new Error("请先登录。");
-        const urls = (el.urls.value || "")
-          .split("\\n")
-          .map((item) => item.trim())
-          .filter(Boolean);
-        if (urls.length === 0) throw new Error("先填至少一个回放链接。");
-
-        const body = {
-          thread: 100,
-          create_video_list: true,
-          output_subdir: "",
-        };
-        if (urls.length === 1) {
-          body.url = urls[0];
-        } else {
-          body.urls = urls;
-        }
-
-        const payload = await request("/api/jobs", {
-          method: "POST",
-          body: JSON.stringify(body),
-        });
-        setNotice("任务已创建: " + payload.id, "ok");
+        const urls = (el.urls.value || "").split("\n").map((item) => item.trim()).filter(Boolean);
+        if (urls.length === 0) throw new Error("请先填链接。");
+        const body = { thread: 100, create_video_list: true, output_subdir: "" };
+        if (urls.length === 1) body.url = urls[0]; else body.urls = urls;
+        const payload = await request("/api/jobs", { method: "POST", body: JSON.stringify(body) });
+        setNotice("任务已创建：" + payload.id, "ok");
         await refreshStatusAndJobs();
       }
 
       async function uploadCookies() {
         if (!state.authenticated) throw new Error("请先登录。");
-        const parsed = parseCookiesInput(el.cookies.value);
         const payload = await request("/api/cookies", {
           method: "POST",
-          body: JSON.stringify({ cookies: parsed }),
+          body: JSON.stringify({ cookies: parseCookiesInput(el.cookies.value) }),
         });
         setNotice(payload.message || "Cookies 已上传。", "ok");
         await refreshStatusAndJobs();
       }
 
       async function startLoginWorkflow() {
-        if (!state.authenticated) throw new Error("请先登录后再触发远程二维码登录。");
-        const payload = await request("/api/login-workflow", {
-          method: "POST",
-          body: JSON.stringify({}),
-        });
-        renderWorkflowInfo(payload);
-        setNotice(payload.message || "Windows 二维码登录工作流已触发。", "ok");
+        if (!state.authenticated) throw new Error("请先登录。");
+        const payload = await request("/api/login-workflow", { method: "POST", body: JSON.stringify({}) });
+        renderLoginSession(payload);
+        setNotice(payload.message || "已启动二维码登录。", "ok");
       }
 
       el.loginBtn.addEventListener("click", async () => {
         setBusy(el.loginBtn, true);
-        try {
-          await login();
-        } catch (error) {
-          setNotice(error.message, "error");
-        } finally {
-          setBusy(el.loginBtn, false);
-        }
+        try { await login(); } catch (error) { setNotice(error.message, "error"); } finally { setBusy(el.loginBtn, false); }
       });
 
       el.registerBtn.addEventListener("click", async () => {
         setBusy(el.registerBtn, true);
-        try {
-          await registerFirstUser();
-        } catch (error) {
-          setNotice(error.message, "error");
-        } finally {
-          setBusy(el.registerBtn, false);
-        }
+        try { await registerUser(); } catch (error) { setNotice(error.message, "error"); } finally { setBusy(el.registerBtn, false); }
       });
 
       el.logoutBtn.addEventListener("click", async () => {
         setBusy(el.logoutBtn, true);
-        try {
-          await logout();
-          setNotice("已退出登录。", "ok");
-        } catch (error) {
-          setNotice(error.message, "error");
-        } finally {
-          setBusy(el.logoutBtn, false);
-        }
+        try { await logout(); setNotice("已退出登录。", "ok"); } catch (error) { setNotice(error.message, "error"); } finally { setBusy(el.logoutBtn, false); }
       });
 
       if (el.createJobBtn) {
         el.createJobBtn.addEventListener("click", async () => {
           setBusy(el.createJobBtn, true);
-          try {
-            await createJob();
-          } catch (error) {
-            setNotice(error.message, "error");
-          } finally {
-            setBusy(el.createJobBtn, false);
-          }
+          try { await createJob(); } catch (error) { setNotice(error.message, "error"); } finally { setBusy(el.createJobBtn, false); }
         });
       }
 
@@ -1014,6 +768,7 @@ export function renderApp(appOrigin: string, page: AppPage): string {
         el.refreshBtn.addEventListener("click", async () => {
           try {
             await refreshStatusAndJobs();
+            if (PAGE === "settings") await refreshLoginSession();
           } catch (error) {
             setNotice(error.message, "error");
           }
@@ -1023,50 +778,39 @@ export function renderApp(appOrigin: string, page: AppPage): string {
       if (el.uploadCookiesBtn) {
         el.uploadCookiesBtn.addEventListener("click", async () => {
           setBusy(el.uploadCookiesBtn, true);
-          try {
-            await uploadCookies();
-          } catch (error) {
-            setNotice(error.message, "error");
-          } finally {
-            setBusy(el.uploadCookiesBtn, false);
-          }
+          try { await uploadCookies(); } catch (error) { setNotice(error.message, "error"); } finally { setBusy(el.uploadCookiesBtn, false); }
         });
       }
 
       if (el.startLoginWorkflowBtn) {
         el.startLoginWorkflowBtn.addEventListener("click", async () => {
           setBusy(el.startLoginWorkflowBtn, true);
-          try {
-            await startLoginWorkflow();
-          } catch (error) {
-            setNotice(error.message, "error");
-          } finally {
-            renderAuthState();
-          }
+          try { await startLoginWorkflow(); } catch (error) { setNotice(error.message, "error"); } finally { setBusy(el.startLoginWorkflowBtn, false); }
         });
       }
 
       if (el.exampleCookiesBtn) {
         el.exampleCookiesBtn.addEventListener("click", () => {
           if (!el.cookies) return;
-          el.cookies.value = JSON.stringify({
-            acw_tc: "replace-me",
-            csrfToken: "optional",
-          }, null, 2);
+          el.cookies.value = JSON.stringify({ LV_PC_SESSION: "replace-me" }, null, 2);
         });
       }
 
       decodeImportPayload();
 
-      refreshAuth()
-        .then(refreshStatusAndJobs)
-        .catch((error) => setNotice(error.message, "error"));
+      async function refreshAll() {
+        await refreshAuth();
+        await refreshStatusAndJobs();
+        if (PAGE === "settings" || state.loginSessionId) {
+          await refreshLoginSession();
+        }
+      }
+
+      refreshAll().catch((error) => setNotice(error.message, "error"));
 
       if (pollingHandle) clearInterval(pollingHandle);
       pollingHandle = setInterval(() => {
-        refreshAuth()
-          .then(refreshStatusAndJobs)
-          .catch(() => {});
+        refreshAll().catch(() => {});
       }, 5000);
     </script>
   </body>
