@@ -1,7 +1,7 @@
 name: Check Upstream Updates
 
 on:
-  workflow_dispatch: {}
+  workflow_dispatch:
   schedule:
     - cron: '17 */6 * * *'
 
@@ -16,18 +16,17 @@ jobs:
       - name: Compare upstream and current repository
         env:
           GH_TOKEN: ${{ github.token }}
+          CURRENT_REPO: ${{ github.repository }}
+          CURRENT_BRANCH: main
           ISSUE_TITLE: Upstream sync available
+          UPSTREAM_REPO: NAXG/GoDingtalk
         run: |
           set -euo pipefail
 
-          UPSTREAM_REPO="NAXG/GoDingtalk"
-          CURRENT_REPO="${GITHUB_REPOSITORY}"
-          CURRENT_BRANCH="main"
-
-          UPSTREAM_BRANCH="$(gh api repos/${UPSTREAM_REPO} -q '.default_branch')"
-          UPSTREAM_SHA="$(gh api repos/${UPSTREAM_REPO}/commits/${UPSTREAM_BRANCH} -q '.sha')"
-          CURRENT_SHA="$(gh api repos/${CURRENT_REPO}/commits/${CURRENT_BRANCH} -q '.sha')"
-          ISSUE_NUMBER="$(gh issue list --repo "${CURRENT_REPO}" --state open --search "${ISSUE_TITLE} in:title" --json number --jq '.[0].number // empty')"
+          UPSTREAM_BRANCH=$(gh api repos/${UPSTREAM_REPO} -q '.default_branch')
+          UPSTREAM_SHA=$(gh api repos/${UPSTREAM_REPO}/commits/${UPSTREAM_BRANCH} -q '.sha')
+          CURRENT_SHA=$(gh api repos/${CURRENT_REPO}/commits/${CURRENT_BRANCH} -q '.sha')
+          ISSUE_NUMBER=$(gh issue list --repo "${CURRENT_REPO}" --state open --search "${ISSUE_TITLE} in:title" --json number --jq '.[0].number // empty')
 
           if [ "${UPSTREAM_SHA}" = "${CURRENT_SHA}" ]; then
             echo "No upstream update needed."
@@ -38,21 +37,20 @@ jobs:
             exit 0
           fi
 
-          BODY=$(cat <<MSG
+          cat > /tmp/upstream-update-body.txt <<MSG
 Detected a newer upstream commit.
 
 - Upstream repo: https://github.com/${UPSTREAM_REPO}
-- Upstream branch: `${UPSTREAM_BRANCH}`
+- Upstream branch: ${UPSTREAM_BRANCH}
 - Upstream latest commit: https://github.com/${UPSTREAM_REPO}/commit/${UPSTREAM_SHA}
-- Current repo branch: `${CURRENT_BRANCH}`
+- Current repo branch: ${CURRENT_BRANCH}
 - Current repo latest commit: https://github.com/${CURRENT_REPO}/commit/${CURRENT_SHA}
 
 Please review whether to sync upstream changes.
 MSG
-)
 
           if [ -n "${ISSUE_NUMBER}" ]; then
-            gh issue comment "${ISSUE_NUMBER}" --repo "${CURRENT_REPO}" --body "${BODY}"
+            gh issue comment "${ISSUE_NUMBER}" --repo "${CURRENT_REPO}" --body-file /tmp/upstream-update-body.txt
           else
-            gh issue create --repo "${CURRENT_REPO}" --title "${ISSUE_TITLE}" --body "${BODY}"
+            gh issue create --repo "${CURRENT_REPO}" --title "${ISSUE_TITLE}" --body-file /tmp/upstream-update-body.txt
           fi
