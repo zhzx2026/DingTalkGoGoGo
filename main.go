@@ -319,6 +319,33 @@ func captureViewportScreenshot(ctx context.Context) ([]byte, error) {
 	return screenshot, err
 }
 
+func ensureQRCodeTab(ctx context.Context, debugDir string) error {
+	var clicked bool
+	err := chromedp.Run(ctx, chromedp.Evaluate(`(() => {
+		const candidates = Array.from(document.querySelectorAll('button, a, div, span'))
+		  .filter((node) => {
+		    const text = (node.textContent || '').trim().toLowerCase();
+		    return text === 'qr code' || text.includes('qr code') || text.includes('扫码');
+		  });
+		const target = candidates.find((node) => typeof node.click === 'function');
+		if (!target) return false;
+		target.click();
+		return true;
+	})()`, &clicked))
+	if err != nil {
+		return err
+	}
+
+	if strings.TrimSpace(debugDir) != "" {
+		message := time.Now().Format(time.RFC3339) + " 尝试切换到二维码登录页签: " + strconv.FormatBool(clicked) + "\n"
+		_ = saveDebugFile(filepath.Join(debugDir, "login-qr-tab.log"), []byte(message))
+	}
+
+	// Give the page a moment to render the QR code panel after the tab switch.
+	time.Sleep(1500 * time.Millisecond)
+	return nil
+}
+
 func waitForLoginQRCodeURL(ctx context.Context, debugDir string) (string, []byte, error) {
 	deadline := time.Now().Add(45 * time.Second)
 	var lastErr error
@@ -473,6 +500,9 @@ func startChromeQRLogin(config *Config, qrOutputPath string) error {
 		return fmt.Errorf("打开登录页失败: %w", err)
 	}
 	_ = saveDebugFile(filepath.Join(debugDir, "login-qr-debug.log"), []byte(time.Now().Format(time.RFC3339)+" 登录页已打开，开始识别二维码\n"))
+	if err := ensureQRCodeTab(ctx, debugDir); err != nil {
+		return fmt.Errorf("切换二维码登录页签失败: %w", err)
+	}
 
 	qrURL, rawQRImage, err := waitForLoginQRCodeURL(ctx, debugDir)
 	if err != nil {
