@@ -9,7 +9,7 @@ function renderNav(page: AppPage): string {
     { key: "login", href: "/login", label: "登录" },
   ];
 
-  return `<nav class="nav">${items.map((item) => `<a href="${item.href}" class="${page === item.key ? "active" : ""}">${item.label}</a>`).join("")}</nav>`;
+  return `<nav class="nav">${items.map((item) => `<a href="${item.href}" data-nav="${item.key}" class="${page === item.key ? "active" : ""}">${item.label}</a>`).join("")}</nav>`;
 }
 
 function renderDownloadPage(): string {
@@ -93,22 +93,7 @@ function renderSettingsPage(installURL: string): string {
           <img id="login-qr-image" class="qr-image hidden" alt="登录二维码" />
           <div id="login-hint" class="muted small">点击按钮后请耐心等待，大多数情况下约 1 分钟内出现二维码。</div>
         </div>
-      </section>
-
-      <section class="card">
-        <h2>手动导入（兜底）</h2>
-        <p class="muted">默认不需要。若二维码流程异常，可用 Tampermonkey 或手动粘贴 Cookie。</p>
-        <div class="actions">
-          <a class="button-link" href="${installURL}" target="_blank" rel="noreferrer">安装 Tampermonkey</a>
-          <button id="example-cookies-btn" type="button">示例</button>
-        </div>
-        <div class="field">
-          <label for="cookies">Cookies 内容</label>
-          <textarea id="cookies" placeholder='{"LV_PC_SESSION":"replace-me"}'></textarea>
-        </div>
-        <div class="actions">
-          <button id="upload-cookies-btn" class="primary" type="button">上传 Cookies</button>
-        </div>
+        <div class="notice warn" style="margin-top:14px;">不提供手动输入入口。请直接使用二维码登录流程。</div>
       </section>`;
 }
 
@@ -137,6 +122,12 @@ function renderAccountPage(): string {
         <div class="actions">
           <button id="change-password-btn" class="primary" type="button">修改密码</button>
         </div>
+      </section>
+
+      <section id="admin-panel" class="card hidden">
+        <h2>用户管理</h2>
+        <p class="muted">仅 sudo 用户可见。这里可以查看所有用户的注册、免责声明、Cookies 和任务状态。</p>
+        <div id="admin-users" class="admin-users" style="margin-top:14px;"><div class="empty">暂无数据</div></div>
       </section>`;
 }
 
@@ -280,6 +271,11 @@ export function renderApp(appOrigin: string, page: AppPage): string {
       .legal-text { margin-top: 14px; display: grid; gap: 10px; line-height: 1.75; }
       .legal-text h3 { margin: 12px 0 0; font-size: 16px; }
       .legal-text p { margin: 0; color: var(--text); }
+      .admin-users { display: grid; gap: 10px; }
+      .admin-user { padding: 14px; border: 1px solid var(--line); border-radius: 12px; background: #fafcff; }
+      .admin-user-top { display: flex; justify-content: space-between; gap: 12px; align-items: flex-start; }
+      .admin-user-name { font-weight: 700; font-size: 16px; }
+      .admin-user-meta { margin-top: 8px; color: var(--muted); line-height: 1.7; font-size: 14px; }
       .checkbox-row { display: flex; gap: 10px; align-items: flex-start; margin-top: 16px; line-height: 1.7; }
       .checkbox-row input { width: 18px; height: 18px; margin-top: 3px; }
       .small { font-size: 13px; }
@@ -354,6 +350,9 @@ export function renderApp(appOrigin: string, page: AppPage): string {
         legalState: document.getElementById("legal-state"),
         legalWarning: document.getElementById("legal-warning"),
         loginLegalWarning: document.getElementById("login-legal-warning"),
+        adminPanel: document.getElementById("admin-panel"),
+        adminUsers: document.getElementById("admin-users"),
+        loginNavLink: document.querySelector('[data-nav="login"]'),
       };
 
       let pollingHandle = null;
@@ -466,11 +465,13 @@ export function renderApp(appOrigin: string, page: AppPage): string {
           if (el.registerBtn) el.registerBtn.classList.add("hidden");
           if (el.logoutBtn) el.logoutBtn.classList.remove("hidden");
           if (el.authCardHint) el.authCardHint.textContent = "你已登录，可以直接去下载、二维码登录或账号页操作。";
+          if (el.loginNavLink) el.loginNavLink.classList.add("hidden");
         } else {
           if (el.userChip) el.userChip.textContent = "未登录";
           if (el.loginBtn) el.loginBtn.classList.remove("hidden");
           if (el.logoutBtn) el.logoutBtn.classList.add("hidden");
           if (el.authCardHint) el.authCardHint.textContent = "登录后才能使用下载、二维码登录和账号管理功能。";
+          if (el.loginNavLink) el.loginNavLink.classList.remove("hidden");
           if (el.registerBtn) {
             if (state.registrationOpen) el.registerBtn.classList.remove("hidden"); else el.registerBtn.classList.add("hidden");
           }
@@ -511,9 +512,32 @@ export function renderApp(appOrigin: string, page: AppPage): string {
         if (!el.accountSummary) return;
         if (!state.authenticated || !state.user) {
           el.accountSummary.textContent = "请先登录。";
+          if (el.adminPanel) el.adminPanel.classList.add("hidden");
           return;
         }
         el.accountSummary.textContent = "当前用户：" + state.user.username + " · 免责声明：" + (state.legalAccepted ? "已接受" : "未接受");
+        if (el.adminPanel) {
+          if (state.user.is_sudo) el.adminPanel.classList.remove("hidden"); else el.adminPanel.classList.add("hidden");
+        }
+      }
+
+      function renderAdminUsers(users) {
+        if (!el.adminUsers) return;
+        if (!Array.isArray(users) || users.length === 0) {
+          el.adminUsers.innerHTML = '<div class="empty">暂无用户数据</div>';
+          return;
+        }
+        el.adminUsers.innerHTML = users.map((user) => [
+          '<section class="admin-user">',
+          '<div class="admin-user-top">',
+          '<div><div class="admin-user-name">' + escapeHTML(user.username) + '</div><div class="job-id">' + escapeHTML(user.id) + '</div></div>',
+          '<span class="status ' + (user.is_sudo ? 'succeeded' : '') + '">' + (user.is_sudo ? 'sudo' : 'user') + '</span>',
+          '</div>',
+          '<div class="admin-user-meta">注册时间：' + escapeHTML(formatTime(user.created_at)) + '</div>',
+          '<div class="admin-user-meta">免责声明：' + escapeHTML(user.legal_accepted ? ('已接受 · ' + formatTime(user.legal_accepted_at)) : '未接受') + '</div>',
+          '<div class="admin-user-meta">Cookies：' + escapeHTML(user.cookies_ready ? '已就绪' : '未准备') + ' · 任务数：' + escapeHTML(String(user.total_jobs || 0)) + '</div>',
+          '</section>',
+        ].join('')).join('');
       }
 
       function renderJobs(jobs) {
@@ -564,10 +588,7 @@ export function renderApp(appOrigin: string, page: AppPage): string {
         } else if (session.status === "completed") {
           el.loginStatus.textContent = "登录完成";
           el.loginHint.textContent = "Cookies 已自动回传到 Worker，现在可以回到下载页。";
-          if (session.qr_url) {
-            el.loginQRImage.src = qrImageURL(session.qr_url);
-            el.loginQRImage.classList.remove("hidden");
-          }
+          el.loginQRImage.classList.add("hidden");
         } else {
           el.loginStatus.textContent = "登录失败";
           el.loginHint.textContent = session.error_message || "请重试。";
@@ -629,6 +650,12 @@ export function renderApp(appOrigin: string, page: AppPage): string {
         const suffix = state.loginSessionId ? ("?id=" + encodeURIComponent(state.loginSessionId)) : "";
         const payload = await request("/api/login-workflow" + suffix);
         renderLoginSession(payload);
+      }
+
+      async function refreshAdminUsers() {
+        if (!state.authenticated || !state.user || !state.user.is_sudo || !el.adminUsers) return;
+        const payload = await request("/api/admin/users");
+        renderAdminUsers(payload.users || []);
       }
 
       async function login() {
@@ -719,6 +746,7 @@ export function renderApp(appOrigin: string, page: AppPage): string {
         await refreshAuth();
         if (PAGE === "download") await refreshStatusAndJobs();
         if (PAGE === "settings" || state.loginSessionId) await refreshLoginSession();
+        if (PAGE === "account") await refreshAdminUsers();
       }
 
       refreshAll().catch((error) => setNotice(error.message, "error"));

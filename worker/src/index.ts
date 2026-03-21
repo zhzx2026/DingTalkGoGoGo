@@ -498,6 +498,13 @@ async function listAdminUsers(env: Env): Promise<AdminUserRecord[]> {
   });
 }
 
+function requireSudo(user: AuthUser): Response | null {
+  if (!user.is_sudo) {
+    return jsonResponse({ error: "sudo required" }, { status: 403 });
+  }
+  return null;
+}
+
 async function getAuthUser(request: Request, env: Env): Promise<AuthUser | null> {
   const token = getCookieValue(request, SESSION_COOKIE_NAME);
   if (!token) {
@@ -1297,6 +1304,19 @@ async function handleLegal(request: Request, env: Env, user: AuthUser): Promise<
   return jsonResponse({ error: "method not allowed" }, { status: 405 });
 }
 
+async function handleAdminUsers(request: Request, env: Env, user: AuthUser): Promise<Response> {
+  if (request.method !== "GET") {
+    return jsonResponse({ error: "method not allowed" }, { status: 405 });
+  }
+  const sudoError = requireSudo(user);
+  if (sudoError) {
+    return sudoError;
+  }
+  return jsonResponse({
+    users: await listAdminUsers(env),
+  });
+}
+
 async function handleStatus(env: Env, user: AuthUser): Promise<Response> {
   const [countsRow, cookieState, legalState] = await Promise.all([
     env.DB
@@ -1699,6 +1719,13 @@ export default {
           response = auth.response;
         } else {
           response = await handleLegal(request, env, auth.user as AuthUser);
+        }
+      } else if (url.pathname === "/api/admin/users") {
+        const auth = await requireUserAuth(request, env);
+        if (auth.response) {
+          response = auth.response;
+        } else {
+          response = await handleAdminUsers(request, env, auth.user as AuthUser);
         }
       } else if (url.pathname === "/api/jobs") {
         const auth = await requireUserAuth(request, env);
