@@ -92,6 +92,9 @@ npx wrangler deploy
 - `GODINGTALK_S3_SECRET_ACCESS_KEY`
 - `GODINGTALK_S3_BUCKET`（可选，不填默认 `godingtalk-files`）
 - `GODINGTALK_S3_REGION`（可选，Cloudflare R2 默认 `auto`，其它 S3 默认 `us-east-1`）
+- `AWS_BENCHMARK_ACCESS_KEY_ID`（可选）
+- `AWS_BENCHMARK_SECRET_ACCESS_KEY`（可选）
+- `AWS_BENCHMARK_SESSION_TOKEN`（可选）
 
 建议它们的含义如下：
 
@@ -102,6 +105,8 @@ npx wrangler deploy
 - `GODINGTALK_S3_ACCESS_KEY_ID` / `GODINGTALK_S3_SECRET_ACCESS_KEY`：给远程 runner 上传对象存储，也会同步到 Worker 供登录态下载使用
 - `GODINGTALK_S3_BUCKET`：真实的 bucket 名称
 - `GODINGTALK_S3_REGION`：对象存储签名 region；Cloudflare R2 推荐 `auto`
+- `AWS_BENCHMARK_ACCESS_KEY_ID` / `AWS_BENCHMARK_SECRET_ACCESS_KEY`（可选）：给 `s3-region-benchmark.yml` 做真实 AWS S3 跨区域测速；如果不配，会回退复用 `GODINGTALK_S3_ACCESS_KEY_ID` / `GODINGTALK_S3_SECRET_ACCESS_KEY`
+- `AWS_BENCHMARK_SESSION_TOKEN`（可选）：如果你用的是临时 STS 凭证，就一并配置
 
 兼容说明：
 
@@ -133,6 +138,17 @@ npx wrangler deploy
   - 回写最终状态
 - `.github/workflows/release.yml`
   - 打 tag 时构建二进制和 Docker 镜像
+- `.github/workflows/s3-region-benchmark.yml`
+  - 默认使用 GitHub-hosted `ubuntu-latest` runner，按“美国出口近似”去测真实 AWS S3 区域上传
+  - 每个 region 临时建 bucket，上传 `20 MiB` 测试文件，随后自动清理
+  - 汇总最快 region；默认覆盖当前 AWS commercial regions（不含 China / GovCloud）
+  - 兼容保留旧的 `signing-region` 模式，用来对单一 S3 endpoint 测签名 region
+
+`s3-region-benchmark.yml` 的注意点：
+
+- 真实跨区域测速需要 IAM 凭证至少具备这些权限：`s3:CreateBucket`、`s3:DeleteBucket`、`s3:PutObject`、`s3:DeleteObject`
+- 对于 `af-south-1`、`ap-east-1`、`ap-east-2`、`ap-south-2`、`ap-southeast-3/4/5/6/7`、`ca-west-1`、`eu-central-2`、`eu-south-1/2`、`il-central-1`、`me-south-1`、`me-central-1`、`mx-central-1` 这类 opt-in region，如果账号没启用，workflow 会把它们记成失败并保留原因
+- GitHub-hosted runner 的具体机房不能手动指定，但 `ubuntu-latest` 通常位于美国数据中心，所以这个结果更接近“从美国 Action 发起上传”的表现
 
 ### 5. 使用方式
 
