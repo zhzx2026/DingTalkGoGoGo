@@ -697,10 +697,11 @@ export function renderApp(appOrigin: string, page: AppPage): string {
       .side-number { font-size: 30px; line-height: 1; font-weight: 700; color: var(--text); letter-spacing: -0.03em; }
       .side-label { font-size: 12px; color: var(--muted); }
       .file-cluster { display: grid; gap: 10px; margin-top: 12px; }
-      .file-box { padding: 14px; border: 1px solid rgba(15,23,42,0.06); border-radius: var(--radius-md); background: rgba(255,255,255,0.56); }
-      .file-label { color: var(--muted); font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; }
-      .file-links { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
-      .file-links a { padding: 6px 12px; border-radius: 999px; background: rgba(0,113,227,0.08); color: var(--accent); text-decoration: none; font-weight: 600; border: 1px solid rgba(0,113,227,0.10); }
+      .file-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 12px; align-items: center; padding: 14px; border: 1px solid rgba(15,23,42,0.06); border-radius: var(--radius-md); background: rgba(255,255,255,0.56); }
+      .file-name { font-size: 14px; font-weight: 600; line-height: 1.5; color: var(--text); word-break: break-word; }
+      .storage-actions { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
+      .storage-chip { padding: 6px 12px; border-radius: 999px; background: rgba(0,113,227,0.10); color: var(--accent); text-decoration: none; font-weight: 600; border: 1px solid rgba(0,113,227,0.14); display: inline-flex; align-items: center; justify-content: center; min-width: 88px; }
+      .storage-chip.disabled { background: rgba(15,23,42,0.05); color: var(--muted); border-color: rgba(15,23,42,0.08); }
       .job-errors { margin-top: 14px; padding: 14px; border-radius: var(--radius-md); background: rgba(217,45,32,0.08); color: var(--danger); line-height: 1.7; font-size: 13px; border: 1px solid rgba(217,45,32,0.12); }
       .empty { padding: 28px 20px; color: var(--muted); text-align: center; }
       .pagination { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 16px 24px 24px; border-top: 1px solid rgba(15,23,42,0.06); }
@@ -748,6 +749,8 @@ export function renderApp(appOrigin: string, page: AppPage): string {
         .record-header { grid-template-columns: 1fr; }
         .record-side { justify-items: start; }
         .stats-row { grid-template-columns: 1fr 1fr; }
+        .file-row { grid-template-columns: 1fr; }
+        .storage-actions { justify-content: flex-start; }
         .card-body { padding: 18px; }
       }
       @media (max-width: 560px) {
@@ -889,10 +892,19 @@ export function renderApp(appOrigin: string, page: AppPage): string {
           case "resolving": return "解析中";
           case "downloading": return "下载中";
           case "converting": return "转码中";
+          case "uploading_r2": return "上传 R2 中";
+          case "uploading_s3": return "上传 S3 中";
           case "completed": return "已完成";
           case "failed": return "失败";
           default: return stage || "-";
         }
+      }
+
+      function storageButtonHTML(label, url, pendingLabel) {
+        if (url) {
+          return '<a class="storage-chip" href="' + escapeHTML(url) + '" target="_blank" rel="noreferrer">' + escapeHTML(label) + '</a>';
+        }
+        return '<button type="button" class="storage-chip disabled" disabled>' + escapeHTML(pendingLabel) + '</button>';
       }
 
       function formatNumber(value) {
@@ -1109,7 +1121,6 @@ export function renderApp(appOrigin: string, page: AppPage): string {
           const title = job.current_title || (Array.isArray(job.titles) && job.titles[0]) || "下载任务";
           const progress = Math.max(0, Math.min(100, Number(job.progress_percent || 0)));
           const files = Array.isArray(job.files) ? job.files : [];
-          const mp4Files = files.filter((file) => String(file.name || "").toLowerCase().endsWith(".mp4"));
           const errors = Array.isArray(job.errors) ? job.errors : [];
           const statusClass = escapeHTML(String(job.status || "").toLowerCase());
           return [
@@ -1127,10 +1138,15 @@ export function renderApp(appOrigin: string, page: AppPage): string {
             '</div>',
             '<aside class="record-side"><div class="side-number">' + escapeHTML(progress.toFixed(0)) + '%</div><div class="side-label">Progress</div></aside>',
             '</div>',
-            (mp4Files.length || files.length) ? '<div class="file-cluster">' : '',
-            mp4Files.length ? '<div class="file-box"><div class="file-label">直播 MP4</div><div class="file-links">' + mp4Files.map((file) => '<a href="' + escapeHTML(file.download_url || '#') + '" target="_blank" rel="noreferrer">' + escapeHTML(file.name) + '</a>').join('') + '</div></div>' : '',
-            files.length ? '<div class="file-box"><div class="file-label">全部文件</div><div class="file-links">' + files.map((file) => '<a href="' + escapeHTML(file.download_url || '#') + '" target="_blank" rel="noreferrer">' + escapeHTML(file.name) + '</a>').join('') + '</div></div>' : '',
-            (mp4Files.length || files.length) ? '</div>' : '',
+            files.length ? '<div class="file-cluster">' + files.map((file) => [
+              '<div class="file-row">',
+              '<div class="file-name">' + escapeHTML(file.name || file.relative_path || "未命名文件") + '</div>',
+              '<div class="storage-actions">',
+              storageButtonHTML("R2", file.r2_download_url || "", "上传 R2 中"),
+              storageButtonHTML("S3", file.s3_download_url || "", "上传 S3 中"),
+              '</div>',
+              '</div>',
+            ].join("")).join("") + '</div>' : '',
             errors.length ? '<div class="job-errors">' + errors.map(escapeHTML).join('<br/>') + '</div>' : '',
             '</section>'
           ].join('');

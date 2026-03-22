@@ -26,9 +26,13 @@ interface JobFileRecord {
   name: string;
   relative_path: string;
   bucket_key?: string;
+  r2_bucket_key?: string;
+  s3_bucket_key?: string;
   size_bytes?: number;
   content_type?: string;
   download_url?: string;
+  r2_download_url?: string;
+  s3_download_url?: string;
 }
 
 interface JobRow {
@@ -111,6 +115,7 @@ interface ProgressPayload {
   progress_percent?: number;
   titles?: string[];
   errors?: string[];
+  files?: JobFileRecord[];
   message?: string;
 }
 
@@ -329,12 +334,60 @@ function parseJSON<T>(value: string | null | undefined, fallback: T): T {
   }
 }
 
-function jobFileDownloadURL(jobID: string, relativePath: string): string {
+function jobFileDownloadURL(jobID: string, relativePath: string, storage?: "r2" | "s3"): string {
   const params = new URLSearchParams({
     job_id: jobID,
     path: relativePath,
   });
+  if (storage) {
+    params.set("storage", storage);
+  }
   return `/api/files?${params.toString()}`;
+}
+
+function resolveR2BucketKey(file: JobFileRecord, env: Env): string {
+  const direct = (file.r2_bucket_key || "").trim();
+  if (direct) {
+    return direct;
+  }
+  const legacy = (file.bucket_key || "").trim();
+  if (!legacy) {
+    return "";
+  }
+  if ((file.s3_bucket_key || "").trim()) {
+    return "";
+  }
+  return storageUsesS3(env) ? "" : legacy;
+}
+
+function resolveS3BucketKey(file: JobFileRecord, env: Env): string {
+  const direct = (file.s3_bucket_key || "").trim();
+  if (direct) {
+    return direct;
+  }
+  const legacy = (file.bucket_key || "").trim();
+  if (!legacy) {
+    return "";
+  }
+  if ((file.r2_bucket_key || "").trim()) {
+    return "";
+  }
+  return storageUsesS3(env) ? legacy : "";
+}
+
+function enrichJobFile(env: Env, jobID: string, file: JobFileRecord): JobFileRecord {
+  const r2BucketKey = resolveR2BucketKey(file, env);
+  const s3BucketKey = resolveS3BucketKey(file, env);
+  return {
+    ...file,
+    r2_bucket_key: r2BucketKey,
+    s3_bucket_key: s3BucketKey,
+    r2_download_url: r2BucketKey ? jobFileDownloadURL(jobID, file.relative_path, "r2") : "",
+    s3_download_url: s3BucketKey ? jobFileDownloadURL(jobID, file.relative_path, "s3") : "",
+    download_url: r2BucketKey
+      ? jobFileDownloadURL(jobID, file.relative_path, "r2")
+      : (s3BucketKey ? jobFileDownloadURL(jobID, file.relative_path, "s3") : ""),
+  };
 }
 
 function storageUsesS3(env: Env): boolean {
@@ -432,17 +485,8 @@ async function signedS3Request(env: Env, method: "GET" | "DELETE", bucketKey: st
   });
 }
 
-async function deleteStorageObjects(env: Env, keys: string[]): Promise<void> {
+async function deleteR2Objects(env: Env, keys: string[]): Promise<void> {
   if (keys.length === 0) {
-    return;
-  }
-  if (storageUsesS3(env)) {
-    for (const key of keys) {
-      const response = await signedS3Request(env, "DELETE", key);
-      if (!response.ok && response.status !== 404) {
-        throw new Error(`failed to delete object from S3: ${key}`);
-      }
-    }
     return;
   }
   await (env.FILES as unknown as { delete(names: string[]): Promise<void> }).delete(keys);
@@ -1001,11 +1045,8 @@ async function completeLoginSession(
   return getLoginSession(env, loginSessionID);
 }
 
-function parseJobRow(row: JobRow): JobRecord {
-  const files = parseJSON<JobFileRecord[]>(row.files_json, []).map((file) => ({
-    ...file,
-    download_url: jobFileDownloadURL(row.id, file.relative_path),
-  }));
+function parseJobRow(env: Env, row: JobRow): JobRecord {
+  const files = parseJSON<JobFileRecord[]>(row.files_json, []).map((file) => enrichJobFile(env, row.id, file));
   return {
     id: row.id,
     status: row.status,
@@ -1049,7 +1090,7 @@ async function getJob(env: Env, jobID: string, ownerUserID?: string): Promise<Jo
       .prepare("SELECT * FROM jobs WHERE id = ?1")
       .bind(jobID)
       .first<JobRow>();
-  return row ? parseJobRow(row) : null;
+  return row ? parseJobRow(env, row) : null;
 }
 
 async function listJobs(env: Env, ownerUserID: string): Promise<JobRecord[]> {
@@ -1063,7 +1104,7 @@ async function listJobs(env: Env, ownerUserID: string): Promise<JobRecord[]> {
     .bind(ownerUserID)
     .all<JobRow>();
   const rows = Array.isArray(result.results) ? result.results : [];
-  return rows.map(parseJobRow);
+  return rows.map((row) => parseJobRow(env, row));
 }
 
 async function listJobEvents(env: Env, jobID: string, limit = 80): Promise<JobEventRecord[]> {
@@ -1094,6 +1135,9 @@ async function updateJobProgress(env: Env, jobID: string, payload: ProgressPaylo
 
   const titles = Array.isArray(payload.titles) ? payload.titles : current.titles;
   const errors = Array.isArray(payload.errors) ? payload.errors : current.errors;
+  const files = Array.isArray(payload.files)
+    ? payload.files.map((file) => enrichJobFile(env, jobID, file))
+    : current.files;
   const status = payload.status || current.status || "running";
   const stage = payload.stage || current.stage || "running";
 
@@ -1108,7 +1152,8 @@ async function updateJobProgress(env: Env, jobID: string, payload: ProgressPaylo
            progress_percent = ?7,
            titles_json = ?8,
            errors_json = ?9,
-           updated_at = ?10
+           files_json = ?10,
+           updated_at = ?11
        WHERE id = ?1`,
     )
     .bind(
@@ -1121,6 +1166,7 @@ async function updateJobProgress(env: Env, jobID: string, payload: ProgressPaylo
       payload.progress_percent ?? current.progress_percent,
       JSON.stringify(titles),
       JSON.stringify(errors),
+      JSON.stringify(files),
       nowISO(),
     )
     .run();
@@ -1141,10 +1187,7 @@ async function completeJob(env: Env, jobID: string, payload: CompletePayload): P
   const titles = Array.isArray(payload.titles) ? payload.titles : current.titles;
   const errors = Array.isArray(payload.errors) ? payload.errors : current.errors;
   const files = Array.isArray(payload.files)
-    ? payload.files.map((file) => ({
-      ...file,
-      download_url: jobFileDownloadURL(jobID, file.relative_path),
-    }))
+    ? payload.files.map((file) => enrichJobFile(env, jobID, file))
     : current.files;
 
   await env.DB
@@ -1203,7 +1246,7 @@ async function cleanupExpiredFiles(env: Env): Promise<{ jobs: number; files: num
   for (const row of usageRows) {
     const files = parseJSON<JobFileRecord[]>(row.files_json, []);
     for (const file of files) {
-      const key = (file.bucket_key || "").trim();
+      const key = resolveR2BucketKey(file, env);
       if (!key) {
         continue;
       }
@@ -1253,7 +1296,7 @@ async function cleanupExpiredFiles(env: Env): Promise<{ jobs: number; files: num
     const keptFiles: JobFileRecord[] = [];
 
     for (const file of files) {
-      const key = (file.bucket_key || "").trim();
+      const key = resolveR2BucketKey(file, env);
       if (!key) {
         keptFiles.push(file);
         continue;
@@ -1261,6 +1304,13 @@ async function cleanupExpiredFiles(env: Env): Promise<{ jobs: number; files: num
       const stat = bucketStats.get(key);
       if (stat && stat.refs <= 1) {
         deletableFiles.push(file);
+        if (resolveS3BucketKey(file, env)) {
+          keptFiles.push({
+            ...file,
+            bucket_key: resolveS3BucketKey(file, env) ? "" : file.bucket_key,
+            r2_bucket_key: "",
+          });
+        }
       } else {
         keptFiles.push(file);
       }
@@ -1271,17 +1321,17 @@ async function cleanupExpiredFiles(env: Env): Promise<{ jobs: number; files: num
     }
 
     const keys = deletableFiles
-      .map((file) => (file.bucket_key || "").trim())
+      .map((file) => resolveR2BucketKey(file, env))
       .filter((key) => key.length > 0);
 
     if (keys.length > 0) {
-      await deleteStorageObjects(env, keys);
+      await deleteR2Objects(env, keys);
       deletedFiles += keys.length;
     }
 
     let releasedBytes = 0;
     for (const file of deletableFiles) {
-      const key = (file.bucket_key || "").trim();
+      const key = resolveR2BucketKey(file, env);
       if (!key) {
         continue;
       }
@@ -1294,7 +1344,7 @@ async function cleanupExpiredFiles(env: Env): Promise<{ jobs: number; files: num
 
     const nextErrors = Array.from(new Set([
       ...parseJSON<string[]>(row.errors_json, []),
-      `files older than ${FILE_RETENTION_HOURS} hours were deleted from storage because total usage exceeded 2 GB`,
+      `older R2 files were deleted because total R2 usage exceeded 2 GB`,
     ]));
 
     await env.DB
@@ -1864,6 +1914,7 @@ async function handleFileDownload(request: Request, env: Env, user: AuthUser): P
   const url = new URL(request.url);
   const jobID = url.searchParams.get("job_id") || "";
   const relativePath = url.searchParams.get("path") || "";
+  const storage = (url.searchParams.get("storage") || "").trim().toLowerCase();
   if (!jobID || !relativePath) {
     return jsonResponse({ error: "job_id and path are required" }, { status: 400 });
   }
@@ -1878,50 +1929,62 @@ async function handleFileDownload(request: Request, env: Env, user: AuthUser): P
     return jsonResponse({ error: "file not found" }, { status: 404 });
   }
 
-  if (!file.bucket_key) {
+  const r2BucketKey = (file.r2_bucket_key || "").trim();
+  const s3BucketKey = (file.s3_bucket_key || "").trim();
+  if (!r2BucketKey && !s3BucketKey && !file.bucket_key) {
     return jsonResponse({ error: "file is missing storage metadata" }, { status: 404 });
   }
 
-  if (storageUsesS3(env)) {
-    const response = await signedS3Request(env, "GET", file.bucket_key);
-    if (response.status === 404) {
-      return jsonResponse({ error: "object not found in bucket" }, { status: 404 });
+  if (storage === "r2" || (!storage && r2BucketKey)) {
+    if (!r2BucketKey) {
+      return jsonResponse({ error: "object not uploaded to r2 yet" }, { status: 404 });
     }
-    if (!response.ok || !response.body) {
-      return jsonResponse({ error: "failed to fetch object from storage" }, { status: 502 });
+    const object = await env.FILES.get(r2BucketKey);
+    if (!object) {
+      return jsonResponse({ error: "object not found in r2" }, { status: 404 });
     }
 
     const headers = new Headers();
-    const contentType = response.headers.get("content-type");
-    if (contentType) {
-      headers.set("content-type", contentType);
-    } else {
-      headers.set("content-type", file.content_type || "application/octet-stream");
-    }
-    const etag = response.headers.get("etag");
-    if (etag) {
-      headers.set("etag", etag);
-    }
+    object.writeHttpMetadata(headers);
+    headers.set("etag", object.httpEtag);
     headers.set("cache-control", "private, max-age=120");
     headers.set("content-disposition", `attachment; filename*=UTF-8''${encodeURIComponent(file.name)}`);
-    return new Response(response.body, { headers });
+    if (!headers.get("content-type")) {
+      headers.set("content-type", file.content_type || "application/octet-stream");
+    }
+    return new Response(object.body, { headers });
   }
 
-  const object = await env.FILES.get(file.bucket_key);
-  if (!object) {
-    return jsonResponse({ error: "object not found in bucket" }, { status: 404 });
+  const s3Key = s3BucketKey || (storageUsesS3(env) ? (file.bucket_key || "").trim() : "");
+  if (!s3Key) {
+    return jsonResponse({ error: "object not uploaded to s3 yet" }, { status: 404 });
+  }
+  if (!storageUsesS3(env)) {
+    return jsonResponse({ error: "s3 storage is not configured" }, { status: 404 });
+  }
+
+  const response = await signedS3Request(env, "GET", s3Key);
+  if (response.status === 404) {
+    return jsonResponse({ error: "object not found in s3" }, { status: 404 });
+  }
+  if (!response.ok || !response.body) {
+    return jsonResponse({ error: "failed to fetch object from s3" }, { status: 502 });
   }
 
   const headers = new Headers();
-  object.writeHttpMetadata(headers);
-  headers.set("etag", object.httpEtag);
-  headers.set("cache-control", "private, max-age=120");
-  headers.set("content-disposition", `attachment; filename*=UTF-8''${encodeURIComponent(file.name)}`);
-  if (!headers.get("content-type")) {
+  const contentType = response.headers.get("content-type");
+  if (contentType) {
+    headers.set("content-type", contentType);
+  } else {
     headers.set("content-type", file.content_type || "application/octet-stream");
   }
-
-  return new Response(object.body, { headers });
+  const etag = response.headers.get("etag");
+  if (etag) {
+    headers.set("etag", etag);
+  }
+  headers.set("cache-control", "private, max-age=120");
+  headers.set("content-disposition", `attachment; filename*=UTF-8''${encodeURIComponent(file.name)}`);
+  return new Response(response.body, { headers });
 }
 
 async function handleInternalClaim(request: Request, env: Env, jobID: string): Promise<Response> {

@@ -47,11 +47,20 @@ jobs:
         continue-on-error: true
         run: |
           : > "${RUNNER_TEMP}/upload-error.txt"
+          R2_ENDPOINT_VALUE=""
+          R2_BUCKET_VALUE="${LEGACY_R2_BUCKET:-godingtalk-files}"
+          R2_ACCESS_KEY_ID_VALUE="${LEGACY_R2_ACCESS_KEY_ID}"
+          R2_SECRET_ACCESS_KEY_VALUE="${LEGACY_R2_SECRET_ACCESS_KEY}"
+          R2_REGION_VALUE="auto"
           S3_ENDPOINT_VALUE="${RAW_S3_ENDPOINT}"
           S3_BUCKET_VALUE="${RAW_S3_BUCKET:-${LEGACY_R2_BUCKET:-godingtalk-files}}"
           AWS_ACCESS_KEY_ID_VALUE="${RAW_S3_ACCESS_KEY_ID:-${LEGACY_R2_ACCESS_KEY_ID}}"
           AWS_SECRET_ACCESS_KEY_VALUE="${RAW_S3_SECRET_ACCESS_KEY:-${LEGACY_R2_SECRET_ACCESS_KEY}}"
           AWS_DEFAULT_REGION_VALUE="${RAW_S3_REGION}"
+
+          if [ -n "${CLOUDFLARE_ACCOUNT_ID}" ] && [ -n "${R2_ACCESS_KEY_ID_VALUE}" ] && [ -n "${R2_SECRET_ACCESS_KEY_VALUE}" ]; then
+            R2_ENDPOINT_VALUE="https://${CLOUDFLARE_ACCOUNT_ID}.r2.cloudflarestorage.com"
+          fi
 
           if [ -z "${S3_ENDPOINT_VALUE}" ] && [ -n "${CLOUDFLARE_ACCOUNT_ID}" ] && [ -n "${AWS_ACCESS_KEY_ID_VALUE}" ] && [ -n "${AWS_SECRET_ACCESS_KEY_VALUE}" ]; then
             S3_ENDPOINT_VALUE="https://${CLOUDFLARE_ACCOUNT_ID}.r2.cloudflarestorage.com"
@@ -71,11 +80,20 @@ jobs:
             esac
           fi
 
+          if [ -z "${R2_ENDPOINT_VALUE}" ] || [ -z "${R2_BUCKET_VALUE}" ] || [ -z "${R2_ACCESS_KEY_ID_VALUE}" ] || [ -z "${R2_SECRET_ACCESS_KEY_VALUE}" ]; then
+            echo "Missing R2 credentials. Please set CLOUDFLARE_ACCOUNT_ID with GODINGTALK_R2_BUCKET/GODINGTALK_R2_ACCESS_KEY_ID/GODINGTALK_R2_SECRET_ACCESS_KEY." > "${RUNNER_TEMP}/upload-error.txt"
+            exit 0
+          fi
           if [ -z "${S3_ENDPOINT_VALUE}" ] || [ -z "${S3_BUCKET_VALUE}" ] || [ -z "${AWS_ACCESS_KEY_ID_VALUE}" ] || [ -z "${AWS_SECRET_ACCESS_KEY_VALUE}" ]; then
-            echo "Missing S3 credentials. Set GODINGTALK_S3_ENDPOINT/GODINGTALK_S3_BUCKET/GODINGTALK_S3_ACCESS_KEY_ID/GODINGTALK_S3_SECRET_ACCESS_KEY, or keep the legacy GODINGTALK_R2_* keys together with CLOUDFLARE_ACCOUNT_ID." > "${RUNNER_TEMP}/upload-error.txt"
+            echo "Missing S3 credentials. Please set GODINGTALK_S3_ENDPOINT/GODINGTALK_S3_BUCKET/GODINGTALK_S3_ACCESS_KEY_ID/GODINGTALK_S3_SECRET_ACCESS_KEY." > "${RUNNER_TEMP}/upload-error.txt"
             exit 0
           fi
           {
+            echo "R2_ENDPOINT=${R2_ENDPOINT_VALUE}"
+            echo "R2_BUCKET=${R2_BUCKET_VALUE}"
+            echo "R2_ACCESS_KEY_ID=${R2_ACCESS_KEY_ID_VALUE}"
+            echo "R2_SECRET_ACCESS_KEY=${R2_SECRET_ACCESS_KEY_VALUE}"
+            echo "R2_REGION=${R2_REGION_VALUE}"
             echo "S3_ENDPOINT=${S3_ENDPOINT_VALUE}"
             echo "S3_BUCKET=${S3_BUCKET_VALUE}"
             echo "AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID_VALUE}"
@@ -95,17 +113,32 @@ jobs:
             -saveDir "${RUNNER_TEMP}/godingtalk" \
             -resultFile "${RUNNER_TEMP}/job-result.json"
 
-      - name: Upload output files to private S3
+      - name: Upload output files to R2 and S3
         if: always()
         continue-on-error: true
         run: |
           RESULT_FILE="${RUNNER_TEMP}/job-result.json"
           UPLOAD_FILE="${RUNNER_TEMP}/uploaded-files.json"
           ERROR_FILE="${RUNNER_TEMP}/upload-error.txt"
+          PROGRESS_FILE="${RUNNER_TEMP}/job-progress.json"
           MANIFEST_FILE="${RUNNER_TEMP}/upload-manifest.jsonl"
           SAVE_DIR="${RUNNER_TEMP}/godingtalk"
           echo '[]' > "${UPLOAD_FILE}"
           : > "${MANIFEST_FILE}"
+
+          report_progress() {
+            local stage="$1"
+            jq -n \
+              --arg status "running" \
+              --arg stage "${stage}" \
+              --slurpfile files "${UPLOAD_FILE}" \
+              '{status:$status, stage:$stage, files:$files[0], progress_percent:100}' > "${PROGRESS_FILE}"
+            curl -sS --fail \
+              -X POST "${CONTROL_URL}/internal/jobs/${JOB_ID}/progress" \
+              -H "Authorization: Bearer ${INTERNAL_TOKEN}" \
+              -H "Content-Type: application/json" \
+              --data @"${PROGRESS_FILE}" > /dev/null || true
+          }
 
           if [ ! -f "${RESULT_FILE}" ]; then
             exit 0
@@ -169,6 +202,48 @@ jobs:
                 *) CONTENT_TYPE="application/octet-stream" ;;
               esac
             fi
+            TMP_FILE="$(mktemp)"
+            jq \
+              --arg name "${DISPLAY_NAME}" \
+              --arg relative_path "${RELATIVE_PATH}" \
+              --arg bucket_key "" \
+              --arg r2_bucket_key "" \
+              --arg s3_bucket_key "" \
+              --arg content_type "${CONTENT_TYPE}" \
+              --argjson size_bytes "${SIZE_BYTES:-0}" \
+              '. += [{
+                "name": $name,
+                "relative_path": $relative_path,
+                "bucket_key": $bucket_key,
+                "r2_bucket_key": $r2_bucket_key,
+                "s3_bucket_key": $s3_bucket_key,
+                "content_type": $content_type,
+                "size_bytes": $size_bytes
+              }]' \
+              "${UPLOAD_FILE}" > "${TMP_FILE}"
+            mv "${TMP_FILE}" "${UPLOAD_FILE}"
+            report_progress "uploading_r2"
+            if ! python3 scripts/s3_put.py \
+              --endpoint "${R2_ENDPOINT}" \
+              --bucket "${R2_BUCKET}" \
+              --key "${OBJECT_KEY}" \
+              --file "${LOCAL_PATH}" \
+              --access-key "${R2_ACCESS_KEY_ID}" \
+              --secret-key "${R2_SECRET_ACCESS_KEY}" \
+              --region "${R2_REGION}" \
+              --content-type "${CONTENT_TYPE}"; then
+              echo "failed to upload ${NAME} to R2" > "${ERROR_FILE}"
+              break
+            fi
+            TMP_FILE="$(mktemp)"
+            jq \
+              --arg relative_path "${RELATIVE_PATH}" \
+              --arg bucket_key "${OBJECT_KEY}" \
+              --arg r2_bucket_key "${OBJECT_KEY}" \
+              'map(if .relative_path == $relative_path then . + {"bucket_key": $bucket_key, "r2_bucket_key": $r2_bucket_key} else . end)' \
+              "${UPLOAD_FILE}" > "${TMP_FILE}"
+            mv "${TMP_FILE}" "${UPLOAD_FILE}"
+            report_progress "uploading_s3"
             if ! python3 scripts/s3_put.py \
               --endpoint "${S3_ENDPOINT}" \
               --bucket "${S3_BUCKET}" \
@@ -184,16 +259,9 @@ jobs:
 
             TMP_FILE="$(mktemp)"
             jq \
-              --arg name "${DISPLAY_NAME}" \
               --arg relative_path "${RELATIVE_PATH}" \
-              --arg bucket_key "${OBJECT_KEY}" \
-              --argjson size_bytes "${SIZE_BYTES:-0}" \
-              '. += [{
-                "name": $name,
-                "relative_path": $relative_path,
-                "bucket_key": $bucket_key,
-                "size_bytes": $size_bytes
-              }]' \
+              --arg s3_bucket_key "${OBJECT_KEY}" \
+              'map(if .relative_path == $relative_path then . + {"s3_bucket_key": $s3_bucket_key} else . end)' \
               "${UPLOAD_FILE}" > "${TMP_FILE}"
             mv "${TMP_FILE}" "${UPLOAD_FILE}"
           done < <(while IFS= read -r line; do printf '%s' "${line}" | base64 | tr -d '\n'; printf '\n'; done < "${MANIFEST_FILE}")
@@ -216,7 +284,7 @@ jobs:
                 stage: (if (($upload_error | length) > 0 or .status != "succeeded") then "failed" else "completed" end),
                 titles: .titles,
                 errors: (if ($upload_error | length) > 0 then ((.errors // []) + [$upload_error]) else .errors end),
-                files: (if ($upload_error | length) > 0 then [] else $files[0] end),
+                files: $files[0],
                 progress_percent: (if (($upload_error | length) > 0 or .status != "succeeded") then 0 else 100 end)
               }' \
               "${RESULT_FILE}" > "${COMPLETE_FILE}"
