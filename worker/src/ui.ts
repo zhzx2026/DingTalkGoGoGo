@@ -209,7 +209,7 @@ function renderSettingsPage(installURL: string): string {
           <div class="card-body">
             <div id="login-legal-warning" class="notice error hidden"></div>
             <div class="notice warn">如果当前 Cookies 仍然有效，请不要重复扫码登录，以免触发风控。</div>
-            <div class="notice">对象存储若使用 Cloudflare R2 或 `hi168` S3 兼容端点，系统默认签名 region 为 `auto`，前后端保持一致。</div>
+            <div class="notice">对象存储若使用 Cloudflare R2 或 <code>hi168</code> S3 兼容端点，系统默认签名 region 为 <code>auto</code>，前后端保持一致。</div>
             <div class="actions">
               <button id="start-login-workflow-btn" class="primary" type="button">启动二维码登录</button>
             </div>
@@ -232,7 +232,7 @@ function renderSettingsPage(installURL: string): string {
             <div class="guide-item"><strong>1</strong><span>先确认账号已登录，并接受当前免责声明。</span></div>
             <div class="guide-item"><strong>2</strong><span>点击启动后等待二维码出现，再用钉钉扫码。</span></div>
             <div class="guide-item"><strong>3</strong><span>扫码成功后，Cookies 会自动回传到 Worker。</span></div>
-            <div class="guide-item"><strong>4</strong><span>`hi168` / R2 默认使用 `auto` region；美国 Actions 出口上传大文件会比较慢。</span></div>
+            <div class="guide-item"><strong>4</strong><span><code>hi168</code> / R2 默认使用 <code>auto</code> region；美国 Actions 出口上传大文件会比较慢。</span></div>
             <div class="actions">
               <a class="button-link" href="${installURL}">安装辅助脚本</a>
             </div>
