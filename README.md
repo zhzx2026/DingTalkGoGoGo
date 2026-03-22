@@ -87,17 +87,26 @@ npx wrangler deploy
 - `GODINGTALK_CONTROL_URL`
 - `GODINGTALK_INTERNAL_TOKEN`
 - `GODINGTALK_GITHUB_ACTIONS_TOKEN`
-- `GODINGTALK_R2_ACCESS_KEY_ID`
-- `GODINGTALK_R2_SECRET_ACCESS_KEY`
-- `GODINGTALK_R2_BUCKET`（可选，不填默认 `godingtalk-files`）
+- `GODINGTALK_S3_ENDPOINT`
+- `GODINGTALK_S3_ACCESS_KEY_ID`
+- `GODINGTALK_S3_SECRET_ACCESS_KEY`
+- `GODINGTALK_S3_BUCKET`（可选，不填默认 `godingtalk-files`）
+- `GODINGTALK_S3_REGION`（可选，Cloudflare R2 默认 `auto`，其它 S3 默认 `us-east-1`）
 
 建议它们的含义如下：
 
 - `GODINGTALK_CONTROL_URL`：你部署好的 Worker 地址，例如 `https://godingtalk-worker.example.workers.dev`
 - `GODINGTALK_INTERNAL_TOKEN`：和 Worker secret `INTERNAL_API_TOKEN` 保持一致
 - `GODINGTALK_GITHUB_ACTIONS_TOKEN`：给 `deploy-worker.yml` 用，用来同步 Worker secret
-- `GODINGTALK_R2_ACCESS_KEY_ID` / `GODINGTALK_R2_SECRET_ACCESS_KEY`：给远程 runner 上传 R2
-- `GODINGTALK_R2_BUCKET`：真实的 R2 bucket 名称
+- `GODINGTALK_S3_ENDPOINT`：S3 兼容 endpoint；如果你用的是 Cloudflare R2，也可以不填，让 workflow 根据 `CLOUDFLARE_ACCOUNT_ID` 自动推导成 `https://<account-id>.r2.cloudflarestorage.com`
+- `GODINGTALK_S3_ACCESS_KEY_ID` / `GODINGTALK_S3_SECRET_ACCESS_KEY`：给远程 runner 上传对象存储，也会同步到 Worker 供登录态下载使用
+- `GODINGTALK_S3_BUCKET`：真实的 bucket 名称
+- `GODINGTALK_S3_REGION`：对象存储签名 region；Cloudflare R2 推荐 `auto`
+
+兼容说明：
+
+- 旧的 `GODINGTALK_R2_ACCESS_KEY_ID` / `GODINGTALK_R2_SECRET_ACCESS_KEY` / `GODINGTALK_R2_BUCKET` 仍然兼容 Cloudflare R2
+- 但如果你接的是第三方 S3，还是应该优先配置 `GODINGTALK_S3_*`
 
 `worker/wrangler.toml` 里的 GitHub 变量建议保持：
 

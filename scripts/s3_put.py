@@ -21,13 +21,20 @@ def sha256_hex(data: bytes) -> str:
 def region_candidates(endpoint: str, configured: str) -> list[str]:
     host = urllib.parse.urlparse(endpoint).hostname or ""
     items: list[str] = []
-    for item in [configured.strip() or "us-east-1"]:
-        if item and item not in items:
-            items.append(item)
-    if host.endswith("hi168.com"):
-        for item in ["us-east", "us-east-1", "auto"]:
-            if item not in items:
+
+    def append_unique(*values: str) -> None:
+        for value in values:
+            item = value.strip()
+            if item and item not in items:
                 items.append(item)
+
+    if host.endswith("r2.cloudflarestorage.com"):
+        append_unique("auto")
+    if host.endswith("hi168.com"):
+        append_unique("auto", "us-east", "us-east-1")
+    append_unique(configured or "us-east-1")
+    if host.endswith("r2.cloudflarestorage.com"):
+        append_unique("us-east-1")
     return items
 
 

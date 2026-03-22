@@ -19,11 +19,15 @@ jobs:
       JOB_ID: ${{ inputs.job_id }}
       CONTROL_URL: ${{ secrets.GODINGTALK_CONTROL_URL }}
       INTERNAL_TOKEN: ${{ secrets.GODINGTALK_INTERNAL_TOKEN }}
-      S3_ENDPOINT: ${{ secrets.GODINGTALK_S3_ENDPOINT }}
-      S3_BUCKET: ${{ secrets.GODINGTALK_S3_BUCKET }}
-      AWS_ACCESS_KEY_ID: ${{ secrets.GODINGTALK_S3_ACCESS_KEY_ID }}
-      AWS_SECRET_ACCESS_KEY: ${{ secrets.GODINGTALK_S3_SECRET_ACCESS_KEY }}
-      AWS_DEFAULT_REGION: ${{ secrets.GODINGTALK_S3_REGION }}
+      RAW_S3_ENDPOINT: ${{ secrets.GODINGTALK_S3_ENDPOINT }}
+      RAW_S3_BUCKET: ${{ secrets.GODINGTALK_S3_BUCKET }}
+      RAW_S3_ACCESS_KEY_ID: ${{ secrets.GODINGTALK_S3_ACCESS_KEY_ID }}
+      RAW_S3_SECRET_ACCESS_KEY: ${{ secrets.GODINGTALK_S3_SECRET_ACCESS_KEY }}
+      RAW_S3_REGION: ${{ secrets.GODINGTALK_S3_REGION }}
+      LEGACY_R2_BUCKET: ${{ secrets.GODINGTALK_R2_BUCKET }}
+      LEGACY_R2_ACCESS_KEY_ID: ${{ secrets.GODINGTALK_R2_ACCESS_KEY_ID }}
+      LEGACY_R2_SECRET_ACCESS_KEY: ${{ secrets.GODINGTALK_R2_SECRET_ACCESS_KEY }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
     steps:
       - uses: actions/checkout@v4
 
@@ -43,13 +47,41 @@ jobs:
         continue-on-error: true
         run: |
           : > "${RUNNER_TEMP}/upload-error.txt"
-          if [ -z "${S3_ENDPOINT}" ] || [ -z "${S3_BUCKET}" ] || [ -z "${AWS_ACCESS_KEY_ID}" ] || [ -z "${AWS_SECRET_ACCESS_KEY}" ]; then
-            echo "Missing S3 credentials. Please set GODINGTALK_S3_ENDPOINT, GODINGTALK_S3_BUCKET, GODINGTALK_S3_ACCESS_KEY_ID, GODINGTALK_S3_SECRET_ACCESS_KEY." > "${RUNNER_TEMP}/upload-error.txt"
+          S3_ENDPOINT_VALUE="${RAW_S3_ENDPOINT}"
+          S3_BUCKET_VALUE="${RAW_S3_BUCKET:-${LEGACY_R2_BUCKET:-godingtalk-files}}"
+          AWS_ACCESS_KEY_ID_VALUE="${RAW_S3_ACCESS_KEY_ID:-${LEGACY_R2_ACCESS_KEY_ID}}"
+          AWS_SECRET_ACCESS_KEY_VALUE="${RAW_S3_SECRET_ACCESS_KEY:-${LEGACY_R2_SECRET_ACCESS_KEY}}"
+          AWS_DEFAULT_REGION_VALUE="${RAW_S3_REGION}"
+
+          if [ -z "${S3_ENDPOINT_VALUE}" ] && [ -n "${CLOUDFLARE_ACCOUNT_ID}" ] && [ -n "${AWS_ACCESS_KEY_ID_VALUE}" ] && [ -n "${AWS_SECRET_ACCESS_KEY_VALUE}" ]; then
+            S3_ENDPOINT_VALUE="https://${CLOUDFLARE_ACCOUNT_ID}.r2.cloudflarestorage.com"
+          fi
+
+          if [ -z "${AWS_DEFAULT_REGION_VALUE}" ]; then
+            case "${S3_ENDPOINT_VALUE}" in
+              *.r2.cloudflarestorage.com|*.r2.cloudflarestorage.com/)
+                AWS_DEFAULT_REGION_VALUE="auto"
+                ;;
+              *hi168.com*)
+                AWS_DEFAULT_REGION_VALUE="auto"
+                ;;
+              *)
+                AWS_DEFAULT_REGION_VALUE="us-east-1"
+                ;;
+            esac
+          fi
+
+          if [ -z "${S3_ENDPOINT_VALUE}" ] || [ -z "${S3_BUCKET_VALUE}" ] || [ -z "${AWS_ACCESS_KEY_ID_VALUE}" ] || [ -z "${AWS_SECRET_ACCESS_KEY_VALUE}" ]; then
+            echo "Missing S3 credentials. Set GODINGTALK_S3_ENDPOINT/GODINGTALK_S3_BUCKET/GODINGTALK_S3_ACCESS_KEY_ID/GODINGTALK_S3_SECRET_ACCESS_KEY, or keep the legacy GODINGTALK_R2_* keys together with CLOUDFLARE_ACCOUNT_ID." > "${RUNNER_TEMP}/upload-error.txt"
             exit 0
           fi
-          if [ -z "${AWS_DEFAULT_REGION}" ]; then
-            echo "AWS_DEFAULT_REGION=us-east-1" >> "$GITHUB_ENV"
-          fi
+          {
+            echo "S3_ENDPOINT=${S3_ENDPOINT_VALUE}"
+            echo "S3_BUCKET=${S3_BUCKET_VALUE}"
+            echo "AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID_VALUE}"
+            echo "AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY_VALUE}"
+            echo "AWS_DEFAULT_REGION=${AWS_DEFAULT_REGION_VALUE}"
+          } >> "$GITHUB_ENV"
 
       - name: Run remote job
         id: remote_job

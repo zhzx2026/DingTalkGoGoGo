@@ -346,8 +346,28 @@ function storageUsesS3(env: Env): boolean {
   );
 }
 
+function s3EndpointHost(env: Env): string {
+  const endpoint = env.S3_ENDPOINT?.trim();
+  if (!endpoint) {
+    return "";
+  }
+  try {
+    return new URL(endpoint).hostname;
+  } catch {
+    return "";
+  }
+}
+
 function s3Region(env: Env): string {
-  return env.S3_REGION?.trim() || "us-east-1";
+  const configured = env.S3_REGION?.trim();
+  if (configured) {
+    return configured;
+  }
+  const host = s3EndpointHost(env);
+  if (host.endsWith(".r2.cloudflarestorage.com") || host.endsWith("hi168.com")) {
+    return "auto";
+  }
+  return "us-east-1";
 }
 
 function s3ObjectURL(env: Env, bucketKey: string): URL {
