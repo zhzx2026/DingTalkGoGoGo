@@ -127,6 +127,7 @@ jobs:
                 --secret-key "${AWS_SECRET_ACCESS_KEY}" \
                 --region "${region}" \
                 --strict-region \
+                --allow-short-timeout \
                 --timeout-seconds "${TIMEOUT_SECONDS}" \
                 --content-type application/octet-stream 2>&1)"
               status=$?
