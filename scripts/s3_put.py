@@ -102,6 +102,7 @@ def main() -> int:
     parser.add_argument("--access-key", required=True)
     parser.add_argument("--secret-key", required=True)
     parser.add_argument("--region", default="us-east-1")
+    parser.add_argument("--strict-region", action="store_true")
     parser.add_argument("--content-type", default="application/octet-stream")
     parser.add_argument("--timeout-seconds", type=int, default=3600)
     args = parser.parse_args()
@@ -109,7 +110,8 @@ def main() -> int:
     body = Path(args.file).read_bytes()
     last_status = 0
     last_body = ""
-    for region in region_candidates(args.endpoint, args.region):
+    regions = [args.region.strip() or "us-east-1"] if args.strict_region else region_candidates(args.endpoint, args.region)
+    for region in regions:
         for unsigned_payload in (False, True):
             status, response_body = put_object(
                 endpoint=args.endpoint,

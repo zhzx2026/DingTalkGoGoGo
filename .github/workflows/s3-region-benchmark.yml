@@ -1,0 +1,135 @@
+name: S3 Region Benchmark
+
+on:
+  workflow_dispatch:
+    inputs:
+      regions:
+        description: Comma-separated signing regions to test
+        required: false
+        default: auto,us-east,us-east-1,us-west-1,us-west-2,ap-east-1,ap-northeast-1,ap-southeast-1,ap-southeast-2,eu-central-1,eu-west-1
+        type: string
+      timeout_seconds:
+        description: Per-region upload timeout in seconds
+        required: false
+        default: "90"
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  benchmark:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      S3_ENDPOINT: ${{ secrets.GODINGTALK_S3_ENDPOINT }}
+      S3_BUCKET: ${{ secrets.GODINGTALK_S3_BUCKET }}
+      AWS_ACCESS_KEY_ID: ${{ secrets.GODINGTALK_S3_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.GODINGTALK_S3_SECRET_ACCESS_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate benchmark target
+        run: |
+          missing=0
+          for name in S3_ENDPOINT S3_BUCKET AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY; do
+            if [ -z "${!name}" ]; then
+              echo "::error::Missing ${name}"
+              missing=1
+            fi
+          done
+          if [ "${missing}" -ne 0 ]; then
+            exit 1
+          fi
+          python3 - <<'PY'
+          import os
+          import urllib.parse
+          host = urllib.parse.urlparse(os.environ["S3_ENDPOINT"]).hostname or ""
+          print(f"Benchmark target host: {host}")
+          PY
+
+      - name: Generate 20 MiB payload
+        run: |
+          dd if=/dev/zero of="${RUNNER_TEMP}/s3-region-bench.bin" bs=1M count=20 status=none
+          ls -lh "${RUNNER_TEMP}/s3-region-bench.bin"
+
+      - name: Benchmark upload by region
+        env:
+          REGIONS_INPUT: ${{ inputs.regions }}
+          TIMEOUT_SECONDS: ${{ inputs.timeout_seconds }}
+        run: |
+          set -euo pipefail
+          FILE="${RUNNER_TEMP}/s3-region-bench.bin"
+          RESULTS_JSONL="${RUNNER_TEMP}/s3-region-bench.jsonl"
+          SUMMARY_MD="${RUNNER_TEMP}/s3-region-bench.md"
+          HOST="$(python3 - <<'PY'
+          import os
+          import urllib.parse
+          print(urllib.parse.urlparse(os.environ["S3_ENDPOINT"]).hostname or "")
+          PY
+          )"
+
+          : > "${RESULTS_JSONL}"
+          printf 'Target host: `%s`\n\n' "${HOST}" > "${SUMMARY_MD}"
+          printf '| Region | Result | Seconds | Note |\n|---|---|---:|---|\n' >> "${SUMMARY_MD}"
+
+          IFS=',' read -r -a REGIONS <<< "${REGIONS_INPUT}"
+          for raw_region in "${REGIONS[@]}"; do
+            region="$(printf '%s' "${raw_region}" | xargs)"
+            if [ -z "${region}" ]; then
+              continue
+            fi
+
+            object_key="bench/${GITHUB_RUN_ID}/${region}/20mb.bin"
+            SECONDS=0
+            set +e
+            output="$(python3 scripts/s3_put.py \
+              --endpoint "${S3_ENDPOINT}" \
+              --bucket "${S3_BUCKET}" \
+              --key "${object_key}" \
+              --file "${FILE}" \
+              --access-key "${AWS_ACCESS_KEY_ID}" \
+              --secret-key "${AWS_SECRET_ACCESS_KEY}" \
+              --region "${region}" \
+              --strict-region \
+              --timeout-seconds "${TIMEOUT_SECONDS}" \
+              --content-type application/octet-stream 2>&1)"
+            status=$?
+            set -e
+            elapsed="${SECONDS}"
+
+            if [ "${status}" -eq 0 ]; then
+              result="success"
+            else
+              result="failed"
+            fi
+
+            note="$(printf '%s' "${output}" | tail -n 1 | tr '\n' ' ' | tr '|' '/' | cut -c1-180)"
+            printf '| `%s` | %s | %s | %s |\n' "${region}" "${result}" "${elapsed}" "${note}" >> "${SUMMARY_MD}"
+            jq -cn \
+              --arg region "${region}" \
+              --arg result "${result}" \
+              --arg note "${note}" \
+              --arg output "${output}" \
+              --argjson seconds "${elapsed}" \
+              '{region:$region, result:$result, seconds:$seconds, note:$note, output:$output}' >> "${RESULTS_JSONL}"
+          done
+
+          success_count="$(jq -s '[.[] | select(.result == "success")] | length' "${RESULTS_JSONL}")"
+          if [ "${success_count}" -gt 0 ]; then
+            best_region="$(jq -r 'select(.result == "success") | [.seconds, .region] | @tsv' "${RESULTS_JSONL}" | sort -n | head -n 1 | cut -f2)"
+            best_seconds="$(jq -r --arg region "${best_region}" 'select(.region == $region and .result == "success") | .seconds' "${RESULTS_JSONL}" | head -n 1)"
+            printf '\nRecommended region: `%s` (%ss)\n' "${best_region}" "${best_seconds}" >> "${SUMMARY_MD}"
+          else
+            printf '\nNo region completed successfully within the configured timeout.\n' >> "${SUMMARY_MD}"
+          fi
+
+          cat "${SUMMARY_MD}" >> "${GITHUB_STEP_SUMMARY}"
+
+      - name: Upload benchmark results
+        uses: actions/upload-artifact@v4
+        with:
+          name: s3-region-benchmark-${{ github.run_id }}
+          path: |
+            ${{ runner.temp }}/s3-region-bench.jsonl
+            ${{ runner.temp }}/s3-region-bench.md
