@@ -14,34 +14,64 @@ function renderNav(page: AppPage): string {
 
 function renderDownloadPage(): string {
   return `
-      <section class="card">
-        <h2>创建下载任务</h2>
-        <p class="muted">先确认已接受免责声明并准备好 Cookies，然后再提交链接。每行一个链接，会拆成多个独立任务。</p>
-        <div id="legal-warning" class="notice error hidden"></div>
-        <div class="field">
-          <label for="urls">回放链接</label>
-          <textarea id="urls" placeholder="每行一个钉钉回放链接"></textarea>
-        </div>
-        <div class="actions">
-          <button id="create-job-btn" class="primary" type="button">开始下载</button>
-          <button id="refresh-btn" type="button">刷新状态</button>
-        </div>
+      <section class="download-shell">
+        <section class="card compose-card">
+          <div class="section-head">
+            <div>
+              <div class="section-kicker">Task Console</div>
+              <h2>创建下载任务</h2>
+            </div>
+            <div class="toolbar">
+              <button id="refresh-btn" type="button">刷新</button>
+            </div>
+          </div>
+          <div id="legal-warning" class="notice error hidden"></div>
+          <div class="field">
+            <label for="urls">回放链接</label>
+            <textarea id="urls" placeholder="每行一个钉钉回放链接"></textarea>
+          </div>
+          <div class="compose-footer">
+            <div class="muted compact-copy">一行一个链接。提交后将拆分成独立任务。</div>
+            <div class="actions">
+              <button id="create-job-btn" class="primary" type="button">创建任务</button>
+            </div>
+          </div>
+        </section>
+
+        <aside class="overview-stack">
+          <section class="card overview-card">
+            <div class="section-head">
+              <div>
+                <div class="section-kicker">Overview</div>
+                <h2>运行概览</h2>
+              </div>
+            </div>
+            <div class="stats dashboard-stats">
+              <div class="metric"><span>Cookies</span><strong id="stat-cookies">-</strong></div>
+              <div class="metric"><span>总任务</span><strong id="stat-total">0</strong></div>
+              <div class="metric"><span>运行中</span><strong id="stat-running">0</strong></div>
+              <div class="metric"><span>已完成</span><strong id="stat-success">0</strong></div>
+            </div>
+          </section>
+        </aside>
       </section>
 
-      <section class="card">
-        <h2>概览</h2>
-        <div class="stats" style="margin-top:14px;">
-          <div class="metric"><span>Cookies</span><strong id="stat-cookies">-</strong></div>
-          <div class="metric"><span>总任务</span><strong id="stat-total">0</strong></div>
-          <div class="metric"><span>运行中</span><strong id="stat-running">0</strong></div>
-          <div class="metric"><span>已完成</span><strong id="stat-success">0</strong></div>
+      <section class="card records-card">
+        <div class="section-head">
+          <div>
+            <div class="section-kicker">Records</div>
+            <h2>任务列表</h2>
+          </div>
+          <div class="list-summary">
+            <span id="jobs-range" class="muted">暂无任务</span>
+          </div>
         </div>
-      </section>
-
-      <section class="card">
-        <h2>全部记录</h2>
-        <p class="muted">这里会显示全部下载记录；成功任务会直接显示直播 MP4 下载链接。</p>
-        <div id="jobs" class="jobs" style="margin-top:14px;"><div class="empty">暂无任务</div></div>
+        <div id="jobs" class="jobs"><div class="empty">暂无任务</div></div>
+        <div id="jobs-pagination" class="pagination hidden">
+          <button id="jobs-prev-btn" type="button">上一页</button>
+          <div id="jobs-page-info" class="pagination-info">第 1 / 1 页</div>
+          <button id="jobs-next-btn" type="button">下一页</button>
+        </div>
       </section>`;
 }
 
@@ -275,28 +305,49 @@ export function renderApp(appOrigin: string, page: AppPage): string {
       button.primary, .button-link.primary { background: var(--primary); border-color: var(--primary); color: #fff; }
       button.primary:hover, .button-link.primary:hover { background: var(--primary-dark); }
       button:disabled { opacity: 0.7; cursor: wait; }
+      .download-shell { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(280px, 0.8fr); gap: 16px; align-items: start; }
+      .overview-stack { display: grid; gap: 16px; }
+      .section-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; }
+      .section-head h2 { margin-top: 4px; }
+      .section-kicker { color: var(--primary); font-size: 11px; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; }
+      .toolbar { display: flex; gap: 10px; flex-wrap: wrap; }
+      .compose-card textarea { min-height: 220px; }
+      .compose-footer { display: flex; justify-content: space-between; align-items: center; gap: 16px; margin-top: 16px; }
+      .compact-copy { font-size: 13px; }
+      .dashboard-stats { margin-top: 18px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
       .stats { grid-template-columns: repeat(4, minmax(0, 1fr)); }
-      .metric { padding: 16px; }
+      .metric { padding: 16px; border: 1px solid var(--line); border-radius: 16px; background: linear-gradient(180deg, #ffffff 0%, #f8fbfe 100%); }
       .metric span { display: block; color: var(--muted); font-size: 13px; }
       .metric strong { display: block; margin-top: 8px; font-size: 26px; }
-      .jobs { display: grid; gap: 12px; }
-      .job { padding: 18px; background: linear-gradient(180deg, #ffffff 0%, #fbfdff 100%); }
+      .records-card { display: grid; gap: 16px; }
+      .list-summary { display: flex; align-items: center; min-height: 44px; }
+      .jobs { display: grid; gap: 14px; }
+      .job { padding: 20px; background: linear-gradient(180deg, #ffffff 0%, #fbfdff 100%); border: 1px solid var(--line); border-radius: 18px; }
       .job-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
       .job-id { font-size: 12px; color: var(--muted); }
-      .job-title { margin: 6px 0 0; font-size: 18px; }
-      .status { padding: 4px 10px; border-radius: 999px; font-size: 12px; font-weight: 700; background: #eff6ff; color: var(--primary); }
+      .job-title { margin: 6px 0 0; font-size: 20px; line-height: 1.3; }
+      .status { padding: 6px 10px; border-radius: 999px; font-size: 12px; font-weight: 700; background: #eff6ff; color: var(--primary); }
       .status.succeeded { background: #ecfdf5; color: var(--ok); }
       .status.failed { background: #fef2f2; color: var(--danger); }
       .status.queued { background: #fff7ed; color: #c2410c; }
-      .job-meta, .job-errors { margin-top: 8px; color: var(--muted); line-height: 1.6; font-size: 14px; }
-      .job-errors { color: var(--danger); }
-      .progress { height: 8px; margin-top: 10px; border-radius: 999px; background: #eef2f7; overflow: hidden; }
+      .job-grid { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(220px, 0.8fr); gap: 16px; margin-top: 14px; }
+      .job-meta-panel { display: grid; gap: 10px; }
+      .job-meta-row { display: flex; flex-wrap: wrap; gap: 10px 18px; color: var(--muted); line-height: 1.6; font-size: 14px; }
+      .job-side { padding: 14px 16px; border-radius: 16px; background: #f8fbfe; border: 1px solid #e2ebf3; }
+      .job-side-label { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; }
+      .job-side-value { margin-top: 8px; font-size: 26px; font-weight: 800; }
+      .job-side-sub { margin-top: 6px; color: var(--muted); font-size: 13px; }
+      .job-errors { margin-top: 12px; padding: 12px 14px; border-radius: 14px; background: #fff5f5; color: var(--danger); line-height: 1.7; font-size: 14px; border: 1px solid #ffd5d2; }
+      .progress { height: 10px; margin-top: 10px; border-radius: 999px; background: #e9eef4; overflow: hidden; }
       .progress > div { height: 100%; background: var(--primary); }
+      .file-sections { display: grid; gap: 12px; margin-top: 14px; }
       .files { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
       .files a { padding: 7px 11px; border-radius: 999px; background: #edf5fb; color: var(--primary); text-decoration: none; font-weight: 700; border: 1px solid #d8e7f4; }
-      .file-block { margin-top: 12px; }
-      .file-title { color: var(--muted); font-size: 13px; font-weight: 700; margin-bottom: 8px; }
+      .file-block { padding: 14px 16px; border-radius: 16px; border: 1px solid var(--line); background: #fcfdff; }
+      .file-title { color: var(--muted); font-size: 13px; font-weight: 700; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.06em; }
       .empty { padding: 14px; border-radius: 12px; border: 1px dashed var(--line); color: var(--muted); background: #fafafa; }
+      .pagination { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-top: 4px; }
+      .pagination-info { color: var(--muted); font-size: 14px; text-align: center; flex: 1; }
       .login-box { margin-top: 14px; padding: 14px; border-radius: 12px; background: #f8fafc; border: 1px solid var(--line); }
       .login-status { font-weight: 600; }
       .qr-image { display: block; width: 280px; max-width: 100%; margin-top: 12px; border-radius: 12px; border: 1px solid var(--line); background: #fff; }
@@ -318,12 +369,18 @@ export function renderApp(appOrigin: string, page: AppPage): string {
       @media (max-width: 760px) {
         body { padding: 14px; }
         .topbar, .job-top { flex-direction: column; align-items: flex-start; }
+        .section-head,
+        .compose-footer,
+        .pagination { flex-direction: column; align-items: stretch; }
+        .job-grid,
         .auth-landing,
         .auth-panels,
+        .download-shell,
         .auth-grid,
         .stats { grid-template-columns: 1fr; }
         .auth-intro { padding: 8px 0 0; }
         .auth-intro h2 { font-size: 32px; }
+        .dashboard-stats { grid-template-columns: 1fr 1fr; }
       }
     </style>
   </head>
@@ -359,6 +416,9 @@ export function renderApp(appOrigin: string, page: AppPage): string {
         user: null,
         loginSessionId: "",
         loginSessionStatus: "",
+        jobs: [],
+        jobsPage: 1,
+        jobsPageSize: 6,
       };
 
       const el = {
@@ -390,6 +450,11 @@ export function renderApp(appOrigin: string, page: AppPage): string {
         statRunning: document.getElementById("stat-running"),
         statSuccess: document.getElementById("stat-success"),
         jobs: document.getElementById("jobs"),
+        jobsRange: document.getElementById("jobs-range"),
+        jobsPagination: document.getElementById("jobs-pagination"),
+        jobsPageInfo: document.getElementById("jobs-page-info"),
+        jobsPrevBtn: document.getElementById("jobs-prev-btn"),
+        jobsNextBtn: document.getElementById("jobs-next-btn"),
         currentPassword: document.getElementById("current-password"),
         newPassword: document.getElementById("new-password"),
         confirmNewPassword: document.getElementById("confirm-new-password"),
@@ -456,6 +521,26 @@ export function renderApp(appOrigin: string, page: AppPage): string {
           case "failed": return "失败";
           default: return stage || "-";
         }
+      }
+
+      function formatNumber(value) {
+        const num = Number(value || 0);
+        return Number.isFinite(num) ? num.toLocaleString() : "0";
+      }
+
+      function paginateJobs(jobs) {
+        const safeJobs = Array.isArray(jobs) ? jobs : [];
+        const totalPages = Math.max(1, Math.ceil(safeJobs.length / state.jobsPageSize));
+        state.jobsPage = Math.min(Math.max(1, state.jobsPage), totalPages);
+        const start = (state.jobsPage - 1) * state.jobsPageSize;
+        const end = start + state.jobsPageSize;
+        return {
+          items: safeJobs.slice(start, end),
+          total: safeJobs.length,
+          totalPages,
+          start: safeJobs.length ? start + 1 : 0,
+          end: Math.min(end, safeJobs.length),
+        };
       }
 
       function qrImageURL(value) {
@@ -628,11 +713,27 @@ export function renderApp(appOrigin: string, page: AppPage): string {
 
       function renderJobs(jobs) {
         if (!el.jobs) return;
-        if (!Array.isArray(jobs) || jobs.length === 0) {
+        state.jobs = Array.isArray(jobs) ? jobs : [];
+        const page = paginateJobs(state.jobs);
+        if (el.jobsRange) {
+          el.jobsRange.textContent = page.total ? ("显示 " + page.start + "-" + page.end + " / 共 " + page.total + " 条") : "暂无任务";
+        }
+        if (el.jobsPagination && el.jobsPageInfo && el.jobsPrevBtn && el.jobsNextBtn) {
+          if (page.total > state.jobsPageSize) {
+            el.jobsPagination.classList.remove("hidden");
+            el.jobsPageInfo.textContent = "第 " + state.jobsPage + " / " + page.totalPages + " 页";
+            el.jobsPrevBtn.disabled = state.jobsPage <= 1;
+            el.jobsNextBtn.disabled = state.jobsPage >= page.totalPages;
+          } else {
+            el.jobsPagination.classList.add("hidden");
+            el.jobsPageInfo.textContent = "第 1 / 1 页";
+          }
+        }
+        if (!page.total) {
           el.jobs.innerHTML = '<div class="empty">暂无任务</div>';
           return;
         }
-        el.jobs.innerHTML = jobs.map((job) => {
+        el.jobs.innerHTML = page.items.map((job) => {
           const title = job.current_title || (Array.isArray(job.titles) && job.titles[0]) || "下载任务";
           const progress = Math.max(0, Math.min(100, Number(job.progress_percent || 0)));
           const files = Array.isArray(job.files) ? job.files : [];
@@ -644,10 +745,18 @@ export function renderApp(appOrigin: string, page: AppPage): string {
             '<div><div class="job-id">' + escapeHTML(job.id) + '</div><div class="job-title">' + escapeHTML(title) + '</div></div>',
             '<span class="status ' + escapeHTML(String(job.status || '').toLowerCase()) + '">' + escapeHTML(job.status || '-') + '</span>',
             '</div>',
-            '<div class="job-meta">阶段：' + escapeHTML(formatStage(job.stage)) + ' · 创建时间：' + escapeHTML(formatTime(job.created_at)) + '</div>',
+            '<div class="job-grid">',
+            '<div class="job-meta-panel">',
+            '<div class="job-meta-row"><span>阶段：' + escapeHTML(formatStage(job.stage)) + '</span><span>创建时间：' + escapeHTML(formatTime(job.created_at)) + '</span></div>',
             '<div class="progress"><div style="width:' + escapeHTML(progress.toFixed(1)) + '%"></div></div>',
-            mp4Files.length ? '<div class="file-block"><div class="file-title">直播 MP4 下载链接</div><div class="files">' + mp4Files.map((file) => '<a href="' + escapeHTML(file.download_url || '#') + '" target="_blank" rel="noreferrer">' + escapeHTML(file.name) + '</a>').join('') + '</div></div>' : '',
+            '<div class="job-meta-row"><span>进度：' + escapeHTML(progress.toFixed(1)) + '%</span><span>文件数：' + escapeHTML(String(files.length)) + '</span></div>',
+            '</div>',
+            '<aside class="job-side"><div class="job-side-label">Progress</div><div class="job-side-value">' + escapeHTML(progress.toFixed(0)) + '%</div><div class="job-side-sub">当前状态：' + escapeHTML(formatStage(job.stage)) + '</div></aside>',
+            '</div>',
+            (mp4Files.length || files.length) ? '<div class="file-sections">' : '',
+            mp4Files.length ? '<div class="file-block"><div class="file-title">直播 MP4</div><div class="files">' + mp4Files.map((file) => '<a href="' + escapeHTML(file.download_url || '#') + '" target="_blank" rel="noreferrer">' + escapeHTML(file.name) + '</a>').join('') + '</div></div>' : '',
             files.length ? '<div class="file-block"><div class="file-title">全部文件</div><div class="files">' + files.map((file) => '<a href="' + escapeHTML(file.download_url || '#') + '" target="_blank" rel="noreferrer">' + escapeHTML(file.name) + '</a>').join('') + '</div></div>' : '',
+            (mp4Files.length || files.length) ? '</div>' : '',
             errors.length ? '<div class="job-errors">' + errors.map(escapeHTML).join('<br/>') + '</div>' : '',
             '</section>'
           ].join('');
@@ -732,6 +841,7 @@ export function renderApp(appOrigin: string, page: AppPage): string {
           if (el.statTotal) el.statTotal.textContent = "0";
           if (el.statRunning) el.statRunning.textContent = "0";
           if (el.statSuccess) el.statSuccess.textContent = "0";
+          state.jobsPage = 1;
           renderJobs([]);
           return;
         }
@@ -864,6 +974,14 @@ export function renderApp(appOrigin: string, page: AppPage): string {
       if (el.topbarLogoutBtn) el.topbarLogoutBtn.addEventListener("click", async () => { setBusy(el.topbarLogoutBtn, true); try { await logout(); setNotice("已退出登录。", "ok"); } catch (error) { setNotice(error.message, "error"); } finally { setBusy(el.topbarLogoutBtn, false); } });
       if (el.createJobBtn) el.createJobBtn.addEventListener("click", async () => { setBusy(el.createJobBtn, true); try { await createJob(); } catch (error) { setNotice(error.message, "error"); } finally { setBusy(el.createJobBtn, false); } });
       if (el.refreshBtn) el.refreshBtn.addEventListener("click", async () => { try { await refreshAll(); } catch (error) { setNotice(error.message, "error"); } });
+      if (el.jobsPrevBtn) el.jobsPrevBtn.addEventListener("click", () => {
+        state.jobsPage = Math.max(1, state.jobsPage - 1);
+        renderJobs(state.jobs);
+      });
+      if (el.jobsNextBtn) el.jobsNextBtn.addEventListener("click", () => {
+        state.jobsPage += 1;
+        renderJobs(state.jobs);
+      });
       if (el.startLoginWorkflowBtn) el.startLoginWorkflowBtn.addEventListener("click", async () => { setBusy(el.startLoginWorkflowBtn, true); try { await startLoginWorkflow(); } catch (error) { setNotice(error.message, "error"); } finally { setBusy(el.startLoginWorkflowBtn, false); } });
       if (el.changePasswordBtn) el.changePasswordBtn.addEventListener("click", async () => { setBusy(el.changePasswordBtn, true); try { await changePassword(); } catch (error) { setNotice(error.message, "error"); } finally { setBusy(el.changePasswordBtn, false); } });
       if (el.acceptLegalBtn) el.acceptLegalBtn.addEventListener("click", async () => { setBusy(el.acceptLegalBtn, true); try { await acceptLegal(); } catch (error) { setNotice(error.message, "error"); } finally { setBusy(el.acceptLegalBtn, false); } });
