@@ -411,36 +411,40 @@ export function renderApp(appOrigin: string, page: AppPage): string {
       .stat-card span { display: block; font-size: 12px; color: var(--fg-muted); }
       .stat-card strong { display: block; margin-top: 6px; font-size: 24px; font-weight: 600; }
       .job-list { display: grid; }
-      .record-card { padding: 16px; border-top: 1px solid var(--border-default); }
+      .record-card { padding: 16px; border-top: 1px solid var(--border-default); background: var(--bg-overlay); }
+      .record-card:hover { background: #f6f8fa; }
       .record-card:first-child { border-top: 0; }
-      .record-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+      .record-header { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 12px; align-items: start; }
+      .state-dot { width: 14px; height: 14px; margin-top: 4px; border-radius: 999px; background: var(--border-default); border: 2px solid var(--bg-overlay); box-shadow: 0 0 0 1px var(--border-default); }
+      .state-dot.succeeded { background: var(--accent-emphasis); box-shadow: 0 0 0 1px #1f883d; }
+      .state-dot.failed { background: var(--danger-emphasis); box-shadow: 0 0 0 1px #cf222e; }
+      .state-dot.queued { background: #9a6700; box-shadow: 0 0 0 1px #9a6700; }
+      .state-dot.running { background: #0969da; box-shadow: 0 0 0 1px #0969da; }
       .record-overline { font-size: 12px; color: var(--fg-muted); }
-      .record-title { margin: 4px 0 0; font-size: 20px; line-height: 1.35; font-weight: 600; }
-      .status { display: inline-flex; align-items: center; padding: 2px 10px; border-radius: 999px; font-size: 12px; font-weight: 600; background: var(--bg-inset); color: var(--fg-muted); border: 1px solid var(--border-default); }
+      .record-title { margin: 2px 0 0; font-size: 16px; line-height: 1.4; font-weight: 600; color: #0969da; }
+      .record-title:hover { text-decoration: underline; }
+      .status { display: inline-flex; align-items: center; padding: 2px 10px; border-radius: 999px; font-size: 12px; font-weight: 600; background: var(--bg-inset); color: var(--fg-muted); border: 1px solid var(--border-default); white-space: nowrap; }
       .status.succeeded { background: var(--accent-subtle); color: var(--accent-emphasis); border-color: #4ac26b33; }
       .status.failed { background: var(--danger-subtle); color: var(--danger-emphasis); border-color: #ff818266; }
       .status.queued { background: var(--warning-subtle); color: #9a6700; border-color: #d4a72c66; }
-      .record-grid { display: grid; grid-template-columns: minmax(0, 1fr) 220px; gap: 16px; margin-top: 16px; }
-      .record-main { display: grid; gap: 12px; }
-      .detail-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
-      .detail-item { padding: 12px; border: 1px solid var(--border-muted); border-radius: 6px; background: var(--bg-subtle); }
-      .detail-item dt { font-size: 11px; color: var(--fg-muted); text-transform: uppercase; letter-spacing: 0.03em; }
-      .detail-item dd { margin: 6px 0 0; font-size: 14px; font-weight: 600; line-height: 1.5; }
-      .progress-track { height: 8px; border-radius: 999px; background: #d8dee4; overflow: hidden; }
+      .record-grid { display: grid; grid-template-columns: minmax(0, 1fr) 190px; gap: 16px; margin-top: 12px; }
+      .record-main { display: grid; gap: 10px; }
+      .meta-line { display: flex; flex-wrap: wrap; gap: 8px 16px; color: var(--fg-muted); font-size: 12px; }
+      .meta-line strong { color: var(--fg-default); font-weight: 500; }
+      .progress-track { height: 6px; border-radius: 999px; background: #d8dee4; overflow: hidden; }
       .progress-track > div { height: 100%; background: #2da44e; }
       .progress-caption { display: flex; justify-content: space-between; align-items: center; gap: 12px; color: var(--fg-muted); font-size: 12px; }
-      .record-meter { padding: 12px; border: 1px solid var(--border-muted); border-radius: 6px; background: var(--bg-subtle); display: grid; gap: 6px; align-content: start; }
-      .meter-label { font-size: 11px; color: var(--fg-muted); text-transform: uppercase; }
-      .meter-value { font-size: 32px; line-height: 1; font-weight: 600; }
-      .meter-note { color: var(--fg-muted); font-size: 12px; line-height: 1.5; }
-      .file-cluster { display: grid; gap: 10px; margin-top: 14px; }
+      .record-side { display: grid; gap: 6px; justify-items: end; align-content: start; }
+      .side-number { font-size: 28px; line-height: 1; font-weight: 600; color: var(--fg-default); }
+      .side-label { font-size: 12px; color: var(--fg-muted); }
+      .file-cluster { display: grid; gap: 10px; margin-top: 12px; }
       .file-box { padding: 12px; border: 1px solid var(--border-muted); border-radius: 6px; background: var(--bg-subtle); }
-      .file-label { color: var(--fg-muted); font-size: 12px; font-weight: 600; }
+      .file-label { color: var(--fg-muted); font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.03em; }
       .file-links { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
-      .file-links a { padding: 6px 10px; border-radius: 6px; background: var(--bg-overlay); color: #0969da; text-decoration: none; font-weight: 500; border: 1px solid var(--border-default); }
+      .file-links a { padding: 5px 10px; border-radius: 999px; background: var(--bg-overlay); color: #0969da; text-decoration: none; font-weight: 500; border: 1px solid var(--border-default); }
       .job-errors { margin-top: 14px; padding: 12px; border-radius: 6px; background: var(--danger-subtle); color: var(--danger-emphasis); line-height: 1.7; font-size: 13px; border: 1px solid #ffcecb; }
       .empty { padding: 24px 16px; color: var(--fg-muted); text-align: center; }
-      .pagination { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+      .pagination { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 16px 16px; border-top: 1px solid var(--border-default); }
       .pagination-info { color: var(--muted); font-size: 14px; text-align: center; flex: 1; }
       .guide-body { display: grid; gap: 12px; }
       .guide-item { display: grid; grid-template-columns: 32px minmax(0, 1fr); gap: 12px; align-items: start; padding: 12px 0; border-bottom: 1px solid var(--border-muted); }
@@ -480,8 +484,9 @@ export function renderApp(appOrigin: string, page: AppPage): string {
         .composer-footer,
         .box-header,
         .progress-caption { flex-direction: column; align-items: stretch; }
-        .stats-grid,
-        .detail-grid { grid-template-columns: 1fr; }
+        .record-header { grid-template-columns: 1fr; }
+        .record-side { justify-items: start; }
+        .stats-grid { grid-template-columns: 1fr; }
       }
     </style>
   </head>
@@ -841,23 +846,21 @@ export function renderApp(appOrigin: string, page: AppPage): string {
           const files = Array.isArray(job.files) ? job.files : [];
           const mp4Files = files.filter((file) => String(file.name || "").toLowerCase().endsWith(".mp4"));
           const errors = Array.isArray(job.errors) ? job.errors : [];
+          const statusClass = escapeHTML(String(job.status || "").toLowerCase());
           return [
             '<section class="record-card">',
             '<div class="record-header">',
-            '<div><div class="record-overline">Task ' + escapeHTML(job.id) + '</div><div class="record-title">' + escapeHTML(title) + '</div></div>',
-            '<span class="status ' + escapeHTML(String(job.status || '').toLowerCase()) + '">' + escapeHTML(job.status || '-') + '</span>',
+            '<span class="state-dot ' + statusClass + '"></span>',
+            '<div><div class="record-overline">Task #' + escapeHTML(job.id) + '</div><div class="record-title">' + escapeHTML(title) + '</div></div>',
+            '<span class="status ' + statusClass + '">' + escapeHTML(job.status || '-') + '</span>',
             '</div>',
             '<div class="record-grid">',
             '<div class="record-main">',
-            '<div class="detail-grid">',
-            '<div class="detail-item"><dt>阶段</dt><dd>' + escapeHTML(formatStage(job.stage)) + '</dd></div>',
-            '<div class="detail-item"><dt>创建时间</dt><dd>' + escapeHTML(formatTime(job.created_at)) + '</dd></div>',
-            '<div class="detail-item"><dt>文件数</dt><dd>' + escapeHTML(String(files.length)) + '</dd></div>',
-            '</div>',
+            '<div class="meta-line"><span><strong>Stage</strong> ' + escapeHTML(formatStage(job.stage)) + '</span><span><strong>Created</strong> ' + escapeHTML(formatTime(job.created_at)) + '</span><span><strong>Files</strong> ' + escapeHTML(String(files.length)) + '</span></div>',
             '<div class="progress-track"><div style="width:' + escapeHTML(progress.toFixed(1)) + '%"></div></div>',
             '<div class="progress-caption"><span>进度 ' + escapeHTML(progress.toFixed(1)) + '%</span><span>状态 ' + escapeHTML(String(job.status || '-')) + '</span></div>',
             '</div>',
-            '<aside class="record-meter"><div class="meter-label">Progress</div><div class="meter-value">' + escapeHTML(progress.toFixed(0)) + '%</div><div class="meter-note">当前阶段：' + escapeHTML(formatStage(job.stage)) + '</div></aside>',
+            '<aside class="record-side"><div class="side-number">' + escapeHTML(progress.toFixed(0)) + '%</div><div class="side-label">Progress</div></aside>',
             '</div>',
             (mp4Files.length || files.length) ? '<div class="file-cluster">' : '',
             mp4Files.length ? '<div class="file-box"><div class="file-label">直播 MP4</div><div class="file-links">' + mp4Files.map((file) => '<a href="' + escapeHTML(file.download_url || '#') + '" target="_blank" rel="noreferrer">' + escapeHTML(file.name) + '</a>').join('') + '</div></div>' : '',
