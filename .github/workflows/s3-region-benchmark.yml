@@ -26,6 +26,11 @@ on:
         required: false
         default: "30"
         type: string
+      payload_mib:
+        description: "Payload size in MiB"
+        required: false
+        default: "20"
+        type: string
 
 permissions:
   contents: read
@@ -110,8 +115,10 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Generate 20 MiB payload
+        env:
+          PAYLOAD_MIB: ${{ inputs.payload_mib }}
         run: |
-          dd if=/dev/zero of="${RUNNER_TEMP}/s3-region-bench.bin" bs=1M count=20 status=none
+          dd if=/dev/zero of="${RUNNER_TEMP}/s3-region-bench.bin" bs=1M count="${PAYLOAD_MIB}" status=none
 
       - name: Benchmark region
         env:
