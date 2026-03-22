@@ -62,12 +62,7 @@ jobs:
             if [ "${missing}" -ne 0 ]; then
               exit 1
             fi
-            python3 - <<'PY'
-            import os
-            import urllib.parse
-            host = urllib.parse.urlparse(os.environ["S3_ENDPOINT"]).hostname or ""
-            print(f"Benchmark target host: {host}")
-            PY
+            python3 -c 'import os, urllib.parse; print(f"Benchmark target host: {urllib.parse.urlparse(os.environ[\"S3_ENDPOINT\"]).hostname or \"\"}")'
             exit 0
           fi
 
@@ -105,12 +100,7 @@ jobs:
           SUMMARY_MD="${RUNNER_TEMP}/s3-region-bench.md"
 
           if [ "${BENCHMARK_MODE}" = "signing-region" ]; then
-            HOST="$(python3 - <<'PY'
-            import os
-            import urllib.parse
-            print(urllib.parse.urlparse(os.environ["S3_ENDPOINT"]).hostname or "")
-            PY
-            )"
+            HOST="$(python3 -c 'import os, urllib.parse; print(urllib.parse.urlparse(os.environ["S3_ENDPOINT"]).hostname or "")')"
 
             export AWS_ACCESS_KEY_ID="${LEGACY_S3_ACCESS_KEY_ID:-}"
             export AWS_SECRET_ACCESS_KEY="${LEGACY_S3_SECRET_ACCESS_KEY:-}"
