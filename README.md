@@ -91,7 +91,7 @@ npx wrangler deploy
 - `GODINGTALK_S3_ACCESS_KEY_ID`
 - `GODINGTALK_S3_SECRET_ACCESS_KEY`
 - `GODINGTALK_S3_BUCKET`（可选，不填默认 `godingtalk-files`）
-- `GODINGTALK_S3_REGION`（可选，Cloudflare R2 默认 `auto`，其它 S3 默认 `us-east-1`）
+- `GODINGTALK_S3_REGION`（可选，Cloudflare R2 与 `hi168` S3 兼容端点默认 `auto`，其它 S3 默认 `us-east-1`）
 - `AWS_BENCHMARK_ACCESS_KEY_ID`（可选）
 - `AWS_BENCHMARK_SECRET_ACCESS_KEY`（可选）
 - `AWS_BENCHMARK_SESSION_TOKEN`（可选）
@@ -104,7 +104,7 @@ npx wrangler deploy
 - `GODINGTALK_S3_ENDPOINT`：S3 兼容 endpoint；如果你用的是 Cloudflare R2，也可以不填，让 workflow 根据 `CLOUDFLARE_ACCOUNT_ID` 自动推导成 `https://<account-id>.r2.cloudflarestorage.com`
 - `GODINGTALK_S3_ACCESS_KEY_ID` / `GODINGTALK_S3_SECRET_ACCESS_KEY`：给远程 runner 上传对象存储，也会同步到 Worker 供登录态下载使用
 - `GODINGTALK_S3_BUCKET`：真实的 bucket 名称
-- `GODINGTALK_S3_REGION`：对象存储签名 region；Cloudflare R2 推荐 `auto`
+- `GODINGTALK_S3_REGION`：对象存储签名 region；Cloudflare R2 与 `hi168` S3 兼容端点推荐 `auto`
 - `AWS_BENCHMARK_ACCESS_KEY_ID` / `AWS_BENCHMARK_SECRET_ACCESS_KEY`（可选）：给 `s3-region-benchmark.yml` 做真实 AWS S3 跨区域测速；如果不配，会回退复用 `GODINGTALK_S3_ACCESS_KEY_ID` / `GODINGTALK_S3_SECRET_ACCESS_KEY`
 - `AWS_BENCHMARK_SESSION_TOKEN`（可选）：如果你用的是临时 STS 凭证，就一并配置
 

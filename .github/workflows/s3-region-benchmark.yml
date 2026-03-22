@@ -29,7 +29,7 @@ on:
       payload_mib:
         description: "Payload size in MiB"
         required: false
-        default: "20"
+        default: "10"
         type: string
 
 permissions:
@@ -114,7 +114,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Generate 20 MiB payload
+      - name: Generate benchmark payload
         env:
           PAYLOAD_MIB: ${{ inputs.payload_mib }}
         run: |
