@@ -22,6 +22,7 @@ def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--input-dir", required=True)
     parser.add_argument("--mode", required=True)
+    parser.add_argument("--payload-mib", required=True)
     parser.add_argument("--runner-label", required=True)
     parser.add_argument("--target", required=True)
     parser.add_argument("--summary-md", required=True)
@@ -40,6 +41,8 @@ def main() -> int:
         f"Runner: `{args.runner_label}`",
         "",
         f"Mode: `{args.mode}`",
+        "",
+        f"Payload: `{args.payload_mib} MiB`",
         "",
         f"Target: `{target_label}`",
         "",

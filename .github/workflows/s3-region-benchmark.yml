@@ -197,6 +197,7 @@ jobs:
           python3 scripts/s3_region_summarize.py \
             --input-dir "${RUNNER_TEMP}/artifacts" \
             --mode "${BENCHMARK_MODE}" \
+            --payload-mib "${{ inputs.payload_mib }}" \
             --runner-label "GitHub Actions ubuntu-latest (US-hosted approximation)" \
             --target "${{ needs.prepare.outputs.target_host }}" \
             --summary-md "${SUMMARY_MD}" \
