@@ -2,37 +2,57 @@ type AppPage = "download" | "login" | "settings" | "account" | "legal";
 
 function renderNav(page: AppPage): string {
   const items: Array<{ key: AppPage; href: string; label: string }> = [
-    { key: "download", href: "/download", label: "Tasks" },
-    { key: "settings", href: "/settings", label: "QR Login" },
-    { key: "account", href: "/account", label: "Account" },
-    { key: "legal", href: "/legal", label: "Legal" },
-    { key: "login", href: "/login", label: "Sign in" },
+    { key: "download", href: "/download", label: "下载" },
+    { key: "settings", href: "/settings", label: "扫码登录" },
+    { key: "account", href: "/account", label: "账号" },
+    { key: "legal", href: "/legal", label: "免责" },
+    { key: "login", href: "/login", label: "登录" },
   ];
 
-  return `<nav class="app-nav">${items.map((item) => `<a href="${item.href}" data-nav="${item.key}" class="app-nav-link ${page === item.key ? "active" : ""}">${item.label}</a>`).join("")}</nav>`;
+  return `<nav class="top-tabs">${items.map((item) => `<a href="${item.href}" data-nav="${item.key}" class="top-tab ${page === item.key ? "active" : ""}">${item.label}</a>`).join("")}</nav>`;
 }
 
 function renderDownloadPage(): string {
   return `
-      <section class="pagehead">
+      <section class="hero hero-download">
         <div>
-          <div class="pagehead-eyebrow">Repository / Downloads</div>
-          <h1 class="pagehead-title">下载任务</h1>
-          <p class="pagehead-description">提交直播回放链接，集中查看任务状态、文件输出和错误记录。</p>
+          <div class="hero-kicker">GoDingtalk Workspace</div>
+          <h1 class="hero-title">下载工作台</h1>
+          <p class="hero-description">提交直播回放链接，集中查看任务状态、文件输出和错误记录。</p>
         </div>
-        <div class="pagehead-actions">
-          <button id="refresh-btn" type="button">Refresh</button>
+        <div class="hero-actions">
+          <button id="refresh-btn" type="button">刷新状态</button>
         </div>
       </section>
 
-      <section class="dashboard-grid">
-        <section class="box composer-box">
-          <div class="box-header">
-            <div>
-              <h2 class="box-title">Create new job</h2>
+      <section class="stats-row">
+        <article class="stat-card">
+          <span>Cookies</span>
+          <strong id="stat-cookies">-</strong>
+        </article>
+        <article class="stat-card">
+          <span>总任务</span>
+          <strong id="stat-total">0</strong>
+        </article>
+        <article class="stat-card">
+          <span>运行中</span>
+          <strong id="stat-running">0</strong>
+        </article>
+        <article class="stat-card">
+          <span>已完成</span>
+          <strong id="stat-success">0</strong>
+        </article>
+      </section>
+
+      <section class="main-grid">
+        <section class="glass-card composer-card">
+          <div class="card-head">
+            <div class="card-head-copy">
+              <div class="card-kicker">Create</div>
+              <h2>创建下载任务</h2>
             </div>
           </div>
-          <div class="box-body">
+          <div class="card-body">
             <div id="legal-warning" class="notice error hidden"></div>
             <div class="field">
               <label for="urls">回放链接</label>
@@ -45,67 +65,74 @@ function renderDownloadPage(): string {
           </div>
         </section>
 
-        <aside class="stats-column">
-          <section class="box">
-            <div class="box-header">
-              <h2 class="box-title">Overview</h2>
-            </div>
-            <div class="box-body">
-              <div class="stats-grid">
-                <div class="stat-card"><span>Cookies</span><strong id="stat-cookies">-</strong></div>
-                <div class="stat-card"><span>Total</span><strong id="stat-total">0</strong></div>
-                <div class="stat-card"><span>Running</span><strong id="stat-running">0</strong></div>
-                <div class="stat-card"><span>Succeeded</span><strong id="stat-success">0</strong></div>
+        <aside class="side-column">
+          <section class="glass-card mini-card">
+            <div class="card-head compact">
+              <div class="card-head-copy">
+                <div class="card-kicker">Status</div>
+                <h2>当前说明</h2>
               </div>
             </div>
-          </section>
-          <section class="box">
-            <div class="box-header">
-              <h2 class="box-title">Quick note</h2>
+            <div class="card-body prose-copy">
+              先确认 Cookies 已就绪，并完成免责声明接受，再批量提交链接。
             </div>
-            <div class="box-body prose-copy">
-              先确认 Cookies 已就绪，并完成免责声明接受，再提交任务。
+          </section>
+          <section class="glass-card mini-card">
+            <div class="card-head compact">
+              <div class="card-head-copy">
+                <div class="card-kicker">Flow</div>
+                <h2>使用顺序</h2>
+              </div>
+            </div>
+            <div class="card-body step-list">
+              <div class="step-item"><strong>1</strong><span>确认免责声明和 Cookies 状态</span></div>
+              <div class="step-item"><strong>2</strong><span>提交一个或多个回放链接</span></div>
+              <div class="step-item"><strong>3</strong><span>等待任务完成并下载结果文件</span></div>
             </div>
           </section>
         </aside>
       </section>
 
-      <section class="box jobs-box">
-        <div class="box-header jobs-header">
+      <section class="glass-card jobs-card">
+        <div class="card-head jobs-head">
           <div>
-            <h2 class="box-title">Jobs</h2>
+            <div class="card-kicker">Archive</div>
+            <h2>任务列表</h2>
           </div>
           <div class="jobs-range-wrap">
             <span id="jobs-range" class="muted">暂无任务</span>
           </div>
         </div>
-        <div class="box-body no-padding">
+        <div class="card-body no-padding">
           <div id="jobs" class="job-list"><div class="empty">暂无任务</div></div>
         </div>
         <div id="jobs-pagination" class="pagination hidden">
-          <button id="jobs-prev-btn" type="button">Previous</button>
-          <div id="jobs-page-info" class="pagination-info">Page 1 of 1</div>
-          <button id="jobs-next-btn" type="button">Next</button>
+          <button id="jobs-prev-btn" type="button">上一页</button>
+          <div id="jobs-page-info" class="pagination-info">第 1 / 1 页</div>
+          <button id="jobs-next-btn" type="button">下一页</button>
         </div>
       </section>`;
 }
 
 function renderLoginPage(): string {
   return `
-      <section class="pagehead">
+      <section class="hero hero-auth">
         <div>
-          <div class="pagehead-eyebrow">Authentication</div>
-          <h1 class="pagehead-title">Sign in</h1>
-          <p class="pagehead-description">登录后即可进入下载、二维码登录和账号管理。</p>
+          <div class="hero-kicker">Identity</div>
+          <h1 class="hero-title">登录与注册</h1>
+          <p class="hero-description">进入你的控制台空间，完成下载、扫码登录和账号管理。</p>
         </div>
       </section>
 
-      <section class="split-layout">
-        <section class="box auth-box" id="login-panel">
-          <div class="box-header">
-            <h2 class="box-title">Sign in to GoDingtalk</h2>
+      <section class="auth-grid">
+        <section class="glass-card auth-box" id="login-panel">
+          <div class="card-head">
+            <div class="card-head-copy">
+              <div class="card-kicker">Sign In</div>
+              <h2>登录</h2>
+            </div>
           </div>
-          <div class="box-body">
+          <div class="card-body">
             <div class="field">
               <label for="login-username">用户名</label>
               <input id="login-username" placeholder="输入用户名" />
@@ -120,13 +147,14 @@ function renderLoginPage(): string {
           </div>
         </section>
 
-        <section class="box auth-box" id="register-panel">
-          <div class="box-header">
-            <div>
-              <h2 class="box-title">Create an account</h2>
+        <section class="glass-card auth-box" id="register-panel">
+          <div class="card-head">
+            <div class="card-head-copy">
+              <div class="card-kicker">Register</div>
+              <h2>注册</h2>
             </div>
           </div>
-          <div class="box-body">
+          <div class="card-body">
             <p class="muted" id="register-card-hint">创建新账号后即可登录使用</p>
             <div class="field">
               <label for="register-username">用户名</label>
@@ -142,11 +170,14 @@ function renderLoginPage(): string {
           </div>
         </section>
 
-        <section class="box auth-session hidden" id="auth-session-card">
-          <div class="box-header">
-            <h2 class="box-title">Current session</h2>
+        <section class="glass-card auth-session hidden" id="auth-session-card">
+          <div class="card-head">
+            <div class="card-head-copy">
+              <div class="card-kicker">Current Session</div>
+              <h2>当前会话</h2>
+            </div>
           </div>
-          <div class="box-body">
+          <div class="card-body">
             <p class="muted" id="auth-session-summary">已登录</p>
             <div class="actions">
               <a class="button-link primary" href="/download">前往下载页</a>
@@ -159,20 +190,23 @@ function renderLoginPage(): string {
 
 function renderSettingsPage(installURL: string): string {
   return `
-      <section class="pagehead">
+      <section class="hero hero-settings">
         <div>
-          <div class="pagehead-eyebrow">Workflow</div>
-          <h1 class="pagehead-title">二维码登录</h1>
-          <p class="pagehead-description">启动登录工作流，等待二维码出现并回传 Cookies。</p>
+          <div class="hero-kicker">Workflow</div>
+          <h1 class="hero-title">二维码登录</h1>
+          <p class="hero-description">启动登录工作流，等待二维码出现并回传 Cookies。</p>
         </div>
       </section>
 
-      <section class="split-layout">
-        <section class="box">
-          <div class="box-header">
-            <h2 class="box-title">Start workflow</h2>
+      <section class="settings-grid">
+        <section class="glass-card">
+          <div class="card-head">
+            <div class="card-head-copy">
+              <div class="card-kicker">Launch</div>
+              <h2>启动登录流程</h2>
+            </div>
           </div>
-          <div class="box-body">
+          <div class="card-body">
             <div id="login-legal-warning" class="notice error hidden"></div>
             <div class="notice warn">如果当前 Cookies 仍然有效，请不要重复扫码登录，以免触发风控。</div>
             <div class="actions">
@@ -186,11 +220,14 @@ function renderSettingsPage(installURL: string): string {
           </div>
         </section>
 
-        <aside class="box">
-          <div class="box-header">
-            <h2 class="box-title">Guide</h2>
+        <aside class="glass-card">
+          <div class="card-head">
+            <div class="card-head-copy">
+              <div class="card-kicker">Guide</div>
+              <h2>操作说明</h2>
+            </div>
           </div>
-          <div class="box-body guide-body">
+          <div class="card-body guide-body">
             <div class="guide-item"><strong>1</strong><span>先确认账号已登录，并接受当前免责声明。</span></div>
             <div class="guide-item"><strong>2</strong><span>点击启动后等待二维码出现，再用钉钉扫码。</span></div>
             <div class="guide-item"><strong>3</strong><span>扫码成功后，Cookies 会自动回传到 Worker。</span></div>
@@ -204,29 +241,35 @@ function renderSettingsPage(installURL: string): string {
 
 function renderAccountPage(): string {
   return `
-      <section class="pagehead">
+      <section class="hero hero-account">
         <div>
-          <div class="pagehead-eyebrow">Settings</div>
-          <h1 class="pagehead-title">账号中心</h1>
-          <p class="pagehead-description">查看当前账号状态，更新密码，并在 sudo 模式下管理用户与免责声明。</p>
+          <div class="hero-kicker">Profile</div>
+          <h1 class="hero-title">账号中心</h1>
+          <p class="hero-description">查看当前账号状态，更新密码，并在 sudo 模式下管理用户与免责声明。</p>
         </div>
       </section>
 
-      <section class="split-layout">
-        <section class="box">
-          <div class="box-header">
-            <h2 class="box-title">Profile</h2>
+      <section class="account-grid">
+        <section class="glass-card">
+          <div class="card-head">
+            <div class="card-head-copy">
+              <div class="card-kicker">Summary</div>
+              <h2>账号概览</h2>
+            </div>
           </div>
-          <div class="box-body">
+          <div class="card-body">
             <p id="account-summary" class="muted">未登录</p>
           </div>
         </section>
 
-        <section class="box">
-          <div class="box-header">
-            <h2 class="box-title">Change password</h2>
+        <section class="glass-card">
+          <div class="card-head">
+            <div class="card-head-copy">
+              <div class="card-kicker">Security</div>
+              <h2>修改密码</h2>
+            </div>
           </div>
-          <div class="box-body">
+          <div class="card-body">
             <div class="field">
               <label for="current-password">当前密码</label>
               <input id="current-password" type="password" placeholder="当前密码" />
@@ -249,15 +292,21 @@ function renderAccountPage(): string {
 
 function renderAccountAdminPanel(): string {
   return `
-      <section id="admin-panel" class="box admin-box hidden">
-        <div class="box-header">
-          <h2 class="box-title">Admin</h2>
+      <section id="admin-panel" class="glass-card admin-box hidden">
+        <div class="card-head">
+          <div class="card-head-copy">
+            <div class="card-kicker">Admin</div>
+            <h2>管理区</h2>
+          </div>
         </div>
-        <div class="box-body">
+        <div class="card-body">
           <div id="admin-users" class="admin-users"><div class="empty">暂无数据</div></div>
           <div class="admin-legal-editor">
-            <div class="box-header nested-header">
-              <h2 class="box-title">免责内容管理</h2>
+            <div class="card-head nested-head">
+              <div class="card-head-copy">
+                <div class="card-kicker">Legal Content</div>
+                <h2>免责内容管理</h2>
+              </div>
             </div>
             <div class="field">
               <label for="admin-legal-text">免责文本</label>
@@ -274,20 +323,23 @@ function renderAccountAdminPanel(): string {
 
 function renderLegalPage(): string {
   return `
-      <section class="pagehead">
+      <section class="hero hero-legal">
         <div>
-          <div class="pagehead-eyebrow">Policy</div>
-          <h1 class="pagehead-title">法律免责声明</h1>
-          <p class="pagehead-description">创建下载任务或启动二维码登录前，必须先完整阅读并接受当前版本的条款。</p>
+          <div class="hero-kicker">Policy</div>
+          <h1 class="hero-title">法律免责声明</h1>
+          <p class="hero-description">创建下载任务或启动二维码登录前，必须先完整阅读并接受当前版本的条款。</p>
         </div>
       </section>
 
-      <section class="split-layout legal-layout">
-        <aside class="box">
-          <div class="box-header">
-            <h2 class="box-title">Acceptance</h2>
+      <section class="legal-grid">
+        <aside class="glass-card legal-side">
+          <div class="card-head">
+            <div class="card-head-copy">
+              <div class="card-kicker">Acceptance</div>
+              <h2>接受状态</h2>
+            </div>
           </div>
-          <div class="box-body">
+          <div class="card-body">
             <div id="legal-state" class="notice ok hidden"></div>
             <div id="legal-version-meta" class="muted small"></div>
             <label class="checkbox-row">
@@ -300,11 +352,14 @@ function renderLegalPage(): string {
           </div>
         </aside>
 
-        <section class="box">
-          <div class="box-header">
-            <h2 class="box-title">Document</h2>
+        <section class="glass-card legal-doc">
+          <div class="card-head">
+            <div class="card-head-copy">
+              <div class="card-kicker">Document</div>
+              <h2>条款正文</h2>
+            </div>
           </div>
-          <div class="box-body">
+          <div class="card-body">
             <div id="legal-text" class="legal-text"><div class="empty">正在加载免责内容...</div></div>
             <div class="notice warn" style="margin-top:16px;">点击接受后，系统会记录你的接受时间和版本号，并将其视为有效电子记录。</div>
           </div>
@@ -341,152 +396,362 @@ export function renderApp(appOrigin: string, page: AppPage): string {
     <title>GoDingtalk</title>
     <style>
       :root {
-        --bg-default: #f6f8fa;
-        --bg-subtle: #f6f8fa;
-        --bg-overlay: #ffffff;
-        --bg-inset: #f6f8fa;
-        --border-default: #d0d7de;
-        --border-muted: #d8dee4;
-        --fg-default: #1f2328;
-        --fg-muted: #59636e;
-        --fg-on-emphasis: #ffffff;
-        --canvas-inset-shadow: inset 0 1px 0 rgba(27,31,36,0.04);
-        --accent-emphasis: #1f883d;
-        --accent-emphasis-hover: #1a7f37;
-        --accent-subtle: #dafbe1;
-        --danger-emphasis: #cf222e;
-        --danger-subtle: #ffebe9;
-        --warning-subtle: #fff8c5;
-        --header-bg: #24292f;
-        --header-fg: #f0f6fc;
-        --radius: 6px;
+        --bg: #f4f5f7;
+        --bg-soft: #fbfbfd;
+        --surface: rgba(255, 255, 255, 0.78);
+        --surface-strong: rgba(255, 255, 255, 0.94);
+        --line: rgba(15, 23, 42, 0.08);
+        --line-strong: rgba(15, 23, 42, 0.12);
+        --text: #101114;
+        --muted: #6b7280;
+        --accent: #0071e3;
+        --accent-strong: #005fcc;
+        --accent-soft: rgba(0, 113, 227, 0.12);
+        --ok: #16a34a;
+        --danger: #d92d20;
+        --warning: #b7791f;
+        --header-bg: rgba(255, 255, 255, 0.72);
+        --header-border: rgba(15, 23, 42, 0.06);
+        --shadow-lg: 0 30px 80px rgba(15, 23, 42, 0.10);
+        --shadow-md: 0 16px 40px rgba(15, 23, 42, 0.08);
+        --radius-xl: 28px;
+        --radius-lg: 22px;
+        --radius-md: 16px;
+        --radius-sm: 12px;
       }
       * { box-sizing: border-box; }
-      html, body { margin: 0; min-height: 100%; background: var(--bg-default); color: var(--fg-default); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", Helvetica, Arial, sans-serif; }
+      html, body { margin: 0; min-height: 100%; background:
+        radial-gradient(circle at top left, rgba(0, 113, 227, 0.10), transparent 28%),
+        radial-gradient(circle at top right, rgba(255, 159, 10, 0.10), transparent 24%),
+        linear-gradient(180deg, #fafafd 0%, var(--bg) 54%, #eef1f5 100%);
+        color: var(--text);
+        font-family: "SF Pro Display", "SF Pro Text", "PingFang SC", "Helvetica Neue", Arial, sans-serif;
+      }
       body { padding: 0; }
       a { color: inherit; }
-      .app-header { background: var(--header-bg); color: var(--header-fg); }
-      .app-header-inner { max-width: 1280px; margin: 0 auto; height: 62px; padding: 0 16px; display: flex; align-items: center; gap: 16px; }
-      .app-brand { display: inline-flex; align-items: center; gap: 10px; text-decoration: none; color: var(--header-fg); font-weight: 600; }
-      .app-brand-mark { width: 28px; height: 28px; border-radius: 999px; background: #f6f8fa; color: #24292f; display: inline-flex; align-items: center; justify-content: center; font-weight: 800; font-size: 12px; }
-      .app-nav { display: flex; align-items: center; gap: 4px; flex: 1; min-width: 0; }
-      .app-nav-link { color: rgba(240,246,252,0.88); text-decoration: none; font-size: 14px; font-weight: 600; padding: 6px 10px; border-radius: 6px; }
-      .app-nav-link:hover, .app-nav-link.active { background: rgba(255,255,255,0.08); color: var(--header-fg); }
-      .app-header-actions { display: flex; align-items: center; gap: 12px; }
-      .user-chip { color: rgba(240,246,252,0.78); font-size: 13px; white-space: nowrap; }
-      .app-main { max-width: 1280px; margin: 0 auto; padding: 24px 16px 40px; display: grid; gap: 16px; }
-      .pagehead { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; }
-      .pagehead-eyebrow { color: var(--fg-muted); font-size: 12px; font-weight: 600; }
-      .pagehead-title { margin: 4px 0 0; font-size: 32px; line-height: 1.25; font-weight: 600; }
-      .pagehead-description { margin: 8px 0 0; font-size: 14px; color: var(--fg-muted); max-width: 72ch; line-height: 1.5; }
-      .pagehead-actions { display: flex; align-items: center; gap: 8px; }
-      .box { background: var(--bg-overlay); border: 1px solid var(--border-default); border-radius: var(--radius); box-shadow: 0 1px 0 rgba(27,31,36,0.04); }
-      .box-header { padding: 16px; border-bottom: 1px solid var(--border-default); background: var(--bg-subtle); border-top-left-radius: var(--radius); border-top-right-radius: var(--radius); display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-      .box-body { padding: 16px; }
+      .app-header {
+        position: sticky;
+        top: 0;
+        z-index: 20;
+        backdrop-filter: saturate(180%) blur(24px);
+        background: var(--header-bg);
+        border-bottom: 1px solid var(--header-border);
+      }
+      .app-header-inner {
+        max-width: 1280px;
+        margin: 0 auto;
+        min-height: 72px;
+        padding: 14px 20px;
+        display: flex;
+        align-items: center;
+        gap: 16px;
+      }
+      .app-brand {
+        display: inline-flex;
+        align-items: center;
+        gap: 12px;
+        text-decoration: none;
+        color: var(--text);
+      }
+      .app-brand-text {
+        display: grid;
+        gap: 2px;
+      }
+      .app-brand-text strong {
+        font-size: 15px;
+        font-weight: 700;
+        letter-spacing: -0.01em;
+      }
+      .app-brand-text span {
+        font-size: 12px;
+        color: var(--muted);
+      }
+      .app-brand-mark {
+        width: 34px;
+        height: 34px;
+        border-radius: 12px;
+        background: linear-gradient(180deg, #111827 0%, #1f2937 100%);
+        color: #fff;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+        font-size: 12px;
+        letter-spacing: 0.08em;
+      }
+      .top-tabs {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        flex: 1;
+        min-width: 0;
+      }
+      .top-tab {
+        padding: 8px 14px;
+        border-radius: 999px;
+        text-decoration: none;
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--muted);
+        white-space: nowrap;
+      }
+      .top-tab:hover {
+        background: rgba(15, 23, 42, 0.05);
+        color: var(--text);
+      }
+      .top-tab.active {
+        background: rgba(15, 23, 42, 0.08);
+        color: var(--text);
+      }
+      .app-header-actions {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+      .user-chip {
+        color: var(--muted);
+        font-size: 13px;
+        white-space: nowrap;
+      }
+      .app-main {
+        max-width: 1280px;
+        margin: 0 auto;
+        padding: 28px 20px 56px;
+        display: grid;
+        gap: 20px;
+      }
+      .hero {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-end;
+        gap: 20px;
+        padding: 8px 4px 0;
+      }
+      .hero-kicker {
+        color: var(--muted);
+        font-size: 12px;
+        font-weight: 600;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+      .hero-title {
+        margin: 8px 0 0;
+        font-size: 48px;
+        line-height: 1.04;
+        letter-spacing: -0.04em;
+        font-weight: 700;
+      }
+      .hero-description {
+        margin: 14px 0 0;
+        max-width: 64ch;
+        font-size: 15px;
+        line-height: 1.7;
+        color: var(--muted);
+      }
+      .hero-actions {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      .glass-card {
+        background: var(--surface);
+        border: 1px solid var(--line);
+        border-radius: var(--radius-xl);
+        box-shadow: var(--shadow-md);
+        backdrop-filter: blur(24px);
+      }
+      .card-head {
+        padding: 24px 24px 0;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+      }
+      .card-head.compact {
+        padding-bottom: 0;
+      }
+      .card-head.nested-head {
+        padding-left: 0;
+        padding-right: 0;
+        padding-top: 28px;
+      }
+      .card-head-copy {
+        display: grid;
+        gap: 6px;
+      }
+      .card-head-copy h2 {
+        margin: 0;
+        font-size: 24px;
+        line-height: 1.2;
+        letter-spacing: -0.02em;
+        font-weight: 700;
+      }
+      .card-kicker {
+        color: var(--muted);
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+      }
+      .card-body { padding: 24px; }
       .box-body.no-padding { padding: 0; }
-      .box-title { margin: 0; font-size: 16px; font-weight: 600; }
-      .jobs-header { align-items: center; }
+      .jobs-head { padding-bottom: 18px; }
       .jobs-range-wrap { display: flex; align-items: center; }
-      .muted { color: var(--fg-muted); }
+      .muted { color: var(--muted); }
       .field { display: grid; gap: 9px; margin-top: 16px; }
-      label { color: var(--fg-default); }
-      .field > label { font-size: 12px; font-weight: 600; color: var(--fg-default); }
-      input, textarea { width: 100%; border: 1px solid var(--border-default); border-radius: 6px; padding: 10px 12px; font: inherit; background: var(--bg-overlay); color: var(--fg-default); box-shadow: var(--canvas-inset-shadow); }
-      textarea { min-height: 180px; resize: vertical; line-height: 1.6; }
-      input:focus, textarea:focus { outline: none; border-color: #0969da; box-shadow: 0 0 0 3px rgba(9,105,218,0.15); }
+      label { color: var(--text); }
+      .field > label {
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--text);
+      }
+      input, textarea {
+        width: 100%;
+        border: 1px solid var(--line-strong);
+        border-radius: var(--radius-md);
+        padding: 14px 16px;
+        font: inherit;
+        background: var(--surface-strong);
+        color: var(--text);
+        box-shadow: inset 0 1px 0 rgba(255,255,255,0.7);
+      }
+      textarea { min-height: 190px; resize: vertical; line-height: 1.7; }
+      input:focus, textarea:focus {
+        outline: none;
+        border-color: rgba(0, 113, 227, 0.55);
+        box-shadow: 0 0 0 4px rgba(0, 113, 227, 0.12);
+      }
       .actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 18px; }
-      button, .button-link { border: 1px solid var(--border-default); background: var(--bg-overlay); color: var(--fg-default); min-height: 32px; padding: 0 12px; border-radius: 6px; font: inherit; font-weight: 500; text-decoration: none; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; box-shadow: 0 1px 0 rgba(27,31,36,0.04); }
-      button.primary, .button-link.primary { background: var(--accent-emphasis); border-color: rgba(27,31,36,0.15); color: var(--fg-on-emphasis); }
-      button.primary:hover, .button-link.primary:hover { background: var(--accent-emphasis-hover); }
+      button, .button-link {
+        border: 1px solid var(--line);
+        background: rgba(255, 255, 255, 0.7);
+        color: var(--text);
+        min-height: 40px;
+        padding: 0 16px;
+        border-radius: 999px;
+        font: inherit;
+        font-weight: 600;
+        text-decoration: none;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+      }
+      button.primary, .button-link.primary {
+        background: linear-gradient(180deg, var(--accent) 0%, var(--accent-strong) 100%);
+        border-color: transparent;
+        color: #fff;
+      }
+      button.primary:hover, .button-link.primary:hover { filter: brightness(0.98); }
       button:disabled { opacity: 0.65; cursor: wait; }
-      .dashboard-grid, .split-layout, .legal-layout { display: grid; gap: 16px; }
-      .dashboard-grid { grid-template-columns: minmax(0, 1.25fr) 320px; }
-      .split-layout { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-      .legal-layout { grid-template-columns: 320px minmax(0, 1fr); }
-      .stats-column { display: grid; gap: 16px; }
+      .stats-row {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 14px;
+      }
+      .main-grid, .settings-grid, .account-grid, .legal-grid, .auth-grid { display: grid; gap: 20px; }
+      .main-grid { grid-template-columns: minmax(0, 1.25fr) 320px; }
+      .settings-grid { grid-template-columns: minmax(0, 1.1fr) 320px; }
+      .account-grid { grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr); }
+      .legal-grid { grid-template-columns: 320px minmax(0, 1fr); }
+      .auth-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .side-column { display: grid; gap: 20px; }
       .composer-footer { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-top: 16px; }
-      .compact-copy, .small, .prose-copy { font-size: 13px; line-height: 1.5; }
-      .stats-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
-      .stat-card { padding: 12px; border: 1px solid var(--border-muted); border-radius: 6px; background: var(--bg-default); }
-      .stat-card span { display: block; font-size: 12px; color: var(--fg-muted); }
-      .stat-card strong { display: block; margin-top: 6px; font-size: 24px; font-weight: 600; }
+      .compact-copy, .small, .prose-copy { font-size: 13px; line-height: 1.6; }
+      .stat-card {
+        padding: 18px 20px;
+        border-radius: var(--radius-lg);
+        background: var(--surface);
+        border: 1px solid var(--line);
+        box-shadow: var(--shadow-md);
+        backdrop-filter: blur(18px);
+      }
+      .stat-card span { display: block; font-size: 13px; color: var(--muted); }
+      .stat-card strong { display: block; margin-top: 8px; font-size: 30px; font-weight: 700; letter-spacing: -0.03em; }
       .job-list { display: grid; }
-      .record-card { padding: 16px; border-top: 1px solid var(--border-default); background: var(--bg-overlay); }
-      .record-card:hover { background: #f6f8fa; }
+      .record-card { padding: 20px 24px; border-top: 1px solid rgba(15, 23, 42, 0.06); background: transparent; }
+      .record-card:hover { background: rgba(255, 255, 255, 0.34); }
       .record-card:first-child { border-top: 0; }
       .record-header { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 12px; align-items: start; }
-      .state-dot { width: 14px; height: 14px; margin-top: 4px; border-radius: 999px; background: var(--border-default); border: 2px solid var(--bg-overlay); box-shadow: 0 0 0 1px var(--border-default); }
-      .state-dot.succeeded { background: var(--accent-emphasis); box-shadow: 0 0 0 1px #1f883d; }
-      .state-dot.failed { background: var(--danger-emphasis); box-shadow: 0 0 0 1px #cf222e; }
+      .state-dot { width: 14px; height: 14px; margin-top: 4px; border-radius: 999px; background: rgba(15, 23, 42, 0.18); border: 2px solid rgba(255,255,255,0.88); box-shadow: 0 0 0 1px rgba(15,23,42,0.10); }
+      .state-dot.succeeded { background: var(--ok); box-shadow: 0 0 0 1px rgba(22,163,74,0.38); }
+      .state-dot.failed { background: var(--danger); box-shadow: 0 0 0 1px rgba(217,45,32,0.28); }
       .state-dot.queued { background: #9a6700; box-shadow: 0 0 0 1px #9a6700; }
-      .state-dot.running { background: #0969da; box-shadow: 0 0 0 1px #0969da; }
-      .record-overline { font-size: 12px; color: var(--fg-muted); }
-      .record-title { margin: 2px 0 0; font-size: 16px; line-height: 1.4; font-weight: 600; color: #0969da; }
+      .state-dot.running { background: var(--accent); box-shadow: 0 0 0 1px rgba(0,113,227,0.28); }
+      .record-overline { font-size: 12px; color: var(--muted); }
+      .record-title { margin: 2px 0 0; font-size: 20px; line-height: 1.35; font-weight: 700; letter-spacing: -0.02em; color: var(--text); }
       .record-title:hover { text-decoration: underline; }
-      .status { display: inline-flex; align-items: center; padding: 2px 10px; border-radius: 999px; font-size: 12px; font-weight: 600; background: var(--bg-inset); color: var(--fg-muted); border: 1px solid var(--border-default); white-space: nowrap; }
-      .status.succeeded { background: var(--accent-subtle); color: var(--accent-emphasis); border-color: #4ac26b33; }
-      .status.failed { background: var(--danger-subtle); color: var(--danger-emphasis); border-color: #ff818266; }
-      .status.queued { background: var(--warning-subtle); color: #9a6700; border-color: #d4a72c66; }
+      .status { display: inline-flex; align-items: center; padding: 4px 10px; border-radius: 999px; font-size: 12px; font-weight: 600; background: rgba(15,23,42,0.05); color: var(--muted); border: 1px solid rgba(15,23,42,0.08); white-space: nowrap; }
+      .status.succeeded { background: rgba(22,163,74,0.12); color: var(--ok); border-color: rgba(22,163,74,0.14); }
+      .status.failed { background: rgba(217,45,32,0.10); color: var(--danger); border-color: rgba(217,45,32,0.14); }
+      .status.queued { background: rgba(183,121,31,0.12); color: var(--warning); border-color: rgba(183,121,31,0.16); }
       .record-grid { display: grid; grid-template-columns: minmax(0, 1fr) 190px; gap: 16px; margin-top: 12px; }
       .record-main { display: grid; gap: 10px; }
-      .meta-line { display: flex; flex-wrap: wrap; gap: 8px 16px; color: var(--fg-muted); font-size: 12px; }
-      .meta-line strong { color: var(--fg-default); font-weight: 500; }
-      .progress-track { height: 6px; border-radius: 999px; background: #d8dee4; overflow: hidden; }
-      .progress-track > div { height: 100%; background: #2da44e; }
-      .progress-caption { display: flex; justify-content: space-between; align-items: center; gap: 12px; color: var(--fg-muted); font-size: 12px; }
-      .record-side { display: grid; gap: 6px; justify-items: end; align-content: start; }
-      .side-number { font-size: 28px; line-height: 1; font-weight: 600; color: var(--fg-default); }
-      .side-label { font-size: 12px; color: var(--fg-muted); }
+      .meta-line { display: flex; flex-wrap: wrap; gap: 8px 16px; color: var(--muted); font-size: 13px; }
+      .meta-line strong { color: var(--text); font-weight: 600; }
+      .progress-track { height: 7px; border-radius: 999px; background: rgba(15, 23, 42, 0.08); overflow: hidden; }
+      .progress-track > div { height: 100%; background: linear-gradient(90deg, var(--accent) 0%, #5ac8fa 100%); }
+      .progress-caption { display: flex; justify-content: space-between; align-items: center; gap: 12px; color: var(--muted); font-size: 12px; }
+      .record-side { display: grid; gap: 6px; justify-items: end; align-content: start; padding: 14px 16px; border-radius: var(--radius-md); background: rgba(255,255,255,0.54); border: 1px solid rgba(15,23,42,0.06); }
+      .side-number { font-size: 30px; line-height: 1; font-weight: 700; color: var(--text); letter-spacing: -0.03em; }
+      .side-label { font-size: 12px; color: var(--muted); }
       .file-cluster { display: grid; gap: 10px; margin-top: 12px; }
-      .file-box { padding: 12px; border: 1px solid var(--border-muted); border-radius: 6px; background: var(--bg-subtle); }
-      .file-label { color: var(--fg-muted); font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.03em; }
+      .file-box { padding: 14px; border: 1px solid rgba(15,23,42,0.06); border-radius: var(--radius-md); background: rgba(255,255,255,0.56); }
+      .file-label { color: var(--muted); font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; }
       .file-links { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
-      .file-links a { padding: 5px 10px; border-radius: 999px; background: var(--bg-overlay); color: #0969da; text-decoration: none; font-weight: 500; border: 1px solid var(--border-default); }
-      .job-errors { margin-top: 14px; padding: 12px; border-radius: 6px; background: var(--danger-subtle); color: var(--danger-emphasis); line-height: 1.7; font-size: 13px; border: 1px solid #ffcecb; }
-      .empty { padding: 24px 16px; color: var(--fg-muted); text-align: center; }
-      .pagination { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 16px 16px; border-top: 1px solid var(--border-default); }
+      .file-links a { padding: 6px 12px; border-radius: 999px; background: rgba(0,113,227,0.08); color: var(--accent); text-decoration: none; font-weight: 600; border: 1px solid rgba(0,113,227,0.10); }
+      .job-errors { margin-top: 14px; padding: 14px; border-radius: var(--radius-md); background: rgba(217,45,32,0.08); color: var(--danger); line-height: 1.7; font-size: 13px; border: 1px solid rgba(217,45,32,0.12); }
+      .empty { padding: 28px 20px; color: var(--muted); text-align: center; }
+      .pagination { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 16px 24px 24px; border-top: 1px solid rgba(15,23,42,0.06); }
       .pagination-info { color: var(--muted); font-size: 14px; text-align: center; flex: 1; }
       .guide-body { display: grid; gap: 12px; }
-      .guide-item { display: grid; grid-template-columns: 32px minmax(0, 1fr); gap: 12px; align-items: start; padding: 12px 0; border-bottom: 1px solid var(--border-muted); }
+      .guide-item { display: grid; grid-template-columns: 34px minmax(0, 1fr); gap: 12px; align-items: start; padding: 12px 0; border-bottom: 1px solid rgba(15,23,42,0.06); }
       .guide-item:last-child { border-bottom: 0; padding-bottom: 0; }
-      .guide-item strong { display: inline-flex; width: 32px; height: 32px; align-items: center; justify-content: center; border-radius: 999px; background: var(--bg-subtle); border: 1px solid var(--border-default); font-size: 12px; }
-      .guide-item span { color: var(--fg-muted); line-height: 1.6; font-size: 13px; }
-      .login-box { margin-top: 16px; padding: 12px; border-radius: 6px; background: var(--bg-subtle); border: 1px solid var(--border-default); }
-      .login-status { font-size: 18px; font-weight: 600; }
-      .qr-image { display: block; width: 280px; max-width: 100%; margin-top: 14px; border-radius: 6px; border: 1px solid var(--border-default); background: #fff; }
+      .guide-item strong { display: inline-flex; width: 34px; height: 34px; align-items: center; justify-content: center; border-radius: 999px; background: rgba(0,113,227,0.08); color: var(--accent); font-size: 12px; }
+      .guide-item span { color: var(--muted); line-height: 1.7; font-size: 13px; }
+      .login-box { margin-top: 16px; padding: 14px; border-radius: var(--radius-md); background: rgba(255,255,255,0.56); border: 1px solid rgba(15,23,42,0.06); }
+      .login-status { font-size: 18px; font-weight: 700; letter-spacing: -0.02em; }
+      .qr-image { display: block; width: 280px; max-width: 100%; margin-top: 14px; border-radius: var(--radius-md); border: 1px solid rgba(15,23,42,0.08); background: #fff; }
       .legal-text { display: grid; gap: 12px; line-height: 1.7; }
-      .legal-text h3 { margin: 12px 0 0; font-size: 16px; font-weight: 600; }
+      .legal-text h3 { margin: 12px 0 0; font-size: 18px; font-weight: 700; letter-spacing: -0.02em; }
       .legal-text p { margin: 0; color: var(--text); }
       .admin-users { display: grid; gap: 12px; }
-      .admin-user { padding: 16px; border: 1px solid var(--border-default); border-radius: 6px; background: var(--bg-default); }
+      .admin-user { padding: 16px; border: 1px solid rgba(15,23,42,0.06); border-radius: var(--radius-md); background: rgba(255,255,255,0.56); }
       .admin-user-top { display: flex; justify-content: space-between; gap: 16px; align-items: start; }
       .admin-user-name { font-weight: 700; font-size: 17px; }
-      .admin-user-meta { margin-top: 8px; color: var(--fg-muted); line-height: 1.8; font-size: 14px; }
-      .admin-legal-editor { margin-top: 24px; padding-top: 24px; border-top: 1px solid var(--border-default); }
+      .admin-user-meta { margin-top: 8px; color: var(--muted); line-height: 1.8; font-size: 14px; }
+      .admin-legal-editor { margin-top: 24px; padding-top: 24px; border-top: 1px solid rgba(15,23,42,0.06); }
       .legal-editor { min-height: 320px; }
-      .checkbox-row { display: flex; gap: 10px; align-items: flex-start; margin-top: 16px; line-height: 1.6; color: var(--fg-default); font-size: 14px; font-weight: 400; }
+      .checkbox-row { display: flex; gap: 10px; align-items: flex-start; margin-top: 16px; line-height: 1.7; color: var(--text); font-size: 14px; font-weight: 500; }
       .checkbox-row input { width: 18px; height: 18px; margin-top: 4px; }
       .hidden { display: none !important; }
       @media (max-width: 1100px) {
-        .dashboard-grid,
-        .split-layout,
-        .legal-layout,
+        .main-grid,
+        .settings-grid,
+        .account-grid,
+        .legal-grid,
+        .auth-grid,
         .record-grid { grid-template-columns: 1fr; }
       }
       @media (max-width: 760px) {
-        .app-header-inner { height: auto; padding-top: 12px; padding-bottom: 12px; flex-wrap: wrap; }
-        .app-nav { order: 3; width: 100%; overflow-x: auto; padding-bottom: 4px; }
-        .app-main { padding: 16px; }
-        .pagehead { flex-direction: column; align-items: stretch; }
-        .pagehead-title { font-size: 28px; }
+        .app-header-inner { min-height: auto; padding-top: 12px; padding-bottom: 12px; flex-wrap: wrap; }
+        .top-tabs { order: 3; width: 100%; overflow-x: auto; padding-bottom: 4px; }
+        .app-main { padding: 20px 16px 40px; }
+        .hero { flex-direction: column; align-items: stretch; }
+        .hero-title { font-size: 36px; }
         .record-header,
         .pagination,
         .composer-footer,
-        .box-header,
+        .card-head,
         .progress-caption { flex-direction: column; align-items: stretch; }
         .record-header { grid-template-columns: 1fr; }
         .record-side { justify-items: start; }
-        .stats-grid { grid-template-columns: 1fr; }
+        .stats-row { grid-template-columns: 1fr 1fr; }
+        .card-body { padding: 18px; }
+      }
+      @media (max-width: 560px) {
+        .stats-row { grid-template-columns: 1fr; }
       }
     </style>
   </head>
@@ -495,7 +760,7 @@ export function renderApp(appOrigin: string, page: AppPage): string {
       <div class="app-header-inner">
         <a class="app-brand" href="/download">
           <span class="app-brand-mark">GD</span>
-          <span>GoDingtalk</span>
+          <span class="app-brand-text"><strong>GoDingtalk</strong><span>Private Console</span></span>
         </a>
         ${renderNav(page)}
         <div class="app-header-actions">
