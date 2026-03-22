@@ -47,45 +47,65 @@ function renderDownloadPage(): string {
 
 function renderLoginPage(): string {
   return `
-      <section class="hero">
-        <div class="hero-copy">
-          <div class="hero-kicker">GoDingtalk Private Console</div>
-          <h2>更简洁的登录入口</h2>
-          <p class="muted">登录后即可扫码获取 Cookies、提交直播链接并下载 MP4。</p>
-          <div class="actions" style="margin-top:18px;">
-            <a class="button-link primary" href="/legal">先看免责声明</a>
-            <a class="button-link" href="/download">进入下载页</a>
-          </div>
-          <div class="hero-badges">
-            <span>自动回传 Cookies</span>
-            <span>二维码约 1 分钟</span>
-            <span>超 2GB 再清理</span>
-          </div>
-          <div class="mini-steps">
-            <div class="mini-step"><strong>1</strong><span>登录</span></div>
-            <div class="mini-step"><strong>2</strong><span>扫码</span></div>
-            <div class="mini-step"><strong>3</strong><span>下载</span></div>
+      <section class="auth-landing">
+        <div class="auth-intro">
+          <div class="auth-kicker">GoDingtalk Console</div>
+          <h2>账号入口</h2>
+          <p class="muted">登录后可继续使用下载、二维码登录与账号管理。</p>
+          <div class="auth-links">
+            <a class="button-link primary" href="/download">进入下载台</a>
+            <a class="button-link" href="/legal">查看免责声明</a>
           </div>
         </div>
-        <div class="card auth-card" id="auth-card">
-          <h2>登录 / 注册</h2>
-          <p class="muted" id="auth-card-hint">登录后才能使用下载、二维码登录和账号管理功能。</p>
-          <div class="auth-grid">
-            <div class="field">
-              <label for="auth-username">用户名</label>
-              <input id="auth-username" placeholder="至少 3 位" />
+
+        <div class="auth-panels">
+          <section class="card auth-panel" id="login-panel">
+            <div class="auth-panel-head">
+              <h3>登录</h3>
+              <p class="muted">使用现有账号进入控制台</p>
             </div>
             <div class="field">
-              <label for="auth-password">密码</label>
-              <input id="auth-password" type="password" placeholder="至少 6 位" />
+              <label for="login-username">用户名</label>
+              <input id="login-username" placeholder="输入用户名" />
             </div>
+            <div class="field">
+              <label for="login-password">密码</label>
+              <input id="login-password" type="password" placeholder="输入密码" />
+            </div>
+            <div class="actions">
+              <button id="login-btn" class="primary" type="button">登录</button>
+            </div>
+          </section>
+
+          <section class="card auth-panel" id="register-panel">
+            <div class="auth-panel-head">
+              <h3>注册</h3>
+              <p class="muted" id="register-card-hint">创建新账号后即可登录使用</p>
+            </div>
+            <div class="field">
+              <label for="register-username">用户名</label>
+              <input id="register-username" placeholder="至少 3 位" />
+            </div>
+            <div class="field">
+              <label for="register-password">密码</label>
+              <input id="register-password" type="password" placeholder="至少 6 位" />
+            </div>
+            <div class="actions">
+              <button id="register-btn" type="button">注册</button>
+            </div>
+          </section>
+        </div>
+
+        <section class="card auth-session hidden" id="auth-session-card">
+          <div class="auth-panel-head">
+            <h3>当前会话</h3>
+            <p class="muted" id="auth-session-summary">已登录</p>
           </div>
           <div class="actions">
-            <button id="login-btn" class="primary" type="button">登录</button>
-            <button id="register-btn" type="button">注册</button>
-            <button id="logout-btn" type="button" class="hidden">退出登录</button>
+            <a class="button-link primary" href="/download">前往下载页</a>
+            <button id="logout-btn" type="button">退出登录</button>
           </div>
-        </div>
+        </section>
       </section>`;
 }
 
@@ -202,58 +222,56 @@ export function renderApp(appOrigin: string, page: AppPage): string {
     <title>GoDingtalk</title>
     <style>
       :root {
-        --bg: #f5f7fb;
-        --card: #ffffff;
-        --line: #e6ebf2;
-        --text: #111827;
-        --muted: #6b7280;
-        --primary: #2563eb;
-        --primary-dark: #1d4ed8;
-        --danger: #dc2626;
-        --ok: #16a34a;
-        --warning: #b45309;
-        --shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
-        --radius: 16px;
+        --bg: #eef3f8;
+        --card: rgba(255, 255, 255, 0.96);
+        --line: #d7e0ea;
+        --text: #0f172a;
+        --muted: #5b6472;
+        --primary: #0f4c81;
+        --primary-dark: #0b3d68;
+        --danger: #b42318;
+        --ok: #0f7b6c;
+        --warning: #a15c07;
+        --shadow: 0 18px 48px rgba(15, 23, 42, 0.08);
+        --radius: 18px;
       }
       * { box-sizing: border-box; }
-      html, body { margin: 0; min-height: 100%; background: var(--bg); color: var(--text); font-family: Inter, "PingFang SC", "Microsoft YaHei", system-ui, sans-serif; }
-      body { padding: 24px; }
+      html, body { margin: 0; min-height: 100%; background: radial-gradient(circle at top, #f8fbff 0%, var(--bg) 52%, #e8eef5 100%); color: var(--text); font-family: "Avenir Next", "PingFang SC", "Noto Sans SC", "Microsoft YaHei", sans-serif; }
+      body { padding: 28px; }
       a { color: inherit; }
       .wrap { max-width: 1080px; margin: 0 auto; display: grid; gap: 16px; }
-      .topbar, .card, .metric, .job { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow); }
-      .hero { display: grid; grid-template-columns: 1.2fr 0.9fr; gap: 16px; align-items: stretch; }
-      .hero-copy { padding: 28px; border: 1px solid var(--line); border-radius: var(--radius); background: linear-gradient(135deg, #eef4ff 0%, #ffffff 100%); box-shadow: var(--shadow); }
-      .hero-kicker { color: var(--primary); font-size: 12px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; }
-      .hero-copy h2 { margin: 12px 0 0; font-size: 34px; line-height: 1.2; }
-      .hero-badges { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 18px; }
-      .hero-badges span { padding: 8px 12px; border-radius: 999px; background: #fff; border: 1px solid var(--line); color: var(--primary); font-size: 13px; font-weight: 700; }
-      .mini-steps { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-top: 18px; }
-      .mini-step { padding: 14px; border-radius: 14px; background: #0f172a; color: #fff; }
-      .mini-step strong { display: inline-flex; width: 28px; height: 28px; align-items: center; justify-content: center; border-radius: 999px; background: rgba(255,255,255,0.14); margin-bottom: 10px; }
-      .mini-step span { display: block; color: rgba(255,255,255,0.9); }
-      .auth-card { align-self: stretch; }
-      .topbar { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 20px; }
-      .title h1 { margin: 0; font-size: 28px; }
+      .topbar, .card, .metric, .job { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow); backdrop-filter: blur(12px); }
+      .auth-landing { display: grid; grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr); gap: 20px; align-items: start; }
+      .auth-intro { padding: 28px 10px 0 4px; }
+      .auth-kicker { color: var(--primary); font-size: 12px; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; }
+      .auth-intro h2 { margin: 14px 0 0; font-size: 40px; line-height: 1.08; }
+      .auth-links { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 22px; }
+      .auth-panels { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+      .auth-panel, .auth-session { min-height: 100%; }
+      .auth-panel-head h3 { margin: 0; font-size: 24px; }
+      .auth-panel-head p { margin-top: 8px; }
+      .topbar { display: flex; justify-content: space-between; align-items: center; gap: 16px; padding: 18px 22px; }
+      .title h1 { margin: 0; font-size: 30px; letter-spacing: -0.02em; }
       .title p, .muted { margin: 6px 0 0; color: var(--muted); }
       .nav { display: flex; flex-wrap: wrap; gap: 8px; }
       .topbar-actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
-      .nav a { padding: 10px 14px; border-radius: 999px; text-decoration: none; color: var(--muted); background: #f3f4f6; font-weight: 600; }
+      .nav a { padding: 10px 14px; border-radius: 999px; text-decoration: none; color: var(--muted); background: #f7f9fc; font-weight: 600; border: 1px solid transparent; }
       .nav a.active { color: #fff; background: var(--primary); }
       .notice { padding: 12px 14px; border-radius: 12px; font-size: 14px; }
       .notice.ok { background: #ecfdf5; color: var(--ok); border: 1px solid #bbf7d0; }
       .notice.error { background: #fef2f2; color: var(--danger); border: 1px solid #fecaca; }
       .notice.warn { background: #fff7ed; color: var(--warning); border: 1px solid #fed7aa; }
-      .card { padding: 20px; }
+      .card { padding: 22px; }
       .card h2 { margin: 0; font-size: 20px; }
       .field { display: grid; gap: 8px; margin-top: 14px; }
       label { font-size: 14px; font-weight: 600; }
       input, textarea { width: 100%; border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; font: inherit; background: #fff; color: var(--text); }
       textarea { min-height: 160px; resize: vertical; line-height: 1.6; }
-      input:focus, textarea:focus { outline: none; border-color: #93c5fd; box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12); }
+      input:focus, textarea:focus { outline: none; border-color: #8ab3d4; box-shadow: 0 0 0 4px rgba(15, 76, 129, 0.1); }
       .auth-grid, .stats { display: grid; gap: 12px; }
       .auth-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
       .actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 14px; }
-      button, .button-link { border: 1px solid var(--line); background: #fff; color: var(--text); min-height: 42px; padding: 0 14px; border-radius: 10px; font: inherit; font-weight: 600; text-decoration: none; cursor: pointer; }
+      button, .button-link { border: 1px solid var(--line); background: #fff; color: var(--text); min-height: 44px; padding: 0 15px; border-radius: 12px; font: inherit; font-weight: 700; text-decoration: none; cursor: pointer; }
       button.primary, .button-link.primary { background: var(--primary); border-color: var(--primary); color: #fff; }
       button.primary:hover, .button-link.primary:hover { background: var(--primary-dark); }
       button:disabled { opacity: 0.7; cursor: wait; }
@@ -262,7 +280,7 @@ export function renderApp(appOrigin: string, page: AppPage): string {
       .metric span { display: block; color: var(--muted); font-size: 13px; }
       .metric strong { display: block; margin-top: 8px; font-size: 26px; }
       .jobs { display: grid; gap: 12px; }
-      .job { padding: 16px; }
+      .job { padding: 18px; background: linear-gradient(180deg, #ffffff 0%, #fbfdff 100%); }
       .job-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
       .job-id { font-size: 12px; color: var(--muted); }
       .job-title { margin: 6px 0 0; font-size: 18px; }
@@ -275,7 +293,7 @@ export function renderApp(appOrigin: string, page: AppPage): string {
       .progress { height: 8px; margin-top: 10px; border-radius: 999px; background: #eef2f7; overflow: hidden; }
       .progress > div { height: 100%; background: var(--primary); }
       .files { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
-      .files a { padding: 6px 10px; border-radius: 999px; background: #eff6ff; color: var(--primary); text-decoration: none; font-weight: 600; }
+      .files a { padding: 7px 11px; border-radius: 999px; background: #edf5fb; color: var(--primary); text-decoration: none; font-weight: 700; border: 1px solid #d8e7f4; }
       .file-block { margin-top: 12px; }
       .file-title { color: var(--muted); font-size: 13px; font-weight: 700; margin-bottom: 8px; }
       .empty { padding: 14px; border-radius: 12px; border: 1px dashed var(--line); color: var(--muted); background: #fafafa; }
@@ -299,10 +317,13 @@ export function renderApp(appOrigin: string, page: AppPage): string {
       .hidden { display: none !important; }
       @media (max-width: 760px) {
         body { padding: 14px; }
-        .topbar, .job-top, .hero { flex-direction: column; align-items: flex-start; }
-        .hero { grid-template-columns: 1fr; }
-        .mini-steps,
-        .auth-grid, .stats { grid-template-columns: 1fr; }
+        .topbar, .job-top { flex-direction: column; align-items: flex-start; }
+        .auth-landing,
+        .auth-panels,
+        .auth-grid,
+        .stats { grid-template-columns: 1fr; }
+        .auth-intro { padding: 8px 0 0; }
+        .auth-intro h2 { font-size: 32px; }
       }
     </style>
   </head>
@@ -343,9 +364,15 @@ export function renderApp(appOrigin: string, page: AppPage): string {
       const el = {
         notice: document.getElementById("notice"),
         userChip: document.getElementById("user-chip"),
-        authUsername: document.getElementById("auth-username"),
-        authPassword: document.getElementById("auth-password"),
-        authCardHint: document.getElementById("auth-card-hint"),
+        loginPanel: document.getElementById("login-panel"),
+        registerPanel: document.getElementById("register-panel"),
+        authSessionCard: document.getElementById("auth-session-card"),
+        authSessionSummary: document.getElementById("auth-session-summary"),
+        loginUsername: document.getElementById("login-username"),
+        loginPassword: document.getElementById("login-password"),
+        registerUsername: document.getElementById("register-username"),
+        registerPassword: document.getElementById("register-password"),
+        registerCardHint: document.getElementById("register-card-hint"),
         loginBtn: document.getElementById("login-btn"),
         registerBtn: document.getElementById("register-btn"),
         logoutBtn: document.getElementById("logout-btn"),
@@ -472,21 +499,28 @@ export function renderApp(appOrigin: string, page: AppPage): string {
       function renderAuthState() {
         if (state.authenticated && state.user) {
           if (el.userChip) el.userChip.textContent = "已登录：" + state.user.username + (state.user.is_sudo ? " (sudo)" : "");
-          if (el.loginBtn) el.loginBtn.classList.add("hidden");
-          if (el.registerBtn) el.registerBtn.classList.add("hidden");
+          if (el.loginPanel) el.loginPanel.classList.add("hidden");
+          if (el.registerPanel) el.registerPanel.classList.add("hidden");
+          if (el.authSessionCard) el.authSessionCard.classList.remove("hidden");
+          if (el.authSessionSummary) el.authSessionSummary.textContent = "已登录账号：" + state.user.username + (state.user.is_sudo ? "（sudo）" : "");
           if (el.logoutBtn) el.logoutBtn.classList.remove("hidden");
           if (el.topbarLogoutBtn) el.topbarLogoutBtn.classList.remove("hidden");
-          if (el.authCardHint) el.authCardHint.textContent = "你已登录，可以直接去下载、二维码登录或账号页操作。";
           if (el.loginNavLink) el.loginNavLink.classList.add("hidden");
         } else {
           if (el.userChip) el.userChip.textContent = "未登录";
-          if (el.loginBtn) el.loginBtn.classList.remove("hidden");
+          if (el.loginPanel) el.loginPanel.classList.remove("hidden");
+          if (el.authSessionCard) el.authSessionCard.classList.add("hidden");
           if (el.logoutBtn) el.logoutBtn.classList.add("hidden");
           if (el.topbarLogoutBtn) el.topbarLogoutBtn.classList.add("hidden");
-          if (el.authCardHint) el.authCardHint.textContent = "登录后才能使用下载、二维码登录和账号管理功能。";
           if (el.loginNavLink) el.loginNavLink.classList.remove("hidden");
-          if (el.registerBtn) {
-            if (state.registrationOpen) el.registerBtn.classList.remove("hidden"); else el.registerBtn.classList.add("hidden");
+          if (el.registerPanel) {
+            if (state.registrationOpen) {
+              el.registerPanel.classList.remove("hidden");
+              if (el.registerCardHint) el.registerCardHint.textContent = "创建新账号后即可登录使用";
+            } else {
+              el.registerPanel.classList.add("hidden");
+              if (el.registerCardHint) el.registerCardHint.textContent = "当前未开放注册";
+            }
           }
         }
         if (el.startLoginWorkflowBtn) {
@@ -735,13 +769,13 @@ export function renderApp(appOrigin: string, page: AppPage): string {
       }
 
       async function login() {
-        await request("/api/auth/login", { method: "POST", body: JSON.stringify({ username: (el.authUsername.value || "").trim(), password: (el.authPassword.value || "").trim() }) });
+        await request("/api/auth/login", { method: "POST", body: JSON.stringify({ username: (el.loginUsername.value || "").trim(), password: (el.loginPassword.value || "").trim() }) });
         await refreshAll();
         clearNotice();
       }
 
       async function registerUser() {
-        await request("/api/auth/register", { method: "POST", body: JSON.stringify({ username: (el.authUsername.value || "").trim(), password: (el.authPassword.value || "").trim() }) });
+        await request("/api/auth/register", { method: "POST", body: JSON.stringify({ username: (el.registerUsername.value || "").trim(), password: (el.registerPassword.value || "").trim() }) });
         await refreshAll();
         setNotice("注册成功。", "ok");
       }
