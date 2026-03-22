@@ -1,153 +1,157 @@
 type AppPage = "download" | "login" | "settings" | "account" | "legal";
 
 function renderNav(page: AppPage): string {
-  const items: Array<{ key: AppPage; href: string; label: string; note: string }> = [
-    { key: "download", href: "/download", label: "任务台", note: "提交与跟踪任务" },
-    { key: "settings", href: "/settings", label: "扫码登录", note: "二维码工作流" },
-    { key: "account", href: "/account", label: "账号中心", note: "密码与管理" },
-    { key: "legal", href: "/legal", label: "法律声明", note: "查看并接受条款" },
-    { key: "login", href: "/login", label: "登录入口", note: "登录或注册账号" },
+  const items: Array<{ key: AppPage; href: string; label: string }> = [
+    { key: "download", href: "/download", label: "Tasks" },
+    { key: "settings", href: "/settings", label: "QR Login" },
+    { key: "account", href: "/account", label: "Account" },
+    { key: "legal", href: "/legal", label: "Legal" },
+    { key: "login", href: "/login", label: "Sign in" },
   ];
 
-  return `<nav class="rail-nav">${items.map((item, index) => `<a href="${item.href}" data-nav="${item.key}" class="rail-link ${page === item.key ? "active" : ""}"><span class="rail-index">${String(index + 1).padStart(2, "0")}</span><span class="rail-copy"><strong>${item.label}</strong><span>${item.note}</span></span></a>`).join("")}</nav>`;
+  return `<nav class="app-nav">${items.map((item) => `<a href="${item.href}" data-nav="${item.key}" class="app-nav-link ${page === item.key ? "active" : ""}">${item.label}</a>`).join("")}</nav>`;
 }
 
 function renderDownloadPage(): string {
   return `
-      <section class="page-header">
+      <section class="pagehead">
         <div>
-          <div class="page-eyebrow">Operations Ledger</div>
-          <h2>下载指挥台</h2>
-          <p class="page-lead">集中提交直播回放链接，统一查看进度、文件与错误记录。</p>
+          <div class="pagehead-eyebrow">Repository / Downloads</div>
+          <h1 class="pagehead-title">下载任务</h1>
+          <p class="pagehead-description">提交直播回放链接，集中查看任务状态、文件输出和错误记录。</p>
         </div>
-        <div class="header-actions">
-          <button id="refresh-btn" type="button">同步状态</button>
+        <div class="pagehead-actions">
+          <button id="refresh-btn" type="button">Refresh</button>
         </div>
       </section>
 
-      <section class="download-board">
-        <section class="panel compose-panel">
-          <div class="panel-head">
+      <section class="dashboard-grid">
+        <section class="box composer-box">
+          <div class="box-header">
             <div>
-              <div class="panel-kicker">Create Job</div>
-              <h3>提交下载任务</h3>
+              <h2 class="box-title">Create new job</h2>
             </div>
           </div>
-          <div id="legal-warning" class="notice error hidden"></div>
-          <div class="field">
-            <label for="urls">回放链接</label>
+          <div class="box-body">
+            <div id="legal-warning" class="notice error hidden"></div>
+            <div class="field">
+              <label for="urls">回放链接</label>
+            </div>
             <textarea id="urls" placeholder="每行一个钉钉回放链接"></textarea>
-          </div>
-          <div class="compose-footer">
-            <div class="muted compact-copy">每行一个链接。提交后系统会拆成独立任务。</div>
-            <div class="actions">
+            <div class="composer-footer">
+              <div class="muted compact-copy">一行一个链接，系统会自动拆成独立任务。</div>
               <button id="create-job-btn" class="primary" type="button">创建任务</button>
             </div>
           </div>
         </section>
 
-        <aside class="panel insight-panel">
-          <div class="panel-head">
-            <div>
-              <div class="panel-kicker">Overview</div>
-              <h3>运行概览</h3>
+        <aside class="stats-column">
+          <section class="box">
+            <div class="box-header">
+              <h2 class="box-title">Overview</h2>
             </div>
-          </div>
-          <div class="metric-grid">
-            <div class="metric-box"><span>Cookies</span><strong id="stat-cookies">-</strong></div>
-            <div class="metric-box"><span>总任务</span><strong id="stat-total">0</strong></div>
-            <div class="metric-box"><span>运行中</span><strong id="stat-running">0</strong></div>
-            <div class="metric-box"><span>已完成</span><strong id="stat-success">0</strong></div>
-          </div>
-          <div class="insight-note">
-            <div class="insight-label">控制建议</div>
-            <p>先确认 Cookies 已就绪并接受免责声明，再批量提交链接。</p>
-          </div>
+            <div class="box-body">
+              <div class="stats-grid">
+                <div class="stat-card"><span>Cookies</span><strong id="stat-cookies">-</strong></div>
+                <div class="stat-card"><span>Total</span><strong id="stat-total">0</strong></div>
+                <div class="stat-card"><span>Running</span><strong id="stat-running">0</strong></div>
+                <div class="stat-card"><span>Succeeded</span><strong id="stat-success">0</strong></div>
+              </div>
+            </div>
+          </section>
+          <section class="box">
+            <div class="box-header">
+              <h2 class="box-title">Quick note</h2>
+            </div>
+            <div class="box-body prose-copy">
+              先确认 Cookies 已就绪，并完成免责声明接受，再提交任务。
+            </div>
+          </section>
         </aside>
       </section>
 
-      <section class="panel archive-panel">
-        <div class="panel-head">
+      <section class="box jobs-box">
+        <div class="box-header jobs-header">
           <div>
-            <div class="panel-kicker">Archive</div>
-            <h2>任务档案</h2>
+            <h2 class="box-title">Jobs</h2>
           </div>
-          <div class="archive-summary">
+          <div class="jobs-range-wrap">
             <span id="jobs-range" class="muted">暂无任务</span>
           </div>
         </div>
-        <div id="jobs" class="record-list"><div class="empty">暂无任务</div></div>
+        <div class="box-body no-padding">
+          <div id="jobs" class="job-list"><div class="empty">暂无任务</div></div>
+        </div>
         <div id="jobs-pagination" class="pagination hidden">
-          <button id="jobs-prev-btn" type="button">上一页</button>
-          <div id="jobs-page-info" class="pagination-info">第 1 / 1 页</div>
-          <button id="jobs-next-btn" type="button">下一页</button>
+          <button id="jobs-prev-btn" type="button">Previous</button>
+          <div id="jobs-page-info" class="pagination-info">Page 1 of 1</div>
+          <button id="jobs-next-btn" type="button">Next</button>
         </div>
       </section>`;
 }
 
 function renderLoginPage(): string {
   return `
-      <section class="page-header">
+      <section class="pagehead">
         <div>
-          <div class="page-eyebrow">Identity Desk</div>
-          <h2>登录与注册</h2>
-          <p class="page-lead">统一的账号入口。登录后即可进入下载、扫码登录与账号管理。</p>
+          <div class="pagehead-eyebrow">Authentication</div>
+          <h1 class="pagehead-title">Sign in</h1>
+          <p class="pagehead-description">登录后即可进入下载、二维码登录和账号管理。</p>
         </div>
       </section>
 
-      <section class="auth-board">
-        <section class="panel auth-panel" id="login-panel">
-          <div class="panel-head">
-            <div>
-              <div class="panel-kicker">Sign In</div>
-              <h3>登录</h3>
+      <section class="split-layout">
+        <section class="box auth-box" id="login-panel">
+          <div class="box-header">
+            <h2 class="box-title">Sign in to GoDingtalk</h2>
+          </div>
+          <div class="box-body">
+            <div class="field">
+              <label for="login-username">用户名</label>
+              <input id="login-username" placeholder="输入用户名" />
             </div>
-          </div>
-          <div class="field">
-            <label for="login-username">用户名</label>
-            <input id="login-username" placeholder="输入用户名" />
-          </div>
-          <div class="field">
-            <label for="login-password">密码</label>
-            <input id="login-password" type="password" placeholder="输入密码" />
-          </div>
-          <div class="actions">
-            <button id="login-btn" class="primary" type="button">登录</button>
+            <div class="field">
+              <label for="login-password">密码</label>
+              <input id="login-password" type="password" placeholder="输入密码" />
+            </div>
+            <div class="actions">
+              <button id="login-btn" class="primary" type="button">登录</button>
+            </div>
           </div>
         </section>
 
-        <section class="panel auth-panel" id="register-panel">
-          <div class="panel-head">
+        <section class="box auth-box" id="register-panel">
+          <div class="box-header">
             <div>
-              <div class="panel-kicker">Create Account</div>
-              <h3>注册</h3>
+              <h2 class="box-title">Create an account</h2>
             </div>
           </div>
-          <p class="muted" id="register-card-hint">创建新账号后即可登录使用</p>
-          <div class="field">
-            <label for="register-username">用户名</label>
-            <input id="register-username" placeholder="至少 3 位" />
-          </div>
-          <div class="field">
-            <label for="register-password">密码</label>
-            <input id="register-password" type="password" placeholder="至少 6 位" />
-          </div>
-          <div class="actions">
-            <button id="register-btn" type="button">注册</button>
+          <div class="box-body">
+            <p class="muted" id="register-card-hint">创建新账号后即可登录使用</p>
+            <div class="field">
+              <label for="register-username">用户名</label>
+              <input id="register-username" placeholder="至少 3 位" />
+            </div>
+            <div class="field">
+              <label for="register-password">密码</label>
+              <input id="register-password" type="password" placeholder="至少 6 位" />
+            </div>
+            <div class="actions">
+              <button id="register-btn" type="button">注册</button>
+            </div>
           </div>
         </section>
 
-        <section class="panel auth-session hidden" id="auth-session-card">
-          <div class="panel-head">
-            <div>
-              <div class="panel-kicker">Current Session</div>
-              <h3>当前会话</h3>
-            </div>
+        <section class="box auth-session hidden" id="auth-session-card">
+          <div class="box-header">
+            <h2 class="box-title">Current session</h2>
           </div>
-          <p class="muted" id="auth-session-summary">已登录</p>
-          <div class="actions">
-            <a class="button-link primary" href="/download">前往下载页</a>
-            <button id="logout-btn" type="button">退出登录</button>
+          <div class="box-body">
+            <p class="muted" id="auth-session-summary">已登录</p>
+            <div class="actions">
+              <a class="button-link primary" href="/download">前往下载页</a>
+              <button id="logout-btn" type="button">退出登录</button>
+            </div>
           </div>
         </section>
       </section>`;
@@ -155,162 +159,155 @@ function renderLoginPage(): string {
 
 function renderSettingsPage(installURL: string): string {
   return `
-      <section class="page-header">
+      <section class="pagehead">
         <div>
-          <div class="page-eyebrow">Access Workflow</div>
-          <h2>二维码登录台</h2>
-          <p class="page-lead">在这里启动登录工作流，获取二维码并等待 Cookies 自动回传。</p>
+          <div class="pagehead-eyebrow">Workflow</div>
+          <h1 class="pagehead-title">二维码登录</h1>
+          <p class="pagehead-description">启动登录工作流，等待二维码出现并回传 Cookies。</p>
         </div>
       </section>
 
-      <section class="settings-board">
-        <section class="panel launch-panel">
-          <div class="panel-head">
-            <div>
-              <div class="panel-kicker">Launch</div>
-              <h3>启动登录流程</h3>
+      <section class="split-layout">
+        <section class="box">
+          <div class="box-header">
+            <h2 class="box-title">Start workflow</h2>
+          </div>
+          <div class="box-body">
+            <div id="login-legal-warning" class="notice error hidden"></div>
+            <div class="notice warn">如果当前 Cookies 仍然有效，请不要重复扫码登录，以免触发风控。</div>
+            <div class="actions">
+              <button id="start-login-workflow-btn" class="primary" type="button">启动二维码登录</button>
             </div>
-          </div>
-          <div id="login-legal-warning" class="notice error hidden"></div>
-          <div class="notice warn">如当前 Cookies 仍然有效，请不要重复扫码，以免触发平台风控。</div>
-          <div class="actions">
-            <button id="start-login-workflow-btn" class="primary" type="button">启动二维码登录</button>
-          </div>
-          <div id="login-box" class="login-box hidden">
-            <div id="login-status" class="login-status">等待开始</div>
-            <img id="login-qr-image" class="qr-image hidden" alt="登录二维码" />
-            <div id="login-hint" class="muted small">工作流启动后，通常约 1 分钟内出现二维码。</div>
+            <div id="login-box" class="login-box hidden">
+              <div id="login-status" class="login-status">等待开始</div>
+              <img id="login-qr-image" class="qr-image hidden" alt="登录二维码" />
+              <div id="login-hint" class="muted small">启动后通常约 1 分钟内出现二维码。</div>
+            </div>
           </div>
         </section>
 
-        <aside class="panel guide-panel">
-          <div class="panel-head">
-            <div>
-              <div class="panel-kicker">Guide</div>
-              <h3>使用说明</h3>
+        <aside class="box">
+          <div class="box-header">
+            <h2 class="box-title">Guide</h2>
+          </div>
+          <div class="box-body guide-body">
+            <div class="guide-item"><strong>1</strong><span>先确认账号已登录，并接受当前免责声明。</span></div>
+            <div class="guide-item"><strong>2</strong><span>点击启动后等待二维码出现，再用钉钉扫码。</span></div>
+            <div class="guide-item"><strong>3</strong><span>扫码成功后，Cookies 会自动回传到 Worker。</span></div>
+            <div class="actions">
+              <a class="button-link" href="${installURL}">安装辅助脚本</a>
             </div>
           </div>
-          <div class="guide-list">
-            <div class="guide-item"><strong>01</strong><span>先确认账号已登录，并接受当前免责声明。</span></div>
-            <div class="guide-item"><strong>02</strong><span>启动工作流后等待二维码出现，再用钉钉扫码。</span></div>
-            <div class="guide-item"><strong>03</strong><span>扫码成功后，Cookies 会自动回传到 Worker。</span></div>
-          </div>
-          <a class="button-link" href="${installURL}">安装辅助脚本</a>
         </aside>
       </section>`;
 }
 
 function renderAccountPage(): string {
   return `
-      <section class="page-header">
+      <section class="pagehead">
         <div>
-          <div class="page-eyebrow">Profile Registry</div>
-          <h2>账号中心</h2>
-          <p class="page-lead">查看当前账号状态，更新密码，并在 sudo 模式下管理用户与免责声明。</p>
+          <div class="pagehead-eyebrow">Settings</div>
+          <h1 class="pagehead-title">账号中心</h1>
+          <p class="pagehead-description">查看当前账号状态，更新密码，并在 sudo 模式下管理用户与免责声明。</p>
         </div>
       </section>
 
-      <section class="account-board">
-        <section class="panel account-summary-panel">
-          <div class="panel-head">
-            <div>
-              <div class="panel-kicker">Profile</div>
-              <h3>账号信息</h3>
-            </div>
+      <section class="split-layout">
+        <section class="box">
+          <div class="box-header">
+            <h2 class="box-title">Profile</h2>
           </div>
-          <p id="account-summary" class="muted">未登录</p>
-        </section>
-
-        <section class="panel password-panel">
-          <div class="panel-head">
-            <div>
-              <div class="panel-kicker">Security</div>
-              <h3>修改密码</h3>
-            </div>
-          </div>
-          <div class="field">
-            <label for="current-password">当前密码</label>
-            <input id="current-password" type="password" placeholder="当前密码" />
-          </div>
-          <div class="field">
-            <label for="new-password">新密码</label>
-            <input id="new-password" type="password" placeholder="至少 6 位" />
-          </div>
-          <div class="field">
-            <label for="confirm-new-password">确认新密码</label>
-            <input id="confirm-new-password" type="password" placeholder="再次输入新密码" />
-          </div>
-          <div class="actions">
-            <button id="change-password-btn" class="primary" type="button">保存新密码</button>
+          <div class="box-body">
+            <p id="account-summary" class="muted">未登录</p>
           </div>
         </section>
-      </section>
 
-      <section id="admin-panel" class="panel admin-panel hidden">
-        <div class="panel-head">
-          <div>
-            <div class="panel-kicker">Administration</div>
-            <h3>用户与条款管理</h3>
+        <section class="box">
+          <div class="box-header">
+            <h2 class="box-title">Change password</h2>
           </div>
+          <div class="box-body">
+            <div class="field">
+              <label for="current-password">当前密码</label>
+              <input id="current-password" type="password" placeholder="当前密码" />
+            </div>
+            <div class="field">
+              <label for="new-password">新密码</label>
+              <input id="new-password" type="password" placeholder="至少 6 位" />
+            </div>
+            <div class="field">
+              <label for="confirm-new-password">确认新密码</label>
+              <input id="confirm-new-password" type="password" placeholder="再次输入新密码" />
+            </div>
+            <div class="actions">
+              <button id="change-password-btn" class="primary" type="button">保存新密码</button>
+            </div>
+          </div>
+        </section>
+      </section>`;
+}
+
+function renderAccountAdminPanel(): string {
+  return `
+      <section id="admin-panel" class="box admin-box hidden">
+        <div class="box-header">
+          <h2 class="box-title">Admin</h2>
         </div>
-        <div id="admin-users" class="admin-users"><div class="empty">暂无数据</div></div>
-        <div class="admin-legal-editor">
-          <div class="panel-head nested">
-            <div>
-              <div class="panel-kicker">Legal Content</div>
-              <h3>免责内容管理</h3>
+        <div class="box-body">
+          <div id="admin-users" class="admin-users"><div class="empty">暂无数据</div></div>
+          <div class="admin-legal-editor">
+            <div class="box-header nested-header">
+              <h2 class="box-title">免责内容管理</h2>
             </div>
+            <div class="field">
+              <label for="admin-legal-text">免责文本</label>
+              <textarea id="admin-legal-text" class="legal-editor" placeholder="输入新的免责条款"></textarea>
+            </div>
+            <div class="actions">
+              <button id="save-legal-btn" class="primary" type="button">保存免责</button>
+            </div>
+            <p id="admin-legal-meta" class="muted small"></p>
           </div>
-          <div class="field">
-            <label for="admin-legal-text">免责文本</label>
-            <textarea id="admin-legal-text" class="legal-editor" placeholder="输入新的免责条款"></textarea>
-          </div>
-          <div class="actions">
-            <button id="save-legal-btn" class="primary" type="button">保存免责</button>
-          </div>
-          <p id="admin-legal-meta" class="muted small"></p>
         </div>
       </section>`;
 }
 
 function renderLegalPage(): string {
   return `
-      <section class="page-header">
+      <section class="pagehead">
         <div>
-          <div class="page-eyebrow">Legal Ledger</div>
-          <h2>法律免责声明</h2>
-          <p class="page-lead">在创建下载任务或启动二维码登录前，必须先完整阅读并接受当前版本的条款。</p>
+          <div class="pagehead-eyebrow">Policy</div>
+          <h1 class="pagehead-title">法律免责声明</h1>
+          <p class="pagehead-description">创建下载任务或启动二维码登录前，必须先完整阅读并接受当前版本的条款。</p>
         </div>
       </section>
 
-      <section class="legal-board">
-        <aside class="panel legal-action-panel">
-          <div class="panel-head">
-            <div>
-              <div class="panel-kicker">Acceptance</div>
-              <h3>接受状态</h3>
-            </div>
+      <section class="split-layout legal-layout">
+        <aside class="box">
+          <div class="box-header">
+            <h2 class="box-title">Acceptance</h2>
           </div>
-          <div id="legal-state" class="notice ok hidden"></div>
-          <div id="legal-version-meta" class="muted small"></div>
-          <label class="checkbox-row">
-            <input id="legal-confirm-check" type="checkbox" />
-            <span>我已完整阅读、理解风险，并自愿承担全部责任。</span>
-          </label>
-          <div class="actions">
-            <button id="accept-legal-btn" class="primary" type="button" disabled>接受当前版本</button>
+          <div class="box-body">
+            <div id="legal-state" class="notice ok hidden"></div>
+            <div id="legal-version-meta" class="muted small"></div>
+            <label class="checkbox-row">
+              <input id="legal-confirm-check" type="checkbox" />
+              <span>我已完整阅读、理解风险，并自愿承担全部责任。</span>
+            </label>
+            <div class="actions">
+              <button id="accept-legal-btn" class="primary" type="button" disabled>接受当前版本</button>
+            </div>
           </div>
         </aside>
 
-        <section class="panel legal-copy-panel">
-          <div class="panel-head">
-            <div>
-              <div class="panel-kicker">Document</div>
-              <h3>条款正文</h3>
-            </div>
+        <section class="box">
+          <div class="box-header">
+            <h2 class="box-title">Document</h2>
           </div>
-          <div id="legal-text" class="legal-text"><div class="empty">正在加载免责内容...</div></div>
-          <div class="notice warn">点击接受后，系统会记录你的接受时间和版本号，并将其视为有效电子记录。</div>
+          <div class="box-body">
+            <div id="legal-text" class="legal-text"><div class="empty">正在加载免责内容...</div></div>
+            <div class="notice warn" style="margin-top:16px;">点击接受后，系统会记录你的接受时间和版本号，并将其视为有效电子记录。</div>
+          </div>
         </section>
       </section>`;
 }
@@ -324,7 +321,7 @@ function renderPageBody(page: AppPage, installURL: string): string {
     case "settings":
       return renderSettingsPage(installURL);
     case "account":
-      return renderAccountPage();
+      return renderAccountPage() + renderAccountAdminPanel();
     case "legal":
       return renderLegalPage();
     default:
@@ -344,199 +341,167 @@ export function renderApp(appOrigin: string, page: AppPage): string {
     <title>GoDingtalk</title>
     <style>
       :root {
-        --bg: #e7ddd0;
-        --bg-soft: #f5efe6;
-        --rail: #18222d;
-        --rail-soft: #24313f;
-        --panel: #fbf7f1;
-        --panel-strong: #ffffff;
-        --line: #dacdbe;
-        --text: #1d232b;
-        --muted: #6b675f;
-        --primary: #9c5d2f;
-        --primary-dark: #7f4821;
-        --primary-soft: #f1e1cf;
-        --danger: #a63d32;
-        --ok: #0f7a66;
-        --warning: #9b691e;
-        --shadow: 0 24px 70px rgba(23, 30, 38, 0.14);
-        --radius: 24px;
+        --bg-default: #f6f8fa;
+        --bg-subtle: #f6f8fa;
+        --bg-overlay: #ffffff;
+        --bg-inset: #f6f8fa;
+        --border-default: #d0d7de;
+        --border-muted: #d8dee4;
+        --fg-default: #1f2328;
+        --fg-muted: #59636e;
+        --fg-on-emphasis: #ffffff;
+        --canvas-inset-shadow: inset 0 1px 0 rgba(27,31,36,0.04);
+        --accent-emphasis: #1f883d;
+        --accent-emphasis-hover: #1a7f37;
+        --accent-subtle: #dafbe1;
+        --danger-emphasis: #cf222e;
+        --danger-subtle: #ffebe9;
+        --warning-subtle: #fff8c5;
+        --header-bg: #24292f;
+        --header-fg: #f0f6fc;
+        --radius: 6px;
       }
       * { box-sizing: border-box; }
-      html, body { margin: 0; min-height: 100%; background: linear-gradient(135deg, var(--bg) 0%, var(--bg-soft) 48%, #dfd4c5 100%); color: var(--text); font-family: "Avenir Next", "PingFang SC", "Noto Sans SC", "Microsoft YaHei", sans-serif; }
-      body { padding: 26px; }
+      html, body { margin: 0; min-height: 100%; background: var(--bg-default); color: var(--fg-default); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", Helvetica, Arial, sans-serif; }
+      body { padding: 0; }
       a { color: inherit; }
-      .site-shell { max-width: 1380px; margin: 0 auto; display: grid; grid-template-columns: 300px minmax(0, 1fr); gap: 24px; }
-      .rail { background: linear-gradient(180deg, var(--rail) 0%, #111920 100%); color: #eef3f7; border-radius: 30px; padding: 28px 24px; box-shadow: var(--shadow); display: grid; gap: 22px; align-content: start; position: sticky; top: 24px; }
-      .brand-block { display: grid; grid-template-columns: 68px minmax(0, 1fr); gap: 14px; align-items: center; }
-      .brand-mark { width: 68px; height: 68px; border-radius: 18px; background: linear-gradient(135deg, #b06a34 0%, #7d4720 100%); display: flex; align-items: center; justify-content: center; font-size: 24px; font-weight: 800; color: #fff8ef; letter-spacing: 0.08em; }
-      .brand-copy h1 { margin: 6px 0 0; font-size: 32px; line-height: 1; font-family: "Iowan Old Style", "Palatino Linotype", "Songti SC", serif; letter-spacing: -0.03em; }
-      .brand-kicker { margin: 0; font-size: 11px; text-transform: uppercase; letter-spacing: 0.18em; color: rgba(238, 243, 247, 0.7); }
-      .brand-copy p:last-child { margin: 8px 0 0; color: rgba(238, 243, 247, 0.72); line-height: 1.6; font-size: 13px; }
-      .rail-session { padding: 16px 18px; border-radius: 20px; background: rgba(255, 255, 255, 0.06); border: 1px solid rgba(255, 255, 255, 0.08); }
-      .rail-label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.14em; color: rgba(238, 243, 247, 0.62); }
-      #user-chip { margin: 10px 0 0; font-size: 18px; font-weight: 700; color: #fff; }
-      .rail-nav { display: grid; gap: 10px; }
-      .rail-link { display: grid; grid-template-columns: 40px minmax(0, 1fr); gap: 14px; align-items: start; padding: 14px 16px; border-radius: 18px; color: rgba(238, 243, 247, 0.84); text-decoration: none; background: transparent; border: 1px solid transparent; transition: background-color 120ms ease, border-color 120ms ease, transform 120ms ease; }
-      .rail-link:hover { background: rgba(255, 255, 255, 0.06); border-color: rgba(255, 255, 255, 0.08); transform: translateY(-1px); }
-      .rail-link.active { background: linear-gradient(135deg, rgba(176, 106, 52, 0.28) 0%, rgba(127, 72, 33, 0.22) 100%); border-color: rgba(205, 152, 108, 0.38); color: #fff; }
-      .rail-index { font-size: 12px; font-weight: 800; letter-spacing: 0.12em; opacity: 0.68; padding-top: 2px; }
-      .rail-copy { display: grid; gap: 4px; }
-      .rail-copy strong { font-size: 15px; }
-      .rail-copy span:last-child { font-size: 12px; color: rgba(238, 243, 247, 0.66); line-height: 1.5; }
-      .rail-footer { display: grid; gap: 12px; margin-top: auto; }
-      .stage { display: grid; gap: 20px; min-width: 0; }
-      .page-header { display: flex; justify-content: space-between; align-items: end; gap: 18px; padding: 6px 4px 0; }
-      .page-eyebrow { color: var(--primary-dark); font-size: 11px; font-weight: 800; letter-spacing: 0.18em; text-transform: uppercase; }
-      .page-header h2 { margin: 10px 0 0; font-size: 52px; line-height: 0.98; font-family: "Iowan Old Style", "Palatino Linotype", "Songti SC", serif; letter-spacing: -0.04em; }
-      .page-lead { margin: 14px 0 0; max-width: 64ch; color: var(--muted); line-height: 1.75; font-size: 15px; }
-      .header-actions { display: flex; gap: 10px; flex-wrap: wrap; }
-      .panel { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow); padding: 24px; position: relative; overflow: hidden; }
-      .panel::before { content: ""; position: absolute; inset: 0 auto auto 0; width: 100%; height: 5px; background: linear-gradient(90deg, rgba(156, 93, 47, 0.85) 0%, rgba(156, 93, 47, 0) 72%); opacity: 0.8; }
-      .panel-head { display: flex; justify-content: space-between; align-items: start; gap: 16px; }
-      .panel-head h2, .panel-head h3 { margin: 8px 0 0; font-size: 28px; font-family: "Iowan Old Style", "Palatino Linotype", "Songti SC", serif; letter-spacing: -0.03em; }
-      .panel-head.nested { margin-top: 26px; }
-      .panel-kicker { color: var(--primary-dark); font-size: 11px; font-weight: 800; letter-spacing: 0.16em; text-transform: uppercase; }
-      .notice { padding: 13px 15px; border-radius: 16px; font-size: 14px; line-height: 1.7; }
-      .notice.ok { background: #edf8f4; color: var(--ok); border: 1px solid #c7eadf; }
-      .notice.error { background: #fdf1ef; color: var(--danger); border: 1px solid #f3c9c2; }
-      .notice.warn { background: #fbf3e5; color: var(--warning); border: 1px solid #ead5ae; }
-      .muted { color: var(--muted); }
+      .app-header { background: var(--header-bg); color: var(--header-fg); }
+      .app-header-inner { max-width: 1280px; margin: 0 auto; height: 62px; padding: 0 16px; display: flex; align-items: center; gap: 16px; }
+      .app-brand { display: inline-flex; align-items: center; gap: 10px; text-decoration: none; color: var(--header-fg); font-weight: 600; }
+      .app-brand-mark { width: 28px; height: 28px; border-radius: 999px; background: #f6f8fa; color: #24292f; display: inline-flex; align-items: center; justify-content: center; font-weight: 800; font-size: 12px; }
+      .app-nav { display: flex; align-items: center; gap: 4px; flex: 1; min-width: 0; }
+      .app-nav-link { color: rgba(240,246,252,0.88); text-decoration: none; font-size: 14px; font-weight: 600; padding: 6px 10px; border-radius: 6px; }
+      .app-nav-link:hover, .app-nav-link.active { background: rgba(255,255,255,0.08); color: var(--header-fg); }
+      .app-header-actions { display: flex; align-items: center; gap: 12px; }
+      .user-chip { color: rgba(240,246,252,0.78); font-size: 13px; white-space: nowrap; }
+      .app-main { max-width: 1280px; margin: 0 auto; padding: 24px 16px 40px; display: grid; gap: 16px; }
+      .pagehead { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; }
+      .pagehead-eyebrow { color: var(--fg-muted); font-size: 12px; font-weight: 600; }
+      .pagehead-title { margin: 4px 0 0; font-size: 32px; line-height: 1.25; font-weight: 600; }
+      .pagehead-description { margin: 8px 0 0; font-size: 14px; color: var(--fg-muted); max-width: 72ch; line-height: 1.5; }
+      .pagehead-actions { display: flex; align-items: center; gap: 8px; }
+      .box { background: var(--bg-overlay); border: 1px solid var(--border-default); border-radius: var(--radius); box-shadow: 0 1px 0 rgba(27,31,36,0.04); }
+      .box-header { padding: 16px; border-bottom: 1px solid var(--border-default); background: var(--bg-subtle); border-top-left-radius: var(--radius); border-top-right-radius: var(--radius); display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+      .box-body { padding: 16px; }
+      .box-body.no-padding { padding: 0; }
+      .box-title { margin: 0; font-size: 16px; font-weight: 600; }
+      .jobs-header { align-items: center; }
+      .jobs-range-wrap { display: flex; align-items: center; }
+      .muted { color: var(--fg-muted); }
       .field { display: grid; gap: 9px; margin-top: 16px; }
-      label { color: var(--text); }
-      .field > label { font-size: 13px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: var(--muted); }
-      input, textarea { width: 100%; border: 1px solid #d8cab8; border-radius: 16px; padding: 14px 16px; font: inherit; background: rgba(255, 255, 255, 0.92); color: var(--text); box-shadow: inset 0 1px 0 rgba(255,255,255,0.6); }
-      textarea { min-height: 180px; resize: vertical; line-height: 1.7; }
-      input:focus, textarea:focus { outline: none; border-color: #b98257; box-shadow: 0 0 0 4px rgba(156, 93, 47, 0.12); }
+      label { color: var(--fg-default); }
+      .field > label { font-size: 12px; font-weight: 600; color: var(--fg-default); }
+      input, textarea { width: 100%; border: 1px solid var(--border-default); border-radius: 6px; padding: 10px 12px; font: inherit; background: var(--bg-overlay); color: var(--fg-default); box-shadow: var(--canvas-inset-shadow); }
+      textarea { min-height: 180px; resize: vertical; line-height: 1.6; }
+      input:focus, textarea:focus { outline: none; border-color: #0969da; box-shadow: 0 0 0 3px rgba(9,105,218,0.15); }
       .actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 18px; }
-      button, .button-link { border: 1px solid #cbb9a4; background: var(--panel-strong); color: var(--text); min-height: 46px; padding: 0 16px; border-radius: 14px; font: inherit; font-weight: 700; text-decoration: none; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; }
-      button.primary, .button-link.primary { background: var(--primary); border-color: var(--primary); color: #fff9f3; }
-      button.primary:hover, .button-link.primary:hover { background: var(--primary-dark); border-color: var(--primary-dark); }
+      button, .button-link { border: 1px solid var(--border-default); background: var(--bg-overlay); color: var(--fg-default); min-height: 32px; padding: 0 12px; border-radius: 6px; font: inherit; font-weight: 500; text-decoration: none; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; box-shadow: 0 1px 0 rgba(27,31,36,0.04); }
+      button.primary, .button-link.primary { background: var(--accent-emphasis); border-color: rgba(27,31,36,0.15); color: var(--fg-on-emphasis); }
+      button.primary:hover, .button-link.primary:hover { background: var(--accent-emphasis-hover); }
       button:disabled { opacity: 0.65; cursor: wait; }
-      .download-board, .settings-board, .account-board, .legal-board { display: grid; gap: 18px; }
-      .download-board { grid-template-columns: minmax(0, 1.2fr) 340px; }
-      .settings-board { grid-template-columns: minmax(0, 1.08fr) 340px; }
-      .account-board { grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr); }
-      .legal-board { grid-template-columns: 340px minmax(0, 1fr); }
-      .auth-board { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
-      .auth-panel, .auth-session { min-height: 100%; }
-      .compose-footer { display: flex; justify-content: space-between; align-items: center; gap: 16px; margin-top: 18px; }
-      .compact-copy, .small { font-size: 13px; }
-      .metric-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-top: 18px; }
-      .metric-box { padding: 16px; border-radius: 18px; border: 1px solid #e2d4c5; background: linear-gradient(180deg, #fffdfa 0%, #f7f1e9 100%); }
-      .metric-box span { display: block; font-size: 12px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); }
-      .metric-box strong { display: block; margin-top: 10px; font-size: 30px; font-family: "Iowan Old Style", "Palatino Linotype", "Songti SC", serif; }
-      .insight-note { margin-top: 18px; padding: 16px; border-radius: 18px; background: #f5ede4; border: 1px solid #e1d2bf; }
-      .insight-label { font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.14em; color: var(--primary-dark); }
-      .insight-note p { margin: 8px 0 0; color: var(--muted); line-height: 1.7; }
-      .archive-panel { display: grid; gap: 16px; }
-      .archive-summary { display: flex; align-items: center; min-height: 44px; }
-      .record-list { display: grid; gap: 14px; }
-      .record-card { padding: 22px; border-radius: 20px; background: linear-gradient(180deg, #fffdfa 0%, #f8f2ea 100%); border: 1px solid #ddcfbe; }
-      .record-header { display: flex; justify-content: space-between; align-items: start; gap: 16px; }
-      .record-overline { font-size: 11px; text-transform: uppercase; letter-spacing: 0.16em; color: var(--muted); }
-      .record-title { margin: 10px 0 0; font-size: 28px; line-height: 1.12; font-family: "Iowan Old Style", "Palatino Linotype", "Songti SC", serif; letter-spacing: -0.03em; }
-      .status { padding: 7px 12px; border-radius: 999px; font-size: 12px; font-weight: 800; background: #eee4d9; color: var(--primary-dark); border: 1px solid #dcc8b2; }
-      .status.succeeded { background: #edf8f4; color: var(--ok); border-color: #c7eadf; }
-      .status.failed { background: #fdf1ef; color: var(--danger); border-color: #f3c9c2; }
-      .status.queued { background: #fbf3e5; color: var(--warning); border-color: #ead5ae; }
-      .record-grid { display: grid; grid-template-columns: minmax(0, 1fr) 230px; gap: 18px; margin-top: 18px; }
-      .record-main { display: grid; gap: 14px; }
+      .dashboard-grid, .split-layout, .legal-layout { display: grid; gap: 16px; }
+      .dashboard-grid { grid-template-columns: minmax(0, 1.25fr) 320px; }
+      .split-layout { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .legal-layout { grid-template-columns: 320px minmax(0, 1fr); }
+      .stats-column { display: grid; gap: 16px; }
+      .composer-footer { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-top: 16px; }
+      .compact-copy, .small, .prose-copy { font-size: 13px; line-height: 1.5; }
+      .stats-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+      .stat-card { padding: 12px; border: 1px solid var(--border-muted); border-radius: 6px; background: var(--bg-default); }
+      .stat-card span { display: block; font-size: 12px; color: var(--fg-muted); }
+      .stat-card strong { display: block; margin-top: 6px; font-size: 24px; font-weight: 600; }
+      .job-list { display: grid; }
+      .record-card { padding: 16px; border-top: 1px solid var(--border-default); }
+      .record-card:first-child { border-top: 0; }
+      .record-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+      .record-overline { font-size: 12px; color: var(--fg-muted); }
+      .record-title { margin: 4px 0 0; font-size: 20px; line-height: 1.35; font-weight: 600; }
+      .status { display: inline-flex; align-items: center; padding: 2px 10px; border-radius: 999px; font-size: 12px; font-weight: 600; background: var(--bg-inset); color: var(--fg-muted); border: 1px solid var(--border-default); }
+      .status.succeeded { background: var(--accent-subtle); color: var(--accent-emphasis); border-color: #4ac26b33; }
+      .status.failed { background: var(--danger-subtle); color: var(--danger-emphasis); border-color: #ff818266; }
+      .status.queued { background: var(--warning-subtle); color: #9a6700; border-color: #d4a72c66; }
+      .record-grid { display: grid; grid-template-columns: minmax(0, 1fr) 220px; gap: 16px; margin-top: 16px; }
+      .record-main { display: grid; gap: 12px; }
       .detail-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
-      .detail-item { padding: 14px; border-radius: 18px; background: rgba(255,255,255,0.72); border: 1px solid #e6dbcf; }
-      .detail-item dt { font-size: 11px; text-transform: uppercase; letter-spacing: 0.12em; color: var(--muted); }
-      .detail-item dd { margin: 8px 0 0; font-size: 15px; font-weight: 700; line-height: 1.5; }
-      .progress-track { height: 12px; border-radius: 999px; background: #e7dbcd; overflow: hidden; }
-      .progress-track > div { height: 100%; background: linear-gradient(90deg, var(--primary) 0%, #c68550 100%); }
-      .progress-caption { display: flex; justify-content: space-between; align-items: center; gap: 12px; color: var(--muted); font-size: 13px; }
-      .record-meter { padding: 16px; border-radius: 20px; background: #f3ebe2; border: 1px solid #dccdba; display: grid; align-content: start; gap: 8px; }
-      .meter-label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.14em; color: var(--muted); }
-      .meter-value { font-size: 38px; line-height: 1; font-weight: 800; font-family: "Iowan Old Style", "Palatino Linotype", "Songti SC", serif; }
-      .meter-note { color: var(--muted); font-size: 13px; line-height: 1.6; }
-      .file-cluster { display: grid; gap: 12px; margin-top: 18px; }
-      .file-box { padding: 15px 16px; border-radius: 18px; border: 1px solid #e3d7c9; background: rgba(255,255,255,0.74); }
-      .file-label { color: var(--muted); font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.14em; }
+      .detail-item { padding: 12px; border: 1px solid var(--border-muted); border-radius: 6px; background: var(--bg-subtle); }
+      .detail-item dt { font-size: 11px; color: var(--fg-muted); text-transform: uppercase; letter-spacing: 0.03em; }
+      .detail-item dd { margin: 6px 0 0; font-size: 14px; font-weight: 600; line-height: 1.5; }
+      .progress-track { height: 8px; border-radius: 999px; background: #d8dee4; overflow: hidden; }
+      .progress-track > div { height: 100%; background: #2da44e; }
+      .progress-caption { display: flex; justify-content: space-between; align-items: center; gap: 12px; color: var(--fg-muted); font-size: 12px; }
+      .record-meter { padding: 12px; border: 1px solid var(--border-muted); border-radius: 6px; background: var(--bg-subtle); display: grid; gap: 6px; align-content: start; }
+      .meter-label { font-size: 11px; color: var(--fg-muted); text-transform: uppercase; }
+      .meter-value { font-size: 32px; line-height: 1; font-weight: 600; }
+      .meter-note { color: var(--fg-muted); font-size: 12px; line-height: 1.5; }
+      .file-cluster { display: grid; gap: 10px; margin-top: 14px; }
+      .file-box { padding: 12px; border: 1px solid var(--border-muted); border-radius: 6px; background: var(--bg-subtle); }
+      .file-label { color: var(--fg-muted); font-size: 12px; font-weight: 600; }
       .file-links { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
-      .file-links a { padding: 8px 12px; border-radius: 999px; background: var(--primary-soft); color: var(--primary-dark); text-decoration: none; font-weight: 700; border: 1px solid #dfc7ae; }
-      .job-errors { margin-top: 16px; padding: 14px 16px; border-radius: 18px; background: #fdf1ef; color: var(--danger); line-height: 1.8; font-size: 14px; border: 1px solid #f3c9c2; }
-      .empty { padding: 16px; border-radius: 16px; border: 1px dashed #ccbca8; color: var(--muted); background: rgba(255,255,255,0.4); }
+      .file-links a { padding: 6px 10px; border-radius: 6px; background: var(--bg-overlay); color: #0969da; text-decoration: none; font-weight: 500; border: 1px solid var(--border-default); }
+      .job-errors { margin-top: 14px; padding: 12px; border-radius: 6px; background: var(--danger-subtle); color: var(--danger-emphasis); line-height: 1.7; font-size: 13px; border: 1px solid #ffcecb; }
+      .empty { padding: 24px 16px; color: var(--fg-muted); text-align: center; }
       .pagination { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
       .pagination-info { color: var(--muted); font-size: 14px; text-align: center; flex: 1; }
-      .guide-list { display: grid; gap: 12px; margin: 4px 0 18px; }
-      .guide-item { display: grid; grid-template-columns: 42px minmax(0, 1fr); gap: 12px; align-items: start; padding: 14px 0; border-bottom: 1px solid #e5d7c7; }
+      .guide-body { display: grid; gap: 12px; }
+      .guide-item { display: grid; grid-template-columns: 32px minmax(0, 1fr); gap: 12px; align-items: start; padding: 12px 0; border-bottom: 1px solid var(--border-muted); }
       .guide-item:last-child { border-bottom: 0; padding-bottom: 0; }
-      .guide-item strong { display: inline-flex; width: 42px; height: 42px; align-items: center; justify-content: center; border-radius: 14px; background: var(--primary-soft); color: var(--primary-dark); }
-      .guide-item span { color: var(--muted); line-height: 1.7; }
-      .login-box { margin-top: 18px; padding: 16px; border-radius: 18px; background: rgba(255,255,255,0.6); border: 1px solid #dfcfbd; }
-      .login-status { font-size: 20px; font-weight: 800; font-family: "Iowan Old Style", "Palatino Linotype", "Songti SC", serif; }
-      .qr-image { display: block; width: 280px; max-width: 100%; margin-top: 14px; border-radius: 16px; border: 1px solid #d9c7b3; background: #fff; }
-      .legal-text { display: grid; gap: 12px; line-height: 1.85; }
-      .legal-text h3 { margin: 12px 0 0; font-size: 18px; font-family: "Iowan Old Style", "Palatino Linotype", "Songti SC", serif; }
+      .guide-item strong { display: inline-flex; width: 32px; height: 32px; align-items: center; justify-content: center; border-radius: 999px; background: var(--bg-subtle); border: 1px solid var(--border-default); font-size: 12px; }
+      .guide-item span { color: var(--fg-muted); line-height: 1.6; font-size: 13px; }
+      .login-box { margin-top: 16px; padding: 12px; border-radius: 6px; background: var(--bg-subtle); border: 1px solid var(--border-default); }
+      .login-status { font-size: 18px; font-weight: 600; }
+      .qr-image { display: block; width: 280px; max-width: 100%; margin-top: 14px; border-radius: 6px; border: 1px solid var(--border-default); background: #fff; }
+      .legal-text { display: grid; gap: 12px; line-height: 1.7; }
+      .legal-text h3 { margin: 12px 0 0; font-size: 16px; font-weight: 600; }
       .legal-text p { margin: 0; color: var(--text); }
-      .admin-users { display: grid; gap: 12px; margin-top: 18px; }
-      .admin-user { padding: 16px; border: 1px solid #e1d4c4; border-radius: 18px; background: rgba(255,255,255,0.72); }
+      .admin-users { display: grid; gap: 12px; }
+      .admin-user { padding: 16px; border: 1px solid var(--border-default); border-radius: 6px; background: var(--bg-default); }
       .admin-user-top { display: flex; justify-content: space-between; gap: 16px; align-items: start; }
       .admin-user-name { font-weight: 700; font-size: 17px; }
-      .admin-user-meta { margin-top: 8px; color: var(--muted); line-height: 1.8; font-size: 14px; }
-      .admin-legal-editor { margin-top: 28px; padding-top: 24px; border-top: 1px solid #ddcfbe; }
+      .admin-user-meta { margin-top: 8px; color: var(--fg-muted); line-height: 1.8; font-size: 14px; }
+      .admin-legal-editor { margin-top: 24px; padding-top: 24px; border-top: 1px solid var(--border-default); }
       .legal-editor { min-height: 320px; }
-      .checkbox-row { display: flex; gap: 10px; align-items: flex-start; margin-top: 16px; line-height: 1.8; color: var(--text); font-size: 15px; font-weight: 600; }
+      .checkbox-row { display: flex; gap: 10px; align-items: flex-start; margin-top: 16px; line-height: 1.6; color: var(--fg-default); font-size: 14px; font-weight: 400; }
       .checkbox-row input { width: 18px; height: 18px; margin-top: 4px; }
       .hidden { display: none !important; }
       @media (max-width: 1100px) {
-        .site-shell { grid-template-columns: 1fr; }
-        .rail { position: static; }
-        .download-board,
-        .settings-board,
-        .account-board,
-        .legal-board,
-        .auth-board,
+        .dashboard-grid,
+        .split-layout,
+        .legal-layout,
         .record-grid { grid-template-columns: 1fr; }
       }
       @media (max-width: 760px) {
-        body { padding: 14px; }
-        .site-shell { gap: 16px; }
-        .rail { padding: 20px 18px; }
-        .brand-block { grid-template-columns: 52px minmax(0, 1fr); }
-        .brand-mark { width: 52px; height: 52px; font-size: 18px; border-radius: 14px; }
-        .brand-copy h1 { font-size: 26px; }
-        .page-header { flex-direction: column; align-items: stretch; }
-        .page-header h2 { font-size: 38px; }
-        .panel { padding: 18px; }
+        .app-header-inner { height: auto; padding-top: 12px; padding-bottom: 12px; flex-wrap: wrap; }
+        .app-nav { order: 3; width: 100%; overflow-x: auto; padding-bottom: 4px; }
+        .app-main { padding: 16px; }
+        .pagehead { flex-direction: column; align-items: stretch; }
+        .pagehead-title { font-size: 28px; }
         .record-header,
         .pagination,
-        .compose-footer,
-        .panel-head { flex-direction: column; align-items: stretch; }
-        .metric-grid,
+        .composer-footer,
+        .box-header,
+        .progress-caption { flex-direction: column; align-items: stretch; }
+        .stats-grid,
         .detail-grid { grid-template-columns: 1fr; }
       }
     </style>
   </head>
   <body>
-    <main class="site-shell">
-      <aside class="rail">
-        <div class="brand-block">
-          <div class="brand-mark">GD</div>
-          <div class="brand-copy">
-            <p class="brand-kicker">Private Console</p>
-            <h1>GoDingtalk</h1>
-            <p>正式、集中、可追踪的内部下载控制台。</p>
-          </div>
-        </div>
-        <section class="rail-session">
-          <div class="rail-label">当前会话</div>
-          <p id="user-chip">未登录</p>
-        </section>
+    <header class="app-header">
+      <div class="app-header-inner">
+        <a class="app-brand" href="/download">
+          <span class="app-brand-mark">GD</span>
+          <span>GoDingtalk</span>
+        </a>
         ${renderNav(page)}
-        <div class="rail-footer">
-          <a class="button-link" href="/download">返回任务台</a>
+        <div class="app-header-actions">
+          <span id="user-chip" class="user-chip">未登录</span>
           <button id="topbar-logout-btn" type="button" class="hidden">退出登录</button>
         </div>
-      </aside>
-      <section class="stage">
-        <div id="notice" class="notice ok hidden"></div>
-        ${renderPageBody(page, installURL)}
-      </section>
+      </div>
+    </header>
+    <main class="app-main">
+      <div id="notice" class="notice ok hidden"></div>
+      ${renderPageBody(page, installURL)}
     </main>
 
     <script>
