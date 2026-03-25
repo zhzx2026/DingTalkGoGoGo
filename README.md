@@ -137,7 +137,7 @@ npx wrangler deploy
   - 上传 mp4 到私有 R2
   - 回写最终状态
 - `.github/workflows/release.yml`
-  - 打 tag 时构建二进制和 Docker 镜像
+  - 打 tag 时构建多平台二进制、Android APK 和 Docker 镜像
 - `.github/workflows/s3-region-benchmark.yml`
   - 默认使用 GitHub-hosted `ubuntu-latest` runner，按“美国出口近似”去测真实 AWS S3 区域上传
   - 每个 region 临时建 bucket，上传 `20 MiB` 测试文件，随后自动清理
@@ -155,23 +155,21 @@ npx wrangler deploy
 部署完成后，直接打开 Worker 根地址即可：
 
 - 注册/登录账号（默认开放注册）
-- 在“配置”页选择 Tampermonkey 导入，或点击 “Windows 二维码登录”
-- 上传 cookies
+- 未登录时只显示登录/注册
+- 登录后按页面引导完成“同意条款 → 设置 Cookie → 提交下载”
+- Cookie 可通过手动粘贴或二维码登录导入
 - 粘贴一个或多个回放链接
 - 提交任务
 - 网页轮询看进度
 - 成功后在登录态内直接点下载链接
 
+如果你希望 release 自动生成的 Android APK 首次打开就直连你的 Worker，可以在仓库里额外设置一个 Actions Variable：
+
+- `GODINGTALK_CONTROL_URL`
+  - 值填你的 Worker 根地址，例如 `https://godingtalk-worker.example.workers.dev`
+  - 不填也可以，APK 首次启动时会让用户手动输入地址
+
 如果要关闭公开注册，把 `worker/wrangler.toml` 里的 `ALLOW_PUBLIC_REGISTRATION` 改成 `"false"`，再重新部署。
-
-如果你习惯用 Tampermonkey：
-
-- 打开 `/tampermonkey/godingtalk-helper.user.js`
-- 安装脚本
-- 在钉钉页面点右下角按钮
-- 当前链接和可见 cookies 会自动带到控制台
-
-注意：Tampermonkey 依然拿不到 `HttpOnly` cookie，所以它只是辅助入口，不是唯一来源。
 
 ## Remote API
 
@@ -252,13 +250,11 @@ go build -o GoDingtalk .
 - `windows-latest` 位于美国网络，打开的通常是国际版 DingTalk 登录页
 - 如果你希望复用中国网络下的登录链路，可以再切回中国网络环境的 `self-hosted Windows runner`
 
-现在 `/settings` 页面也支持这个流程：
+现在网页工作台第 2 步也支持这个流程：
 
 1. 登录后点击“启动 Windows 二维码登录”
-2. 页面会直接给出 GitHub Actions 工作流和运行记录入口
-3. 下载 `windows-login-qr` 图片扫码
-4. 登录成功后再下载 `windows-login-cookies` artifact
-5. 把 cookies 内容粘贴回配置页上传
+2. 页面出现二维码后直接扫码
+3. 登录成功后 Cookie 会自动回传到 Worker
 
 ## GitHub Runner 远程执行
 

@@ -45,6 +45,7 @@ downloads/
 
 # 容器与 Worker 依赖
 build/
+android/.gradle/
 worker/node_modules/
 .gocache/
 

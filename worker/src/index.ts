@@ -1,4 +1,3 @@
-import { renderTampermonkeyScript } from "./tampermonkey";
 import { renderApp } from "./ui";
 
 interface Env {
@@ -261,6 +260,16 @@ function htmlResponse(body: string): Response {
   return new Response(body, {
     headers: {
       "content-type": "text/html; charset=utf-8",
+      "cache-control": "no-store",
+    },
+  });
+}
+
+function redirectResponse(location: string, status = 302): Response {
+  return new Response(null, {
+    status,
+    headers: {
+      location,
       "cache-control": "no-store",
     },
   });
@@ -2093,23 +2102,29 @@ export default {
     try {
       let response: Response;
 
-      if (url.pathname === "/" || url.pathname === "/download") {
-        response = htmlResponse(renderApp(url.origin, "download"));
-      } else if (url.pathname === "/login") {
-        response = htmlResponse(renderApp(url.origin, "login"));
-      } else if (url.pathname === "/settings") {
-        response = htmlResponse(renderApp(url.origin, "settings"));
-      } else if (url.pathname === "/account") {
-        response = htmlResponse(renderApp(url.origin, "account"));
-      } else if (url.pathname === "/legal") {
-        response = htmlResponse(renderApp(url.origin, "legal"));
-      } else if (url.pathname === "/tampermonkey/godingtalk-helper.user.js") {
-        response = textResponse(renderTampermonkeyScript(url.origin), {
-          headers: {
-            "content-type": "application/javascript; charset=utf-8",
-            "cache-control": "public, max-age=300",
-          },
-        });
+      if (
+        url.pathname === "/"
+        || url.pathname === "/download"
+        || url.pathname === "/login"
+        || url.pathname === "/settings"
+        || url.pathname === "/legal"
+        || url.pathname === "/account"
+      ) {
+        const authUser = await getAuthUser(request, env);
+
+        if (url.pathname === "/") {
+          response = redirectResponse(`${url.origin}${authUser ? "/download" : "/login"}`);
+        } else if (!authUser) {
+          response = url.pathname === "/login"
+            ? htmlResponse(renderApp(url.origin, "login"))
+            : redirectResponse(`${url.origin}/login`);
+        } else if (url.pathname === "/account") {
+          response = htmlResponse(renderApp(url.origin, "account"));
+        } else if (url.pathname === "/login" || url.pathname === "/settings" || url.pathname === "/legal") {
+          response = redirectResponse(`${url.origin}/download`);
+        } else {
+          response = htmlResponse(renderApp(url.origin, "download"));
+        }
       } else if (url.pathname === "/api/auth/me" && request.method === "GET") {
         response = await handleAuthMe(request, env);
       } else if (url.pathname === "/api/auth/register" && request.method === "POST") {
