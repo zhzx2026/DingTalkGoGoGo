@@ -1856,32 +1856,10 @@ async function handleCookies(request: Request, env: Env, user: AuthUser): Promis
   if (request.method !== "POST") {
     return jsonResponse({ error: "method not allowed" }, { status: 405 });
   }
-
-  const payload = (await request.json()) as CookiePayload;
-  const cookies = payload?.cookies;
-  if (!cookies || typeof cookies !== "object" || Array.isArray(cookies)) {
-    return jsonResponse({ error: "invalid cookies payload" }, { status: 400 });
-  }
-
-  const sanitized: Record<string, string> = {};
-  Object.entries(cookies).forEach(([name, value]) => {
-    const normalizedName = String(name || "").trim();
-    const normalizedValue = typeof value === "string" ? value.trim() : "";
-    if (normalizedName && normalizedValue) {
-      sanitized[normalizedName] = normalizedValue;
-    }
-  });
-  if (Object.keys(sanitized).length === 0) {
-    return jsonResponse({ error: "at least one non-empty cookie is required" }, { status: 400 });
-  }
-
-  await saveUserCookies(env, user.id, sanitized);
-  const state = await getUserCookieState(env, user.id);
-  return jsonResponse({
-    message: "cookies saved",
-    cookies_valid: state.cookiesReady,
-    cookies_updated_at: state.cookiesUpdatedAt,
-  });
+  void request;
+  void env;
+  void user;
+  return jsonResponse({ error: "manual cookie upload disabled; use QR login" }, { status: 403 });
 }
 
 async function handleJobs(request: Request, env: Env, user: AuthUser): Promise<Response> {

@@ -1,13 +1,13 @@
+plugins {
+  id "com.android.application"
+}
+
 def rawVersionName = System.getenv("GODINGTALK_APP_VERSION") ?: "0.1.0"
 def versionNameValue = rawVersionName.startsWith("v") ? rawVersionName.substring(1) : rawVersionName
 def versionCodeValue = Integer.parseInt(System.getenv("GODINGTALK_APP_VERSION_CODE") ?: "1")
 def consoleUrlValue = (System.getenv("GODINGTALK_CONSOLE_URL") ?: "")
   .replace("\\", "\\\\")
   .replace("\"", "\\\"")
-
-plugins {
-  id "com.android.application"
-}
 
 android {
   namespace "com.godingtalk.console"

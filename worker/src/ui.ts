@@ -111,16 +111,11 @@ function renderDownloadPage(): string {
               </div>
               <span id="cookie-badge" class="badge warn">未完成</span>
             </div>
-            <p class="muted">支持手动粘贴，也支持二维码登录回传。</p>
+            <p class="muted">这里只保留二维码登录。扫码成功后，Cookie 会自动回传到当前账号。</p>
             <div id="cookie-state" class="notice hidden"></div>
             <div id="cookie-meta" class="meta-line"></div>
-            <div class="field">
-              <label for="cookie-input">Cookie 内容</label>
-              <textarea id="cookie-input" placeholder='支持三种格式：&#10;1. {"cookie":"value"}&#10;2. cookie=value; token=abc&#10;3. 每行一个 name=value'></textarea>
-            </div>
             <div class="actions">
-              <button id="save-cookies-btn" class="primary" type="button">保存 Cookie</button>
-              <button id="start-login-workflow-btn" type="button">二维码登录</button>
+              <button id="start-login-workflow-btn" class="primary" type="button">启动二维码登录</button>
             </div>
             <div id="login-box" class="login-box hidden">
               <div id="login-status" class="login-status">等待开始</div>
@@ -859,8 +854,6 @@ export function renderApp(appOrigin: string, page: AppPage): string {
         cookieBadge: document.getElementById("cookie-badge"),
         cookieState: document.getElementById("cookie-state"),
         cookieMeta: document.getElementById("cookie-meta"),
-        cookieInput: document.getElementById("cookie-input"),
-        saveCookiesBtn: document.getElementById("save-cookies-btn"),
         startLoginWorkflowBtn: document.getElementById("start-login-workflow-btn"),
         loginBox: document.getElementById("login-box"),
         loginStatus: document.getElementById("login-status"),
@@ -992,59 +985,6 @@ export function renderApp(appOrigin: string, page: AppPage): string {
         window.location.href = path;
       }
 
-      function parseCookieInput(raw) {
-        const source = String(raw || "").trim();
-        if (!source) {
-          throw new Error("请先粘贴 Cookie。");
-        }
-
-        const sanitize = (input) => {
-          const result = {};
-          Object.entries(input || {}).forEach(([name, value]) => {
-            const key = String(name || "").trim();
-            const text = typeof value === "string" ? value.trim() : String(value || "").trim();
-            if (key && text) {
-              result[key] = text;
-            }
-          });
-          return result;
-        };
-
-        if (source.startsWith("{")) {
-          try {
-            const parsed = JSON.parse(source);
-            if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
-              throw new Error("Cookie JSON 必须是对象。");
-            }
-            const jsonCookies = sanitize(parsed);
-            if (Object.keys(jsonCookies).length === 0) {
-              throw new Error("Cookie JSON 里没有有效字段。");
-            }
-            return jsonCookies;
-          } catch (error) {
-            throw new Error(error instanceof Error ? error.message : "Cookie JSON 解析失败。");
-          }
-        }
-
-        const cookies = {};
-        source.split(/\\n|;/).forEach((part) => {
-          const chunk = String(part || "").trim();
-          if (!chunk) return;
-          const index = chunk.indexOf("=");
-          if (index === -1) return;
-          const name = chunk.slice(0, index).trim();
-          const value = chunk.slice(index + 1).trim();
-          if (name && value) {
-            cookies[name] = value;
-          }
-        });
-
-        if (Object.keys(cookies).length === 0) {
-          throw new Error("没有识别到有效的 Cookie。");
-        }
-        return cookies;
-      }
-
       function setBadge(element, type, text) {
         if (!element) return;
         element.className = "badge " + type;
@@ -1070,7 +1010,7 @@ export function renderApp(appOrigin: string, page: AppPage): string {
           if (!state.legalAccepted) {
             el.flowSummary.textContent = "下一步：先同意当前条款。";
           } else if (!state.cookiesReady) {
-            el.flowSummary.textContent = "下一步：保存 Cookie 或启动二维码登录。";
+            el.flowSummary.textContent = "下一步：启动二维码登录并完成扫码。";
           } else {
             el.flowSummary.textContent = "前置步骤已完成，现在可以直接提交下载。";
           }
@@ -1107,21 +1047,16 @@ export function renderApp(appOrigin: string, page: AppPage): string {
         setBadge(el.legalBadge, state.legalAccepted ? "ok" : "warn", state.legalAccepted ? "已完成" : "未完成");
 
         if (el.cookieState) {
-          el.cookieState.textContent = state.cookiesReady ? "Cookie 已就绪。" : "还没有可用 Cookie。";
+          el.cookieState.textContent = state.cookiesReady ? "Cookie 已就绪。" : "还没有通过二维码登录获取到 Cookie。";
           el.cookieState.className = "notice " + (state.cookiesReady ? "ok" : "warn");
           el.cookieState.classList.remove("hidden");
         }
         if (el.cookieMeta) {
-          el.cookieMeta.textContent = state.cookiesUpdatedAt ? ("最近更新时间：" + formatTime(state.cookiesUpdatedAt)) : "尚未保存 Cookie。";
-        }
-        if (el.cookieInput) {
-          el.cookieInput.disabled = !state.legalAccepted;
-        }
-        if (el.saveCookiesBtn) {
-          el.saveCookiesBtn.disabled = !state.legalAccepted;
+          el.cookieMeta.textContent = state.cookiesUpdatedAt ? ("最近更新时间：" + formatTime(state.cookiesUpdatedAt)) : "尚未完成二维码登录。";
         }
         if (el.startLoginWorkflowBtn) {
           const loginBusy = state.loginSessionStatus === "pending" || state.loginSessionStatus === "qr_ready";
+          el.startLoginWorkflowBtn.textContent = state.cookiesReady ? "重新二维码登录" : "启动二维码登录";
           el.startLoginWorkflowBtn.disabled = !state.legalAccepted || loginBusy;
         }
         if (el.cookiesStep) {
@@ -1383,18 +1318,6 @@ export function renderApp(appOrigin: string, page: AppPage): string {
         setNotice("条款已同意。", "ok");
       }
 
-      async function saveCookies() {
-        if (!state.authenticated) throw new Error("请先登录。");
-        if (!state.legalAccepted) throw new Error("请先同意条款。");
-        const cookies = parseCookieInput(el.cookieInput ? el.cookieInput.value : "");
-        const payload = await request("/api/cookies", {
-          method: "POST",
-          body: JSON.stringify({ cookies }),
-        });
-        setNotice(payload.message || "Cookie 已保存。", "ok");
-        await refreshAll();
-      }
-
       async function startLoginWorkflow() {
         if (!state.authenticated) throw new Error("请先登录。");
         if (!state.legalAccepted) throw new Error("请先同意条款。");
@@ -1521,19 +1444,6 @@ export function renderApp(appOrigin: string, page: AppPage): string {
             setNotice(error.message, "error");
           } finally {
             setBusy(el.acceptLegalBtn, false);
-          }
-        });
-      }
-
-      if (el.saveCookiesBtn) {
-        el.saveCookiesBtn.addEventListener("click", async () => {
-          setBusy(el.saveCookiesBtn, true);
-          try {
-            await saveCookies();
-          } catch (error) {
-            setNotice(error.message, "error");
-          } finally {
-            setBusy(el.saveCookiesBtn, false);
           }
         });
       }

@@ -157,7 +157,7 @@ npx wrangler deploy
 - 注册/登录账号（默认开放注册）
 - 未登录时只显示登录/注册
 - 登录后按页面引导完成“同意条款 → 设置 Cookie → 提交下载”
-- Cookie 可通过手动粘贴或二维码登录导入
+- Cookie 仅支持二维码登录导入
 - 粘贴一个或多个回放链接
 - 提交任务
 - 网页轮询看进度
@@ -180,7 +180,6 @@ npx wrangler deploy
 - `POST /api/auth/login`
 - `POST /api/auth/logout`
 - `GET /api/status`
-- `POST /api/cookies`
 - `GET /api/jobs`
 - `POST /api/jobs`
 - `GET /api/jobs/{jobId}`
