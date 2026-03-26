@@ -1,4 +1,4 @@
-type AppPage = "download" | "login" | "account";
+type AppPage = "overview" | "download" | "jobs" | "scan" | "login" | "account" | "legal";
 
 function renderNav(page: AppPage): string {
   if (page === "login") {
@@ -6,11 +6,73 @@ function renderNav(page: AppPage): string {
   }
 
   const items: Array<{ key: AppPage; href: string; label: string }> = [
-    { key: "download", href: "/download", label: "工作台" },
+    { key: "overview", href: "/overview", label: "概览" },
+    { key: "legal", href: "/legal", label: "条款" },
+    { key: "scan", href: "/scan", label: "扫码登录" },
+    { key: "download", href: "/download", label: "下载" },
+    { key: "jobs", href: "/jobs", label: "任务" },
     { key: "account", href: "/account", label: "账号" },
   ];
 
   return `<nav class="app-nav">${items.map((item) => `<a href="${item.href}" class="nav-link ${page === item.key ? "active" : ""}">${item.label}</a>`).join("")}</nav>`;
+}
+
+function renderStatsRow(): string {
+  return `
+        <div class="stats-row">
+          <article class="stat-card">
+            <span>Cookie</span>
+            <strong id="stat-cookies">-</strong>
+          </article>
+          <article class="stat-card">
+            <span>总任务</span>
+            <strong id="stat-total">0</strong>
+          </article>
+          <article class="stat-card">
+            <span>进行中</span>
+            <strong id="stat-running">0</strong>
+          </article>
+          <article class="stat-card">
+            <span>已完成</span>
+            <strong id="stat-success">0</strong>
+          </article>
+        </div>`;
+}
+
+function renderFlowNavigator(): string {
+  return `
+      <section class="panel flow-panel">
+        <div class="panel-head">
+          <div>
+            <span class="panel-kicker">Progress</span>
+            <h2>三步流程</h2>
+          </div>
+        </div>
+        <div class="flow-steps">
+          <div id="flow-chip-legal" class="flow-chip active">
+            <span class="flow-step-no">1</span>
+            <div class="flow-copy">
+              <strong>条款</strong>
+              <span>先确认使用条款</span>
+            </div>
+          </div>
+          <div id="flow-chip-cookies" class="flow-chip">
+            <span class="flow-step-no">2</span>
+            <div class="flow-copy">
+              <strong>扫码登录</strong>
+              <span>只通过二维码获取登录态</span>
+            </div>
+          </div>
+          <div id="flow-chip-download" class="flow-chip">
+            <span class="flow-step-no">3</span>
+            <div class="flow-copy">
+              <strong>下载</strong>
+              <span>完成前两步后开始下载</span>
+            </div>
+          </div>
+        </div>
+        <p id="flow-summary" class="muted flow-summary">请按顺序完成三步操作。</p>
+      </section>`;
 }
 
 function renderLoginPage(): string {
@@ -63,12 +125,12 @@ function renderLoginPage(): string {
       </section>`;
 }
 
-function renderDownloadPage(): string {
+function renderOverviewPage(): string {
   return `
       <section class="page-intro">
         <span class="eyebrow">Workspace</span>
-        <h1>钉钉回放下载</h1>
-        <p>所有核心操作集中在这里。按顺序完成条款确认、扫码登录、提交下载即可。</p>
+        <h1>下载控制台</h1>
+        <p>这是总览页。你可以先看当前状态，再按流程去完成条款确认、扫码登录和下载。</p>
       </section>
 
       <section class="panel status-panel">
@@ -83,69 +145,55 @@ function renderDownloadPage(): string {
           <div id="user-status-line" class="status-title">请先同意使用条款</div>
           <div id="status-helper" class="muted">登录后先完成条款确认与扫码验证。</div>
         </div>
-        <div class="stats-row">
-          <article class="stat-card">
-            <span>Cookie</span>
-            <strong id="stat-cookies">-</strong>
-          </article>
-          <article class="stat-card">
-            <span>总任务</span>
-            <strong id="stat-total">0</strong>
-          </article>
-          <article class="stat-card">
-            <span>进行中</span>
-            <strong id="stat-running">0</strong>
-          </article>
-          <article class="stat-card">
-            <span>已完成</span>
-            <strong id="stat-success">0</strong>
-          </article>
-        </div>
+        ${renderStatsRow()}
       </section>
 
-      <section class="panel flow-panel">
-        <div class="panel-head">
-          <div>
-            <span class="panel-kicker">Progress</span>
-            <h2>三步流程</h2>
-          </div>
-        </div>
-        <div class="flow-steps">
-          <div id="flow-chip-legal" class="flow-chip active">
-            <span class="flow-step-no">1</span>
-            <div class="flow-copy">
-              <strong>条款</strong>
-              <span>先确认使用条款</span>
-            </div>
-          </div>
-          <div id="flow-chip-cookies" class="flow-chip">
-            <span class="flow-step-no">2</span>
-            <div class="flow-copy">
-              <strong>扫码登录</strong>
-              <span>只通过二维码获取登录态</span>
-            </div>
-          </div>
-          <div id="flow-chip-download" class="flow-chip">
-            <span class="flow-step-no">3</span>
-            <div class="flow-copy">
-              <strong>下载</strong>
-              <span>完成前两步后开始下载</span>
-            </div>
-          </div>
-        </div>
-        <p id="flow-summary" class="muted flow-summary">请按顺序完成三步操作。</p>
+      ${renderFlowNavigator()}
+
+      <section class="route-grid">
+        <a class="route-card" href="/legal">
+          <span class="route-kicker">Step 1</span>
+          <h3>条款确认</h3>
+          <p>先阅读并确认当前版本条款。</p>
+        </a>
+        <a class="route-card" href="/scan">
+          <span class="route-kicker">Step 2</span>
+          <h3>扫码登录</h3>
+          <p>通过钉钉扫码获取当前账号的登录态。</p>
+        </a>
+        <a class="route-card" href="/download">
+          <span class="route-kicker">Step 3</span>
+          <h3>开始下载</h3>
+          <p>完成前两步后粘贴回放链接开始下载。</p>
+        </a>
+        <a class="route-card" href="/jobs">
+          <span class="route-kicker">Archive</span>
+          <h3>任务列表</h3>
+          <p>查看任务进度、错误信息和最终文件。</p>
+        </a>
+      </section>`;
+}
+
+function renderLegalPage(): string {
+  return `
+      <section class="page-intro">
+        <span class="eyebrow">Legal</span>
+        <h1>使用条款</h1>
+        <p>创建下载任务或启动二维码登录前，必须先完成当前版本条款确认。</p>
       </section>
 
-      <section class="step-stack">
+      ${renderFlowNavigator()}
+
+      <section class="content-grid">
         <section id="legal-step" class="step-card">
           <div class="step-head">
             <div>
               <span class="step-kicker">Step 1</span>
-              <h2>使用条款</h2>
+              <h2>同意条款</h2>
             </div>
             <span id="legal-badge" class="badge warn">未完成</span>
           </div>
-          <p class="muted">使用本工具前，请确认你拥有相关内容的下载权限。</p>
+          <p class="muted">请确认你对相关内容拥有合法访问和下载权限。</p>
           <div id="legal-state" class="notice hidden"></div>
           <div id="legal-version-meta" class="meta-line"></div>
           <label id="legal-checkbox-row" class="checkbox-row">
@@ -155,12 +203,31 @@ function renderDownloadPage(): string {
           <div class="actions">
             <button id="accept-legal-btn" class="primary" type="button" disabled>同意条款</button>
           </div>
-          <details class="details-card">
-            <summary>查看全文</summary>
-            <div id="legal-text" class="legal-text"><div class="empty">正在加载条款...</div></div>
-          </details>
         </section>
 
+        <section class="panel legal-panel">
+          <div class="panel-head">
+            <div>
+              <span class="panel-kicker">Document</span>
+              <h2>条款全文</h2>
+            </div>
+          </div>
+          <div id="legal-text" class="legal-text"><div class="empty">正在加载条款...</div></div>
+        </section>
+      </section>`;
+}
+
+function renderScanPage(): string {
+  return `
+      <section class="page-intro">
+        <span class="eyebrow">Scan Login</span>
+        <h1>二维码登录</h1>
+        <p>这里专门处理扫码登录。Cookie 只会通过二维码登录自动绑定到当前账号。</p>
+      </section>
+
+      ${renderFlowNavigator()}
+
+      <section class="content-grid">
         <section id="cookies-step" class="step-card">
           <div class="step-head">
             <div>
@@ -169,7 +236,7 @@ function renderDownloadPage(): string {
             </div>
             <span id="cookie-badge" class="badge warn">未完成</span>
           </div>
-          <p class="muted">这里只保留二维码登录。扫码成功后，登录态会自动绑定到当前账号。</p>
+          <p class="muted">扫码成功后，登录态会自动回传并绑定到当前账号。</p>
           <div id="cookie-state" class="notice hidden"></div>
           <div id="cookie-meta" class="meta-line"></div>
           <div class="actions">
@@ -182,27 +249,72 @@ function renderDownloadPage(): string {
           </div>
         </section>
 
-        <section id="download-step" class="step-card">
-          <div class="step-head">
+        <section class="panel guide-panel">
+          <div class="panel-head">
             <div>
-              <span class="step-kicker">Step 3</span>
-              <h2>下载</h2>
+              <span class="panel-kicker">Guide</span>
+              <h2>操作说明</h2>
             </div>
-            <span id="download-badge" class="badge warn">等待前置步骤</span>
           </div>
-          <p class="muted">完成前两步后，这里才会开放。</p>
-          <div id="download-lock" class="notice warn">请先同意条款并完成二维码登录。</div>
-          <div id="download-panel" class="hidden">
-            <div class="field">
-              <label for="urls">回放链接</label>
-              <textarea id="urls" placeholder="粘贴回放链接，每行一个"></textarea>
-            </div>
-            <div class="actions">
-              <button id="create-job-btn" class="primary" type="button">开始下载</button>
-              <button id="refresh-btn" type="button">刷新状态</button>
-            </div>
+          <div class="guide-list">
+            <div class="guide-item"><strong>1</strong><span>先到条款页完成确认。</span></div>
+            <div class="guide-item"><strong>2</strong><span>点击“启动二维码登录”并等待二维码出现。</span></div>
+            <div class="guide-item"><strong>3</strong><span>扫码成功后，回到下载页开始下载。</span></div>
           </div>
         </section>
+      </section>
+      `;
+}
+
+function renderDownloadPage(): string {
+  return `
+      <section class="page-intro">
+        <span class="eyebrow">Download</span>
+        <h1>开始下载</h1>
+        <p>这里专门提交回放链接。只有完成条款确认和扫码登录后，下载区才会开放。</p>
+      </section>
+
+      ${renderFlowNavigator()}
+
+      <section id="download-step" class="step-card">
+        <div class="step-head">
+          <div>
+            <span class="step-kicker">Step 3</span>
+            <h2>下载</h2>
+          </div>
+          <span id="download-badge" class="badge warn">等待前置步骤</span>
+        </div>
+        <p class="muted">完成前两步后，你就可以在这里粘贴回放链接。</p>
+        <div id="download-lock" class="notice warn">请先同意条款并完成二维码登录。</div>
+        <div id="download-panel" class="hidden">
+          <div class="field">
+            <label for="urls">回放链接</label>
+            <textarea id="urls" placeholder="粘贴回放链接，每行一个"></textarea>
+          </div>
+          <div class="actions">
+            <button id="create-job-btn" class="primary" type="button">开始下载</button>
+            <button id="refresh-btn" type="button">刷新状态</button>
+          </div>
+        </div>
+      </section>`;
+}
+
+function renderJobsPage(): string {
+  return `
+      <section class="page-intro">
+        <span class="eyebrow">Jobs</span>
+        <h1>任务列表</h1>
+        <p>这里集中查看任务状态、进度、失败原因和最终文件。</p>
+      </section>
+
+      <section class="panel status-panel">
+        <div class="panel-head">
+          <div>
+            <span class="panel-kicker">Archive</span>
+            <h2>任务概览</h2>
+          </div>
+        </div>
+        ${renderStatsRow()}
       </section>
 
       <section class="panel jobs-panel">
@@ -284,8 +396,16 @@ function renderAccountPage(): string {
 
 function renderPageBody(page: AppPage): string {
   switch (page) {
+    case "overview":
+      return renderOverviewPage();
+    case "legal":
+      return renderLegalPage();
+    case "scan":
+      return renderScanPage();
     case "login":
       return renderLoginPage();
+    case "jobs":
+      return renderJobsPage();
     case "account":
       return renderAccountPage();
     case "download":
@@ -399,6 +519,12 @@ export function renderApp(appOrigin: string, page: AppPage): string {
         background: rgba(255, 255, 255, 0.72);
         border: 1px solid var(--line);
         font-weight: 600;
+        transition: border-color 160ms ease, color 160ms ease, background 160ms ease, transform 160ms ease;
+      }
+      .nav-link:hover {
+        color: var(--text);
+        border-color: var(--line-strong);
+        transform: translateY(-1px);
       }
       .nav-link.active {
         color: var(--text);
@@ -515,6 +641,11 @@ export function renderApp(appOrigin: string, page: AppPage): string {
         border: 1px solid var(--line);
         box-shadow: var(--shadow);
         border-radius: var(--radius-lg);
+        position: relative;
+        overflow: hidden;
+        transition: transform 180ms ease, box-shadow 200ms ease, border-color 200ms ease, background-image 200ms ease;
+        transform: perspective(1200px) rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg)) translateY(var(--lift, 0px));
+        background-image: radial-gradient(circle at var(--mx, 50%) var(--my, 50%), rgba(37, 99, 235, 0.08), transparent 42%);
       }
       .step-card {
         padding: 22px;
@@ -578,6 +709,10 @@ export function renderApp(appOrigin: string, page: AppPage): string {
         border-radius: var(--radius-md);
         border: 1px solid var(--line);
         background: #fbfcfe;
+        position: relative;
+        overflow: hidden;
+        transition: transform 180ms ease, box-shadow 200ms ease, border-color 200ms ease, background 200ms ease;
+        transform: perspective(1200px) rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg)) translateY(var(--lift, 0px));
       }
       .flow-chip.active,
       .flow-chip.ready {
@@ -695,11 +830,16 @@ export function renderApp(appOrigin: string, page: AppPage): string {
         display: inline-flex;
         align-items: center;
         justify-content: center;
+        transition: transform 160ms ease, box-shadow 160ms ease, border-color 160ms ease, background 160ms ease;
       }
       button.primary, .button-link.primary {
         color: #eff6ff;
         border-color: transparent;
         background: linear-gradient(180deg, var(--accent) 0%, var(--accent-strong) 100%);
+      }
+      button:hover, .button-link:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 10px 24px rgba(37, 99, 235, 0.14);
       }
       button:disabled {
         opacity: 0.62;
@@ -824,6 +964,54 @@ export function renderApp(appOrigin: string, page: AppPage): string {
       .jobs-panel {
         margin-top: 18px;
       }
+      .route-grid,
+      .content-grid {
+        display: grid;
+        gap: 16px;
+        margin-top: 16px;
+      }
+      .route-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+      .content-grid {
+        grid-template-columns: minmax(320px, 0.82fr) minmax(0, 1.18fr);
+      }
+      .route-card {
+        display: block;
+        padding: 20px;
+        text-decoration: none;
+        color: var(--text);
+        background: var(--surface);
+        border: 1px solid var(--line);
+        box-shadow: var(--shadow);
+        border-radius: var(--radius-lg);
+        position: relative;
+        overflow: hidden;
+        transition: transform 180ms ease, box-shadow 200ms ease, border-color 200ms ease;
+        transform: perspective(1200px) rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg)) translateY(var(--lift, 0px));
+      }
+      .route-card:hover {
+        border-color: rgba(37, 99, 235, 0.20);
+        box-shadow: 0 22px 50px rgba(15, 23, 42, 0.10);
+      }
+      .route-kicker {
+        display: inline-flex;
+        color: var(--muted);
+        text-transform: uppercase;
+        letter-spacing: 0.12em;
+        font-size: 11px;
+        font-weight: 700;
+      }
+      .route-card h3 {
+        margin: 10px 0 0;
+        font-size: 22px;
+        letter-spacing: -0.03em;
+      }
+      .route-card p {
+        margin: 12px 0 0;
+        color: var(--muted);
+        line-height: 1.68;
+      }
       .jobs-list {
         display: grid;
         gap: 12px;
@@ -915,6 +1103,32 @@ export function renderApp(appOrigin: string, page: AppPage): string {
       .admin-field {
         margin-top: 18px;
       }
+      .guide-list {
+        display: grid;
+        gap: 14px;
+        margin-top: 8px;
+      }
+      .guide-item {
+        display: grid;
+        grid-template-columns: 36px minmax(0, 1fr);
+        gap: 12px;
+        align-items: start;
+      }
+      .guide-item strong {
+        width: 36px;
+        height: 36px;
+        border-radius: 999px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        background: var(--accent-soft);
+        color: var(--accent);
+        font-size: 12px;
+      }
+      .guide-item span {
+        color: var(--muted);
+        line-height: 1.7;
+      }
       .empty {
         padding: 24px 8px;
         text-align: center;
@@ -925,7 +1139,11 @@ export function renderApp(appOrigin: string, page: AppPage): string {
         .stats-row {
           grid-template-columns: 1fr;
         }
+        .content-grid,
         .flow-steps {
+          grid-template-columns: 1fr;
+        }
+        .route-grid {
           grid-template-columns: 1fr;
         }
         .app-header {
@@ -965,7 +1183,7 @@ export function renderApp(appOrigin: string, page: AppPage): string {
   <body>
     <div class="app-shell">
       <header class="app-header">
-        <a class="brand" href="${page === "login" ? "/login" : "/download"}">
+        <a class="brand" href="${page === "login" ? "/login" : "/overview"}">
           <span class="brand-mark">GD</span>
           <span class="brand-copy">
             <strong>GoDingtalk</strong>
@@ -1225,8 +1443,6 @@ export function renderApp(appOrigin: string, page: AppPage): string {
       }
 
       function renderFlowState() {
-        if (PAGE !== "download") return;
-
         const loginPhase = state.loginSessionStatus || "";
         let statusTitle = "请先同意使用条款";
         let statusHelper = "登录后先完成条款确认与扫码验证。";
@@ -1415,6 +1631,7 @@ export function renderApp(appOrigin: string, page: AppPage): string {
         state.jobs = records;
         if (records.length === 0) {
           el.jobs.innerHTML = '<div class="empty">暂无任务</div>';
+          setupSurfaceMotion();
           return;
         }
 
@@ -1444,6 +1661,7 @@ export function renderApp(appOrigin: string, page: AppPage): string {
             '</section>',
           ].join("");
         }).join("");
+        setupSurfaceMotion();
       }
 
       function renderLoginSession(payload) {
@@ -1540,10 +1758,16 @@ export function renderApp(appOrigin: string, page: AppPage): string {
       }
 
       async function refreshLoginSession() {
-        if (!state.authenticated || !el.loginBox) return;
+        if (!state.authenticated) return;
         const suffix = state.loginSessionId ? ("?id=" + encodeURIComponent(state.loginSessionId)) : "";
         const payload = await request("/api/login-workflow" + suffix);
-        renderLoginSession(payload);
+        if (el.loginBox) {
+          renderLoginSession(payload);
+        } else {
+          const session = payload && payload.login_session ? payload.login_session : null;
+          state.loginSessionId = session ? (session.id || "") : "";
+          state.loginSessionStatus = session ? (session.status || "") : "";
+        }
         renderFlowState();
       }
 
@@ -1568,7 +1792,7 @@ export function renderApp(appOrigin: string, page: AppPage): string {
             password: (el.loginPassword ? el.loginPassword.value : "").trim(),
           }),
         });
-        redirectTo("/download");
+        redirectTo("/overview");
       }
 
       async function registerUser() {
@@ -1815,21 +2039,51 @@ export function renderApp(appOrigin: string, page: AppPage): string {
         el.authTabRegister.addEventListener("click", () => switchAuthTab("register"));
       }
 
+      function setupSurfaceMotion() {
+        if (!window.matchMedia("(hover: hover) and (pointer: fine)").matches) return;
+        const surfaces = document.querySelectorAll(".panel, .step-card, .stat-card, .job-card, .flow-chip, .route-card");
+        surfaces.forEach((surface) => {
+          const element = surface as HTMLElement;
+          if (element.dataset.motionBound === "1") return;
+          element.dataset.motionBound = "1";
+          element.addEventListener("mousemove", (event) => {
+            const rect = element.getBoundingClientRect();
+            const x = (event.clientX - rect.left) / rect.width;
+            const y = (event.clientY - rect.top) / rect.height;
+            element.style.setProperty("--mx", (x * 100).toFixed(2) + "%");
+            element.style.setProperty("--my", (y * 100).toFixed(2) + "%");
+            element.style.setProperty("--rx", ((0.5 - y) * 4).toFixed(2) + "deg");
+            element.style.setProperty("--ry", ((x - 0.5) * 5).toFixed(2) + "deg");
+            element.style.setProperty("--lift", "-2px");
+          });
+          element.addEventListener("mouseleave", () => {
+            element.style.removeProperty("--mx");
+            element.style.removeProperty("--my");
+            element.style.removeProperty("--rx");
+            element.style.removeProperty("--ry");
+            element.style.removeProperty("--lift");
+          });
+        });
+      }
+
       async function refreshAll() {
         await refreshAuth();
 
-        if (PAGE === "download") {
+        if (PAGE === "legal") {
           await refreshLegalConfig();
+        }
+
+        if (PAGE !== "login" && PAGE !== "account") {
           await refreshStatusAndJobs();
-          if (state.loginSessionId || state.legalAccepted) {
-            await refreshLoginSession();
-          }
+          await refreshLoginSession();
         }
 
         if (PAGE === "account") {
           await refreshAdminUsers();
           await refreshAdminLegal();
         }
+
+        setupSurfaceMotion();
       }
 
       switchAuthTab("login");

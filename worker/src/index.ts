@@ -2082,7 +2082,10 @@ export default {
 
       if (
         url.pathname === "/"
+        || url.pathname === "/overview"
         || url.pathname === "/download"
+        || url.pathname === "/jobs"
+        || url.pathname === "/scan"
         || url.pathname === "/login"
         || url.pathname === "/settings"
         || url.pathname === "/legal"
@@ -2091,15 +2094,23 @@ export default {
         const authUser = await getAuthUser(request, env);
 
         if (url.pathname === "/") {
-          response = redirectResponse(`${url.origin}${authUser ? "/download" : "/login"}`);
+          response = redirectResponse(`${url.origin}${authUser ? "/overview" : "/login"}`);
         } else if (!authUser) {
           response = url.pathname === "/login"
             ? htmlResponse(renderApp(url.origin, "login"))
             : redirectResponse(`${url.origin}/login`);
+        } else if (url.pathname === "/overview") {
+          response = htmlResponse(renderApp(url.origin, "overview"));
+        } else if (url.pathname === "/jobs") {
+          response = htmlResponse(renderApp(url.origin, "jobs"));
+        } else if (url.pathname === "/scan" || url.pathname === "/settings") {
+          response = htmlResponse(renderApp(url.origin, "scan"));
+        } else if (url.pathname === "/legal") {
+          response = htmlResponse(renderApp(url.origin, "legal"));
         } else if (url.pathname === "/account") {
           response = htmlResponse(renderApp(url.origin, "account"));
-        } else if (url.pathname === "/login" || url.pathname === "/settings" || url.pathname === "/legal") {
-          response = redirectResponse(`${url.origin}/download`);
+        } else if (url.pathname === "/login") {
+          response = redirectResponse(`${url.origin}/overview`);
         } else {
           response = htmlResponse(renderApp(url.origin, "download"));
         }
