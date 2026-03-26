@@ -520,8 +520,8 @@ export function renderApp(appOrigin: string, page: AppPage): string {
         margin: 0 auto;
         padding: 24px 18px 64px;
         opacity: 0;
-        transform: translateY(14px) scale(0.995);
-        transition: opacity 280ms ease, transform 320ms cubic-bezier(0.22, 1, 0.36, 1);
+        transform: translateY(6px);
+        transition: opacity 180ms ease, transform 220ms ease;
       }
       body.page-ready .app-shell {
         opacity: 1;
@@ -529,7 +529,7 @@ export function renderApp(appOrigin: string, page: AppPage): string {
       }
       body.page-leaving .app-shell {
         opacity: 0;
-        transform: translateY(18px) scale(0.992);
+        transform: translateY(8px);
       }
       .app-header {
         display: flex;
@@ -596,12 +596,11 @@ export function renderApp(appOrigin: string, page: AppPage): string {
         background: transparent;
         border: 1px solid transparent;
         font-weight: 600;
-        transition: border-color 160ms ease, color 160ms ease, background 160ms ease, transform 160ms ease;
+        transition: border-color 140ms ease, color 140ms ease, background 140ms ease;
       }
       .nav-link:hover {
         color: var(--text);
         border-color: var(--line-strong);
-        transform: translateY(-1px);
       }
       .nav-link.active {
         color: var(--text);
@@ -734,9 +733,9 @@ export function renderApp(appOrigin: string, page: AppPage): string {
         border-radius: var(--radius-lg);
         position: relative;
         overflow: hidden;
-        transition: transform 180ms ease, box-shadow 200ms ease, border-color 200ms ease, background-image 200ms ease;
-        transform: perspective(1200px) rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg)) translateY(var(--lift, 0px));
-        background-image: radial-gradient(circle at var(--mx, 50%) var(--my, 50%), rgba(37, 99, 235, 0.08), transparent 42%);
+        transition: box-shadow 180ms ease, border-color 180ms ease, background-image 180ms ease, transform 180ms ease;
+        transform: translateY(var(--lift, 0px));
+        background-image: radial-gradient(circle at var(--mx, 50%) var(--my, 50%), rgba(37, 99, 235, 0.04), transparent 40%);
       }
       .step-card {
         padding: 22px;
@@ -802,8 +801,8 @@ export function renderApp(appOrigin: string, page: AppPage): string {
         background: #fbfcfe;
         position: relative;
         overflow: hidden;
-        transition: transform 180ms ease, box-shadow 200ms ease, border-color 200ms ease, background 200ms ease;
-        transform: perspective(1200px) rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg)) translateY(var(--lift, 0px));
+        transition: transform 160ms ease, box-shadow 180ms ease, border-color 180ms ease, background 180ms ease;
+        transform: translateY(var(--lift, 0px));
       }
       .flow-chip.active,
       .flow-chip.ready {
@@ -921,7 +920,7 @@ export function renderApp(appOrigin: string, page: AppPage): string {
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        transition: transform 160ms ease, box-shadow 160ms ease, border-color 160ms ease, background 160ms ease;
+        transition: box-shadow 140ms ease, border-color 140ms ease, background 140ms ease;
       }
       button.primary, .button-link.primary {
         color: #eff6ff;
@@ -929,8 +928,7 @@ export function renderApp(appOrigin: string, page: AppPage): string {
         background: linear-gradient(180deg, var(--accent) 0%, var(--accent-strong) 100%);
       }
       button:hover, .button-link:hover {
-        transform: translateY(-1px);
-        box-shadow: 0 10px 24px rgba(37, 99, 235, 0.14);
+        box-shadow: 0 6px 16px rgba(37, 99, 235, 0.10);
       }
       button:disabled {
         opacity: 0.62;
@@ -1078,12 +1076,12 @@ export function renderApp(appOrigin: string, page: AppPage): string {
         border-radius: var(--radius-lg);
         position: relative;
         overflow: hidden;
-        transition: transform 180ms ease, box-shadow 200ms ease, border-color 200ms ease;
-        transform: perspective(1200px) rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg)) translateY(var(--lift, 0px));
+        transition: transform 160ms ease, box-shadow 180ms ease, border-color 180ms ease;
+        transform: translateY(var(--lift, 0px));
       }
       .route-card:hover {
         border-color: rgba(37, 99, 235, 0.20);
-        box-shadow: 0 22px 50px rgba(15, 23, 42, 0.10);
+        box-shadow: 0 16px 34px rgba(15, 23, 42, 0.08);
       }
       .route-kicker {
         display: inline-flex;
@@ -1358,7 +1356,7 @@ export function renderApp(appOrigin: string, page: AppPage): string {
         width: 320px;
         height: 320px;
         border-radius: 999px;
-        background: radial-gradient(circle, rgba(37, 99, 235, 0.18), transparent 70%);
+        background: radial-gradient(circle, rgba(37, 99, 235, 0.10), transparent 70%);
         pointer-events: none;
         z-index: 0;
       }
@@ -1378,7 +1376,7 @@ export function renderApp(appOrigin: string, page: AppPage): string {
         align-content: start;
         background: linear-gradient(180deg, rgba(255,255,255,0.98), rgba(244,247,255,0.92));
         border-color: rgba(37, 99, 235, 0.18);
-        box-shadow: 0 18px 36px rgba(37, 99, 235, 0.10);
+        box-shadow: 0 10px 24px rgba(37, 99, 235, 0.08);
       }
       .scan-qr-frame {
         display: flex;
@@ -1394,7 +1392,7 @@ export function renderApp(appOrigin: string, page: AppPage): string {
       body[data-page="scan"] .qr-image {
         width: 320px;
         margin-top: 0;
-        box-shadow: 0 22px 44px rgba(15, 23, 42, 0.10);
+        box-shadow: 0 14px 28px rgba(15, 23, 42, 0.08);
       }
       body[data-page="scan"] .login-status {
         font-size: 24px;
@@ -2547,15 +2545,11 @@ export function renderApp(appOrigin: string, page: AppPage): string {
             const y = (event.clientY - rect.top) / rect.height;
             element.style.setProperty("--mx", (x * 100).toFixed(2) + "%");
             element.style.setProperty("--my", (y * 100).toFixed(2) + "%");
-            element.style.setProperty("--rx", ((0.5 - y) * 4).toFixed(2) + "deg");
-            element.style.setProperty("--ry", ((x - 0.5) * 5).toFixed(2) + "deg");
-            element.style.setProperty("--lift", "-2px");
+            element.style.setProperty("--lift", "-0.5px");
           });
           element.addEventListener("mouseleave", () => {
             element.style.removeProperty("--mx");
             element.style.removeProperty("--my");
-            element.style.removeProperty("--rx");
-            element.style.removeProperty("--ry");
             element.style.removeProperty("--lift");
           });
         });
