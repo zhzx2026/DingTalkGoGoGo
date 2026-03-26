@@ -15,20 +15,19 @@ function renderNav(page: AppPage): string {
 
 function renderLoginPage(): string {
   return `
-      <section class="page-intro auth-intro">
-        <span class="eyebrow">Private Console</span>
-        <h1>先登录，再开始。</h1>
-        <p>未登录时不展示工作台内容。登录或注册后，系统会按“同意条款 → 设置 Cookie → 提交下载”的顺序引导你完成操作。</p>
-      </section>
+      <section class="auth-shell panel">
+        <div class="auth-copy">
+          <span class="eyebrow">Private Console</span>
+          <h1>钉钉回放下载控制台</h1>
+          <p>安全获取会议回放。登录后需完成条款确认与扫码验证。</p>
+        </div>
 
-      <section class="auth-grid">
-        <section class="panel">
-          <div class="panel-head">
-            <div>
-              <span class="panel-kicker">Step 1</span>
-              <h2>登录</h2>
-            </div>
-          </div>
+        <div class="auth-tabs" role="tablist" aria-label="登录注册切换">
+          <button id="auth-tab-login" class="auth-tab active" type="button">登录</button>
+          <button id="auth-tab-register" class="auth-tab" type="button">注册</button>
+        </div>
+
+        <section id="login-form-panel" class="auth-form-panel">
           <div class="field">
             <label for="login-username">用户名</label>
             <input id="login-username" placeholder="输入用户名" autocomplete="username" />
@@ -37,19 +36,13 @@ function renderLoginPage(): string {
             <label for="login-password">密码</label>
             <input id="login-password" type="password" placeholder="输入密码" autocomplete="current-password" />
           </div>
-          <div class="actions">
-            <button id="login-btn" class="primary" type="button">登录</button>
+          <div class="auth-help muted">登录后需完成条款确认与扫码验证</div>
+          <div class="actions auth-actions">
+            <button id="login-btn" class="primary auth-main-btn" type="button">登录</button>
           </div>
         </section>
 
-        <section class="panel" id="register-panel">
-          <div class="panel-head">
-            <div>
-              <span class="panel-kicker">Step 1</span>
-              <h2>注册</h2>
-            </div>
-          </div>
-          <p id="register-card-hint" class="muted">创建账号后会自动进入工作台。</p>
+        <section id="register-form-panel" class="auth-form-panel hidden">
           <div class="field">
             <label for="register-username">用户名</label>
             <input id="register-username" placeholder="至少 3 位" autocomplete="username" />
@@ -58,8 +51,13 @@ function renderLoginPage(): string {
             <label for="register-password">密码</label>
             <input id="register-password" type="password" placeholder="至少 6 位" autocomplete="new-password" />
           </div>
-          <div class="actions">
-            <button id="register-btn" type="button">注册</button>
+          <div class="field">
+            <label for="register-password-confirm">确认密码</label>
+            <input id="register-password-confirm" type="password" placeholder="再次输入密码" autocomplete="new-password" />
+          </div>
+          <p id="register-card-hint" class="muted auth-help">注册成功后请使用新账号登录</p>
+          <div class="actions auth-actions">
+            <button id="register-btn" class="auth-main-btn" type="button">注册</button>
           </div>
         </section>
       </section>`;
@@ -69,105 +67,142 @@ function renderDownloadPage(): string {
   return `
       <section class="page-intro">
         <span class="eyebrow">Workspace</span>
-        <h1>三步完成下载</h1>
-        <p id="flow-summary">登录后按顺序完成条款确认和 Cookie 设置，再提交回放链接。</p>
+        <h1>钉钉回放下载</h1>
+        <p>所有核心操作集中在这里。按顺序完成条款确认、扫码登录、提交下载即可。</p>
+      </section>
+
+      <section class="panel status-panel">
+        <div class="panel-head">
+          <div>
+            <span class="panel-kicker">Current State</span>
+            <h2>当前状态</h2>
+          </div>
+        </div>
+        <div class="status-summary">
+          <div class="status-label">当前状态</div>
+          <div id="user-status-line" class="status-title">请先同意使用条款</div>
+          <div id="status-helper" class="muted">登录后先完成条款确认与扫码验证。</div>
+        </div>
+        <div class="stats-row">
+          <article class="stat-card">
+            <span>Cookie</span>
+            <strong id="stat-cookies">-</strong>
+          </article>
+          <article class="stat-card">
+            <span>总任务</span>
+            <strong id="stat-total">0</strong>
+          </article>
+          <article class="stat-card">
+            <span>进行中</span>
+            <strong id="stat-running">0</strong>
+          </article>
+          <article class="stat-card">
+            <span>已完成</span>
+            <strong id="stat-success">0</strong>
+          </article>
+        </div>
+      </section>
+
+      <section class="panel flow-panel">
+        <div class="panel-head">
+          <div>
+            <span class="panel-kicker">Progress</span>
+            <h2>三步流程</h2>
+          </div>
+        </div>
+        <div class="flow-steps">
+          <div id="flow-chip-legal" class="flow-chip active">
+            <span class="flow-step-no">1</span>
+            <div class="flow-copy">
+              <strong>条款</strong>
+              <span>先确认使用条款</span>
+            </div>
+          </div>
+          <div id="flow-chip-cookies" class="flow-chip">
+            <span class="flow-step-no">2</span>
+            <div class="flow-copy">
+              <strong>扫码登录</strong>
+              <span>只通过二维码获取登录态</span>
+            </div>
+          </div>
+          <div id="flow-chip-download" class="flow-chip">
+            <span class="flow-step-no">3</span>
+            <div class="flow-copy">
+              <strong>下载</strong>
+              <span>完成前两步后开始下载</span>
+            </div>
+          </div>
+        </div>
+        <p id="flow-summary" class="muted flow-summary">请按顺序完成三步操作。</p>
       </section>
 
       <section class="step-stack">
         <section id="legal-step" class="step-card">
-          <div class="step-index">1</div>
-          <div class="step-content">
-            <div class="step-head">
-              <div>
-                <span class="panel-kicker">Required</span>
-                <h2>同意条款</h2>
-              </div>
-              <span id="legal-badge" class="badge warn">未完成</span>
+          <div class="step-head">
+            <div>
+              <span class="step-kicker">Step 1</span>
+              <h2>使用条款</h2>
             </div>
-            <p class="muted">当前账号必须先接受本版本条款，系统才允许保存 Cookie 和提交下载。</p>
-            <div id="legal-state" class="notice hidden"></div>
-            <div id="legal-version-meta" class="meta-line"></div>
-            <label id="legal-checkbox-row" class="checkbox-row">
-              <input id="legal-confirm-check" type="checkbox" />
-              <span>我已阅读并同意当前版本条款。</span>
-            </label>
-            <div class="actions">
-              <button id="accept-legal-btn" class="primary" type="button" disabled>同意条款</button>
-            </div>
-            <details class="details-card" open>
-              <summary>查看条款全文</summary>
-              <div id="legal-text" class="legal-text"><div class="empty">正在加载条款...</div></div>
-            </details>
+            <span id="legal-badge" class="badge warn">未完成</span>
           </div>
+          <p class="muted">使用本工具前，请确认你拥有相关内容的下载权限。</p>
+          <div id="legal-state" class="notice hidden"></div>
+          <div id="legal-version-meta" class="meta-line"></div>
+          <label id="legal-checkbox-row" class="checkbox-row">
+            <input id="legal-confirm-check" type="checkbox" />
+            <span>我已阅读并同意条款</span>
+          </label>
+          <div class="actions">
+            <button id="accept-legal-btn" class="primary" type="button" disabled>同意条款</button>
+          </div>
+          <details class="details-card">
+            <summary>查看全文</summary>
+            <div id="legal-text" class="legal-text"><div class="empty">正在加载条款...</div></div>
+          </details>
         </section>
 
         <section id="cookies-step" class="step-card">
-          <div class="step-index">2</div>
-          <div class="step-content">
-            <div class="step-head">
-              <div>
-                <span class="panel-kicker">Required</span>
-                <h2>设置 Cookie</h2>
-              </div>
-              <span id="cookie-badge" class="badge warn">未完成</span>
+          <div class="step-head">
+            <div>
+              <span class="step-kicker">Step 2</span>
+              <h2>扫码登录</h2>
             </div>
-            <p class="muted">这里只保留二维码登录。扫码成功后，Cookie 会自动回传到当前账号。</p>
-            <div id="cookie-state" class="notice hidden"></div>
-            <div id="cookie-meta" class="meta-line"></div>
-            <div class="actions">
-              <button id="start-login-workflow-btn" class="primary" type="button">启动二维码登录</button>
-            </div>
-            <div id="login-box" class="login-box hidden">
-              <div id="login-status" class="login-status">等待开始</div>
-              <div id="login-hint" class="muted">启动后通常约 1 分钟内出现二维码。</div>
-              <img id="login-qr-image" class="qr-image hidden" alt="登录二维码" />
-            </div>
+            <span id="cookie-badge" class="badge warn">未完成</span>
+          </div>
+          <p class="muted">这里只保留二维码登录。扫码成功后，登录态会自动绑定到当前账号。</p>
+          <div id="cookie-state" class="notice hidden"></div>
+          <div id="cookie-meta" class="meta-line"></div>
+          <div class="actions">
+            <button id="start-login-workflow-btn" class="primary" type="button">启动二维码登录</button>
+          </div>
+          <div id="login-box" class="login-box hidden">
+            <div id="login-status" class="login-status">正在生成二维码</div>
+            <div id="login-hint" class="muted">二维码出现后，请使用钉钉扫码登录。</div>
+            <img id="login-qr-image" class="qr-image hidden" alt="登录二维码" />
           </div>
         </section>
 
         <section id="download-step" class="step-card">
-          <div class="step-index">3</div>
-          <div class="step-content">
-            <div class="step-head">
-              <div>
-                <span class="panel-kicker">Ready</span>
-                <h2>提交下载</h2>
-              </div>
-              <span id="download-badge" class="badge warn">等待前置步骤</span>
+          <div class="step-head">
+            <div>
+              <span class="step-kicker">Step 3</span>
+              <h2>下载</h2>
             </div>
-            <p class="muted">完成前两步后，这里才会开放。</p>
-            <div id="download-lock" class="notice warn">先同意条款并设置 Cookie，随后才能提交下载任务。</div>
-            <div id="download-panel" class="hidden">
-              <div class="field">
-                <label for="urls">回放链接</label>
-                <textarea id="urls" placeholder="每行一个钉钉回放链接"></textarea>
-              </div>
-              <div class="actions">
-                <button id="create-job-btn" class="primary" type="button">开始下载</button>
-                <button id="refresh-btn" type="button">刷新状态</button>
-              </div>
+            <span id="download-badge" class="badge warn">等待前置步骤</span>
+          </div>
+          <p class="muted">完成前两步后，这里才会开放。</p>
+          <div id="download-lock" class="notice warn">请先同意条款并完成二维码登录。</div>
+          <div id="download-panel" class="hidden">
+            <div class="field">
+              <label for="urls">回放链接</label>
+              <textarea id="urls" placeholder="粘贴回放链接，每行一个"></textarea>
+            </div>
+            <div class="actions">
+              <button id="create-job-btn" class="primary" type="button">开始下载</button>
+              <button id="refresh-btn" type="button">刷新状态</button>
             </div>
           </div>
         </section>
-      </section>
-
-      <section class="stats-row">
-        <article class="stat-card">
-          <span>Cookie</span>
-          <strong id="stat-cookies">-</strong>
-        </article>
-        <article class="stat-card">
-          <span>总任务</span>
-          <strong id="stat-total">0</strong>
-        </article>
-        <article class="stat-card">
-          <span>进行中</span>
-          <strong id="stat-running">0</strong>
-        </article>
-        <article class="stat-card">
-          <span>已完成</span>
-          <strong id="stat-success">0</strong>
-        </article>
       </section>
 
       <section class="panel jobs-panel">
@@ -186,7 +221,7 @@ function renderAccountPage(): string {
       <section class="page-intro">
         <span class="eyebrow">Account</span>
         <h1>账号设置</h1>
-        <p>查看当前账号状态、修改密码，sudo 账号可额外管理用户和条款内容。</p>
+        <p>查看当前账号、修改密码。管理员条款管理默认保持弱化，不干扰主流程。</p>
       </section>
 
       <section class="account-grid">
@@ -194,7 +229,7 @@ function renderAccountPage(): string {
           <div class="panel-head">
             <div>
               <span class="panel-kicker">Profile</span>
-              <h2>当前账号</h2>
+              <h2>账号信息</h2>
             </div>
           </div>
           <p id="account-summary" class="muted">正在加载...</p>
@@ -232,7 +267,7 @@ function renderAccountPage(): string {
         <div class="panel-head">
           <div>
             <span class="panel-kicker">Admin</span>
-            <h2>管理区</h2>
+            <h2>条款管理</h2>
           </div>
         </div>
         <div id="admin-users" class="admin-users"><div class="empty">暂无数据</div></div>
@@ -269,31 +304,31 @@ export function renderApp(appOrigin: string, page: AppPage): string {
     <title>GoDingtalk</title>
     <style>
       :root {
-        --bg: #f4ede4;
-        --bg-strong: #efe4d8;
-        --surface: rgba(255, 250, 244, 0.92);
-        --surface-strong: #fffdf9;
-        --line: rgba(53, 31, 12, 0.10);
-        --line-strong: rgba(53, 31, 12, 0.18);
-        --text: #1f140b;
-        --muted: #6e5a48;
-        --accent: #bf5b2c;
-        --accent-strong: #9a4319;
-        --ok: #18794e;
-        --warn: #a85d11;
+        --bg: #f5f7fb;
+        --surface: rgba(255, 255, 255, 0.96);
+        --surface-strong: #ffffff;
+        --line: #e5e7eb;
+        --line-strong: #cfd8e3;
+        --text: #101828;
+        --muted: #667085;
+        --accent: #2563eb;
+        --accent-strong: #1d4ed8;
+        --accent-soft: rgba(37, 99, 235, 0.08);
+        --ok: #157f3b;
+        --warn: #b54708;
         --danger: #b42318;
-        --shadow: 0 24px 60px rgba(49, 31, 16, 0.10);
-        --radius-lg: 24px;
-        --radius-md: 18px;
-        --radius-sm: 14px;
+        --shadow: 0 18px 40px rgba(15, 23, 42, 0.06);
+        --radius-lg: 22px;
+        --radius-md: 16px;
+        --radius-sm: 12px;
       }
       * { box-sizing: border-box; }
       html, body {
         margin: 0;
         min-height: 100%;
         background:
-          radial-gradient(circle at top left, rgba(252, 226, 186, 0.9), transparent 32%),
-          linear-gradient(180deg, #fbf4eb 0%, #f4ede4 52%, #efe4d8 100%);
+          radial-gradient(circle at top left, rgba(37, 99, 235, 0.10), transparent 28%),
+          linear-gradient(180deg, #f8fbff 0%, #f5f7fb 48%, #eef2f7 100%);
         color: var(--text);
         font-family: "Avenir Next", "PingFang SC", "Helvetica Neue", Arial, sans-serif;
       }
@@ -302,16 +337,16 @@ export function renderApp(appOrigin: string, page: AppPage): string {
       button, input, textarea { font: inherit; }
       .hidden { display: none !important; }
       .app-shell {
-        max-width: 1040px;
+        max-width: 1100px;
         margin: 0 auto;
-        padding: 28px 18px 56px;
+        padding: 24px 18px 64px;
       }
       .app-header {
         display: flex;
         align-items: center;
         gap: 16px;
         justify-content: space-between;
-        padding: 18px 0 24px;
+        padding: 14px 0 22px;
       }
       .brand {
         display: inline-flex;
@@ -320,14 +355,14 @@ export function renderApp(appOrigin: string, page: AppPage): string {
         text-decoration: none;
       }
       .brand-mark {
-        width: 38px;
-        height: 38px;
-        border-radius: 14px;
+        width: 40px;
+        height: 40px;
+        border-radius: 13px;
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        background: linear-gradient(180deg, #2a1a0e 0%, #5f3518 100%);
-        color: #fff8ef;
+        background: linear-gradient(180deg, var(--accent) 0%, var(--accent-strong) 100%);
+        color: #eff6ff;
         font-size: 12px;
         font-weight: 800;
         letter-spacing: 0.10em;
@@ -358,17 +393,17 @@ export function renderApp(appOrigin: string, page: AppPage): string {
       }
       .nav-link {
         text-decoration: none;
-        padding: 10px 14px;
+        padding: 9px 14px;
         border-radius: 999px;
         color: var(--muted);
-        background: rgba(255, 255, 255, 0.52);
-        border: 1px solid transparent;
+        background: rgba(255, 255, 255, 0.72);
+        border: 1px solid var(--line);
         font-weight: 600;
       }
       .nav-link.active {
         color: var(--text);
         background: var(--surface-strong);
-        border-color: var(--line);
+        border-color: var(--line-strong);
       }
       .user-chip {
         color: var(--muted);
@@ -379,15 +414,15 @@ export function renderApp(appOrigin: string, page: AppPage): string {
       }
       .page-intro h1 {
         margin: 10px 0 0;
-        font-size: 42px;
-        line-height: 1.02;
+        font-size: 40px;
+        line-height: 1.04;
         letter-spacing: -0.04em;
       }
       .page-intro p {
         margin: 14px 0 0;
-        max-width: 68ch;
+        max-width: 64ch;
         color: var(--muted);
-        line-height: 1.75;
+        line-height: 1.72;
       }
       .eyebrow, .panel-kicker {
         color: var(--muted);
@@ -396,21 +431,85 @@ export function renderApp(appOrigin: string, page: AppPage): string {
         font-size: 11px;
         font-weight: 700;
       }
-      .auth-intro {
-        padding-top: 32px;
+      .step-kicker {
+        color: var(--muted);
+        text-transform: uppercase;
+        letter-spacing: 0.12em;
+        font-size: 11px;
+        font-weight: 700;
       }
-      .auth-grid,
+      .auth-shell {
+        max-width: 560px;
+        margin: 72px auto 0;
+        padding: 28px;
+      }
+      .auth-copy h1 {
+        margin: 10px 0 0;
+        font-size: 38px;
+        line-height: 1.06;
+        letter-spacing: -0.04em;
+      }
+      .auth-copy p {
+        margin: 14px 0 0;
+        color: var(--muted);
+        line-height: 1.7;
+      }
+      .auth-tabs {
+        display: inline-flex;
+        gap: 6px;
+        margin-top: 24px;
+        padding: 6px;
+        border-radius: 999px;
+        background: #f8fafc;
+        border: 1px solid var(--line);
+      }
+      .auth-tab {
+        min-height: 40px;
+        padding: 0 16px;
+        border-radius: 999px;
+        border: 0;
+        background: transparent;
+        color: var(--muted);
+        font-weight: 700;
+        cursor: pointer;
+      }
+      .auth-tab.active {
+        background: var(--surface-strong);
+        color: var(--text);
+        box-shadow: 0 2px 10px rgba(15, 23, 42, 0.08);
+      }
+      .auth-form-panel {
+        margin-top: 22px;
+      }
+      .auth-help {
+        margin-top: 16px;
+      }
+      .auth-actions {
+        margin-top: 22px;
+      }
+      .auth-main-btn {
+        min-width: 132px;
+      }
+      .account-grid,
       .account-grid {
         display: grid;
         grid-template-columns: repeat(2, minmax(0, 1fr));
         gap: 16px;
       }
+      .status-panel,
+      .flow-panel,
+      .jobs-panel,
+      .step-card,
+      .panel {
+        margin-top: 16px;
+      }
       .step-stack {
         display: grid;
         gap: 14px;
+        margin-top: 16px;
       }
-      .step-card,
       .panel,
+      .step-card,
       .stat-card {
         background: var(--surface);
         border: 1px solid var(--line);
@@ -418,29 +517,21 @@ export function renderApp(appOrigin: string, page: AppPage): string {
         border-radius: var(--radius-lg);
       }
       .step-card {
-        display: grid;
-        grid-template-columns: 68px minmax(0, 1fr);
-        overflow: hidden;
+        padding: 22px;
       }
       .step-card.done {
-        border-color: rgba(24, 121, 78, 0.24);
+        border-color: rgba(21, 127, 59, 0.22);
+      }
+      .step-card.active {
+        border-color: rgba(37, 99, 235, 0.22);
+        box-shadow: 0 18px 40px rgba(37, 99, 235, 0.08);
       }
       .step-card.ready {
-        border-color: rgba(191, 91, 44, 0.20);
+        border-color: rgba(37, 99, 235, 0.20);
       }
-      .step-index {
-        display: flex;
-        align-items: flex-start;
-        justify-content: center;
-        padding: 24px 0;
-        font-size: 28px;
-        font-weight: 800;
-        letter-spacing: -0.04em;
-        color: var(--accent);
-        background: rgba(191, 91, 44, 0.08);
-        border-right: 1px solid var(--line);
+      .step-card.locked {
+        opacity: 0.72;
       }
-      .step-content,
       .panel {
         padding: 22px;
       }
@@ -454,8 +545,80 @@ export function renderApp(appOrigin: string, page: AppPage): string {
       .panel-head h2,
       .step-head h2 {
         margin: 6px 0 0;
-        font-size: 26px;
+        font-size: 24px;
         letter-spacing: -0.03em;
+      }
+      .status-summary {
+        display: grid;
+        gap: 8px;
+        margin-top: 10px;
+      }
+      .status-label {
+        color: var(--muted);
+        font-size: 13px;
+        font-weight: 700;
+      }
+      .status-title {
+        font-size: 30px;
+        line-height: 1.15;
+        font-weight: 800;
+        letter-spacing: -0.04em;
+      }
+      .flow-steps {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 12px;
+        margin-top: 8px;
+      }
+      .flow-chip {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 14px;
+        border-radius: var(--radius-md);
+        border: 1px solid var(--line);
+        background: #fbfcfe;
+      }
+      .flow-chip.active,
+      .flow-chip.ready {
+        border-color: rgba(37, 99, 235, 0.24);
+        background: rgba(37, 99, 235, 0.05);
+      }
+      .flow-chip.done {
+        border-color: rgba(21, 127, 59, 0.22);
+        background: rgba(21, 127, 59, 0.06);
+      }
+      .flow-chip.locked {
+        opacity: 0.66;
+      }
+      .flow-step-no {
+        flex: 0 0 34px;
+        width: 34px;
+        height: 34px;
+        border-radius: 999px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        background: #eef2ff;
+        color: var(--accent);
+        font-weight: 800;
+        font-size: 13px;
+      }
+      .flow-copy {
+        display: grid;
+        gap: 4px;
+        min-width: 0;
+      }
+      .flow-copy strong {
+        font-size: 15px;
+      }
+      .flow-copy span {
+        color: var(--muted);
+        font-size: 13px;
+        line-height: 1.45;
+      }
+      .flow-summary {
+        margin: 14px 0 0;
       }
       .badge {
         display: inline-flex;
@@ -469,15 +632,19 @@ export function renderApp(appOrigin: string, page: AppPage): string {
         border: 1px solid transparent;
       }
       .badge.warn {
-        background: rgba(168, 93, 17, 0.12);
+        background: rgba(181, 71, 8, 0.10);
         color: var(--warn);
       }
       .badge.ok {
-        background: rgba(24, 121, 78, 0.12);
+        background: rgba(21, 127, 59, 0.10);
         color: var(--ok);
       }
+      .badge.active {
+        background: rgba(37, 99, 235, 0.08);
+        color: var(--accent);
+      }
       .badge.locked {
-        background: rgba(31, 20, 11, 0.06);
+        background: rgba(15, 23, 42, 0.05);
         color: var(--muted);
       }
       .field {
@@ -499,8 +666,8 @@ export function renderApp(appOrigin: string, page: AppPage): string {
       }
       input:focus, textarea:focus {
         outline: none;
-        border-color: rgba(191, 91, 44, 0.52);
-        box-shadow: 0 0 0 4px rgba(191, 91, 44, 0.10);
+        border-color: rgba(37, 99, 235, 0.42);
+        box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.10);
       }
       textarea {
         min-height: 156px;
@@ -517,7 +684,7 @@ export function renderApp(appOrigin: string, page: AppPage): string {
       button, .button-link {
         appearance: none;
         border: 1px solid var(--line);
-        background: rgba(255, 255, 255, 0.80);
+        background: rgba(255, 255, 255, 0.92);
         color: var(--text);
         border-radius: 999px;
         min-height: 42px;
@@ -530,7 +697,7 @@ export function renderApp(appOrigin: string, page: AppPage): string {
         justify-content: center;
       }
       button.primary, .button-link.primary {
-        color: #fff7ef;
+        color: #eff6ff;
         border-color: transparent;
         background: linear-gradient(180deg, var(--accent) 0%, var(--accent-strong) 100%);
       }
@@ -546,14 +713,14 @@ export function renderApp(appOrigin: string, page: AppPage): string {
         border: 1px solid transparent;
       }
       .notice.ok {
-        background: rgba(24, 121, 78, 0.10);
+        background: rgba(21, 127, 59, 0.08);
         color: var(--ok);
-        border-color: rgba(24, 121, 78, 0.16);
+        border-color: rgba(21, 127, 59, 0.14);
       }
       .notice.warn {
-        background: rgba(168, 93, 17, 0.10);
+        background: rgba(181, 71, 8, 0.08);
         color: var(--warn);
-        border-color: rgba(168, 93, 17, 0.18);
+        border-color: rgba(181, 71, 8, 0.14);
       }
       .notice.error {
         background: rgba(180, 35, 24, 0.08);
@@ -586,7 +753,7 @@ export function renderApp(appOrigin: string, page: AppPage): string {
         margin-top: 18px;
         border: 1px solid var(--line);
         border-radius: var(--radius-md);
-        background: rgba(255, 255, 255, 0.50);
+        background: #fbfcfe;
         padding: 0 16px 16px;
       }
       .details-card summary {
@@ -616,7 +783,7 @@ export function renderApp(appOrigin: string, page: AppPage): string {
         padding: 16px;
         border-radius: var(--radius-md);
         border: 1px solid var(--line);
-        background: rgba(255, 255, 255, 0.58);
+        background: #fbfcfe;
       }
       .login-status {
         font-size: 20px;
@@ -639,7 +806,10 @@ export function renderApp(appOrigin: string, page: AppPage): string {
         margin-top: 18px;
       }
       .stat-card {
-        padding: 18px;
+        padding: 16px 18px;
+        border-radius: var(--radius-md);
+        box-shadow: none;
+        background: #fbfcfe;
       }
       .stat-card span {
         color: var(--muted);
@@ -662,7 +832,7 @@ export function renderApp(appOrigin: string, page: AppPage): string {
       .job-card {
         border: 1px solid var(--line);
         border-radius: var(--radius-md);
-        background: rgba(255, 255, 255, 0.58);
+        background: #fbfcfe;
         padding: 16px;
       }
       .job-top {
@@ -685,7 +855,7 @@ export function renderApp(appOrigin: string, page: AppPage): string {
       }
       .progress-track > div {
         height: 100%;
-        background: linear-gradient(90deg, var(--accent) 0%, #e38d48 100%);
+        background: linear-gradient(90deg, var(--accent) 0%, #60a5fa 100%);
       }
       .job-meta {
         display: flex;
@@ -707,7 +877,7 @@ export function renderApp(appOrigin: string, page: AppPage): string {
         gap: 12px;
         padding: 12px 14px;
         border-radius: var(--radius-sm);
-        background: rgba(255, 255, 255, 0.68);
+        background: #ffffff;
         border: 1px solid var(--line);
       }
       .file-name {
@@ -735,7 +905,7 @@ export function renderApp(appOrigin: string, page: AppPage): string {
       .admin-user {
         border: 1px solid var(--line);
         border-radius: var(--radius-md);
-        background: rgba(255, 255, 255, 0.58);
+        background: #fbfcfe;
         padding: 16px;
       }
       .admin-user-name {
@@ -751,19 +921,12 @@ export function renderApp(appOrigin: string, page: AppPage): string {
         color: var(--muted);
       }
       @media (max-width: 860px) {
-        .auth-grid,
         .account-grid,
         .stats-row {
           grid-template-columns: 1fr;
         }
-        .step-card {
+        .flow-steps {
           grid-template-columns: 1fr;
-        }
-        .step-index {
-          padding: 14px 22px 0;
-          justify-content: flex-start;
-          border-right: 0;
-          border-bottom: 1px solid var(--line);
         }
         .app-header {
           align-items: flex-start;
@@ -777,6 +940,10 @@ export function renderApp(appOrigin: string, page: AppPage): string {
         .app-shell {
           padding: 20px 14px 40px;
         }
+        .auth-shell {
+          margin-top: 28px;
+          padding: 22px;
+        }
         .page-intro h1 {
           font-size: 34px;
         }
@@ -785,6 +952,12 @@ export function renderApp(appOrigin: string, page: AppPage): string {
         .job-top {
           flex-direction: column;
           align-items: flex-start;
+        }
+        .status-title {
+          font-size: 26px;
+        }
+        .auth-copy h1 {
+          font-size: 32px;
         }
       }
     </style>
@@ -815,6 +988,7 @@ export function renderApp(appOrigin: string, page: AppPage): string {
       const state = {
         authenticated: false,
         registrationOpen: false,
+        authTab: "login",
         legalAccepted: false,
         legalAcceptedAt: "",
         legalVersion: "",
@@ -834,14 +1008,23 @@ export function renderApp(appOrigin: string, page: AppPage): string {
         userChip: document.getElementById("user-chip"),
         topbarLogoutBtn: document.getElementById("topbar-logout-btn"),
         topbarLogoutBtnInline: document.getElementById("topbar-logout-btn-inline"),
-        registerPanel: document.getElementById("register-panel"),
+        authTabLogin: document.getElementById("auth-tab-login"),
+        authTabRegister: document.getElementById("auth-tab-register"),
+        loginFormPanel: document.getElementById("login-form-panel"),
+        registerFormPanel: document.getElementById("register-form-panel"),
         loginUsername: document.getElementById("login-username"),
         loginPassword: document.getElementById("login-password"),
         registerUsername: document.getElementById("register-username"),
         registerPassword: document.getElementById("register-password"),
+        registerPasswordConfirm: document.getElementById("register-password-confirm"),
         registerCardHint: document.getElementById("register-card-hint"),
         loginBtn: document.getElementById("login-btn"),
         registerBtn: document.getElementById("register-btn"),
+        userStatusLine: document.getElementById("user-status-line"),
+        statusHelper: document.getElementById("status-helper"),
+        flowChipLegal: document.getElementById("flow-chip-legal"),
+        flowChipCookies: document.getElementById("flow-chip-cookies"),
+        flowChipDownload: document.getElementById("flow-chip-download"),
         legalStep: document.getElementById("legal-step"),
         legalBadge: document.getElementById("legal-badge"),
         legalState: document.getElementById("legal-state"),
@@ -904,6 +1087,26 @@ export function renderApp(appOrigin: string, page: AppPage): string {
         button.disabled = busy;
       }
 
+      function normalizeErrorMessage(message) {
+        const source = String(message || "").trim();
+        const mapping = {
+          "invalid username or password": "账号或密码错误",
+          "username >= 3 and password >= 6 are required": "用户名至少 3 位，密码至少 6 位",
+          "username already exists": "用户名已存在",
+          "registration is closed": "当前未开放注册",
+          "current password is incorrect": "当前密码错误",
+          "new password must be at least 6 characters": "新密码至少 6 位",
+          "current_password and new_password are required": "请完整填写密码信息",
+          "username and password are required": "请填写用户名和密码",
+          "login required": "请登录后继续",
+          "legal disclaimer must be accepted before starting QR login": "请先同意使用条款",
+          "legal disclaimer must be accepted before creating jobs": "请先同意使用条款",
+          "cookies are missing or invalid": "请先完成扫码登录",
+          "manual cookie upload disabled; use QR login": "Cookie 仅支持二维码登录获取",
+        };
+        return mapping[source] || source || "操作失败，请重试";
+      }
+
       function escapeHTML(value) {
         return String(value)
           .replaceAll("&", "&amp;")
@@ -935,10 +1138,10 @@ export function renderApp(appOrigin: string, page: AppPage): string {
 
       function formatStatus(status) {
         switch (String(status || "").toLowerCase()) {
-          case "queued": return "排队中";
-          case "running": return "运行中";
-          case "succeeded": return "已完成";
-          case "failed": return "失败";
+          case "queued": return "等待开始";
+          case "running": return "正在下载";
+          case "succeeded": return "下载完成";
+          case "failed": return "下载失败";
           default: return status || "-";
         }
       }
@@ -991,6 +1194,24 @@ export function renderApp(appOrigin: string, page: AppPage): string {
         element.textContent = text;
       }
 
+      function switchAuthTab(nextTab) {
+        state.authTab = nextTab === "register" ? "register" : "login";
+        if (el.authTabLogin) el.authTabLogin.classList.toggle("active", state.authTab === "login");
+        if (el.authTabRegister) el.authTabRegister.classList.toggle("active", state.authTab === "register");
+        if (el.loginFormPanel) el.loginFormPanel.classList.toggle("hidden", state.authTab !== "login");
+        if (el.registerFormPanel) el.registerFormPanel.classList.toggle("hidden", state.authTab !== "register");
+      }
+
+      function setFlowChipState(element, phase) {
+        if (!element) return;
+        element.className = "flow-chip " + phase;
+      }
+
+      function setStepState(element, phase) {
+        if (!element) return;
+        element.className = "step-card " + phase;
+      }
+
       function renderShellState() {
         const username = state.authenticated && state.user ? state.user.username : "未登录";
         if (el.userChip) {
@@ -1006,9 +1227,40 @@ export function renderApp(appOrigin: string, page: AppPage): string {
       function renderFlowState() {
         if (PAGE !== "download") return;
 
+        const loginPhase = state.loginSessionStatus || "";
+        let statusTitle = "请先同意使用条款";
+        let statusHelper = "登录后先完成条款确认与扫码验证。";
+
+        if (!state.legalAccepted) {
+          statusTitle = "请先同意使用条款";
+          statusHelper = "完成条款确认后才会生成二维码。";
+        } else if (loginPhase === "pending") {
+          statusTitle = "正在生成二维码";
+          statusHelper = "二维码通常会在 1 分钟内出现。";
+        } else if (loginPhase === "qr_ready") {
+          statusTitle = "等待扫码登录";
+          statusHelper = "请使用钉钉扫码登录。";
+        } else if (loginPhase === "failed") {
+          statusTitle = "登录失败";
+          statusHelper = "二维码登录失败，请重新发起。";
+        } else if (!state.cookiesReady) {
+          statusTitle = "请完成扫码登录";
+          statusHelper = "Cookie 只通过二维码登录获取。";
+        } else {
+          statusTitle = "可以开始下载";
+          statusHelper = "现在可以粘贴回放链接并开始下载。";
+        }
+
+        if (el.userStatusLine) el.userStatusLine.textContent = statusTitle;
+        if (el.statusHelper) el.statusHelper.textContent = statusHelper;
+
         if (el.flowSummary) {
           if (!state.legalAccepted) {
-            el.flowSummary.textContent = "下一步：先同意当前条款。";
+            el.flowSummary.textContent = "下一步：先同意使用条款。";
+          } else if (loginPhase === "pending") {
+            el.flowSummary.textContent = "下一步：等待二维码生成。";
+          } else if (loginPhase === "qr_ready") {
+            el.flowSummary.textContent = "下一步：请使用钉钉扫码登录。";
           } else if (!state.cookiesReady) {
             el.flowSummary.textContent = "下一步：启动二维码登录并完成扫码。";
           } else {
@@ -1041,10 +1293,10 @@ export function renderApp(appOrigin: string, page: AppPage): string {
           }
         }
         if (el.legalStep) {
-          el.legalStep.classList.toggle("done", state.legalAccepted);
-          el.legalStep.classList.toggle("ready", !state.legalAccepted);
+          setStepState(el.legalStep, state.legalAccepted ? "done" : "ready");
         }
         setBadge(el.legalBadge, state.legalAccepted ? "ok" : "warn", state.legalAccepted ? "已完成" : "未完成");
+        setFlowChipState(el.flowChipLegal, state.legalAccepted ? "done" : "active");
 
         if (el.cookieState) {
           el.cookieState.textContent = state.cookiesReady ? "Cookie 已就绪。" : "还没有通过二维码登录获取到 Cookie。";
@@ -1060,14 +1312,26 @@ export function renderApp(appOrigin: string, page: AppPage): string {
           el.startLoginWorkflowBtn.disabled = !state.legalAccepted || loginBusy;
         }
         if (el.cookiesStep) {
-          el.cookiesStep.classList.toggle("done", state.cookiesReady);
-          el.cookiesStep.classList.toggle("ready", state.legalAccepted && !state.cookiesReady);
+          if (!state.legalAccepted) {
+            setStepState(el.cookiesStep, "locked");
+          } else if (state.cookiesReady) {
+            setStepState(el.cookiesStep, "done");
+          } else {
+            setStepState(el.cookiesStep, "active");
+          }
         }
         setBadge(
           el.cookieBadge,
           state.cookiesReady ? "ok" : (state.legalAccepted ? "warn" : "locked"),
-          state.cookiesReady ? "已完成" : (state.legalAccepted ? "待设置" : "等待上一步"),
+          state.cookiesReady ? "已完成" : (state.legalAccepted ? "等待扫码" : "等待上一步"),
         );
+        if (!state.legalAccepted) {
+          setFlowChipState(el.flowChipCookies, "locked");
+        } else if (state.cookiesReady) {
+          setFlowChipState(el.flowChipCookies, "done");
+        } else {
+          setFlowChipState(el.flowChipCookies, loginPhase === "qr_ready" ? "active" : "ready");
+        }
 
         const canDownload = state.legalAccepted && state.cookiesReady;
         if (el.downloadPanel) {
@@ -1078,20 +1342,32 @@ export function renderApp(appOrigin: string, page: AppPage): string {
             el.downloadLock.classList.add("hidden");
           } else {
             el.downloadLock.textContent = !state.legalAccepted
-              ? "先完成条款同意。"
-              : "条款已完成，继续设置 Cookie 后开放下载。";
+              ? "请先完成条款确认。"
+              : "请先完成二维码登录。";
             el.downloadLock.classList.remove("hidden");
           }
         }
         if (el.downloadStep) {
-          el.downloadStep.classList.toggle("done", canDownload);
-          el.downloadStep.classList.toggle("ready", state.legalAccepted && !state.cookiesReady);
+          if (canDownload) {
+            setStepState(el.downloadStep, "active");
+          } else if (state.legalAccepted) {
+            setStepState(el.downloadStep, "locked");
+          } else {
+            setStepState(el.downloadStep, "locked");
+          }
         }
         setBadge(
           el.downloadBadge,
           canDownload ? "ok" : (state.legalAccepted ? "warn" : "locked"),
-          canDownload ? "已开放" : (state.legalAccepted ? "等待 Cookie" : "等待前置步骤"),
+          canDownload ? "可下载" : (state.legalAccepted ? "等待扫码" : "等待前置步骤"),
         );
+        if (canDownload) {
+          setFlowChipState(el.flowChipDownload, "active");
+        } else if (state.legalAccepted) {
+          setFlowChipState(el.flowChipDownload, "locked");
+        } else {
+          setFlowChipState(el.flowChipDownload, "locked");
+        }
       }
 
       function renderAccountState() {
@@ -1147,18 +1423,21 @@ export function renderApp(appOrigin: string, page: AppPage): string {
           const progress = Math.max(0, Math.min(100, Number(job.progress_percent || 0)));
           const files = Array.isArray(job.files) ? job.files : [];
           const errors = Array.isArray(job.errors) ? job.errors : [];
+          const badgeClass = job.status === "succeeded"
+            ? "ok"
+            : (job.status === "failed" ? "warn" : "active");
           return [
             '<section class="job-card">',
             '<div class="job-top">',
             '<div><span class="panel-kicker">Task #' + escapeHTML(job.id) + '</span><h3>' + escapeHTML(title) + '</h3></div>',
-            '<span class="badge ' + (job.status === 'succeeded' ? 'ok' : (job.status === 'failed' ? 'warn' : 'locked')) + '">' + escapeHTML(formatStatus(job.status)) + '</span>',
+            '<span class="badge ' + badgeClass + '">' + escapeHTML(formatStatus(job.status)) + '</span>',
             '</div>',
             '<div class="progress-track"><div style="width:' + escapeHTML(progress.toFixed(1)) + '%"></div></div>',
             '<div class="job-meta"><span>阶段：' + escapeHTML(formatStage(job.stage)) + '</span><span>进度：' + escapeHTML(progress.toFixed(1)) + '%</span><span>创建时间：' + escapeHTML(formatTime(job.created_at)) + '</span></div>',
             files.length ? '<div class="file-list">' + files.map((file) => [
               '<div class="file-row">',
               '<div class="file-name">' + escapeHTML(file.name || file.relative_path || "未命名文件") + '</div>',
-              file.download_url ? '<a class="file-link" href="' + escapeHTML(file.download_url) + '" target="_blank" rel="noreferrer">下载</a>' : '<span class="muted">处理中</span>',
+              file.download_url ? '<a class="file-link" href="' + escapeHTML(file.download_url) + '" target="_blank" rel="noreferrer">下载文件</a>' : '<span class="muted">处理中</span>',
               '</div>',
             ].join("")).join("") + '</div>' : '',
             errors.length ? '<div class="job-errors">' + errors.map(escapeHTML).join("<br/>") + '</div>' : '',
@@ -1183,21 +1462,21 @@ export function renderApp(appOrigin: string, page: AppPage): string {
         el.loginBox.classList.remove("hidden");
 
         if (session.status === "pending") {
-          el.loginStatus.textContent = "已启动，等待二维码";
+          el.loginStatus.textContent = "正在生成二维码";
           el.loginHint.textContent = "通常约 1 分钟内出现二维码，请保持页面开启。";
           el.loginQRImage.classList.add("hidden");
         } else if (session.status === "qr_ready") {
-          el.loginStatus.textContent = "请扫码登录";
-          el.loginHint.textContent = "扫码成功后，Cookie 会自动回传。";
+          el.loginStatus.textContent = "请使用钉钉扫码登录";
+          el.loginHint.textContent = "扫码成功后，登录态会自动绑定到当前账号。";
           el.loginQRImage.src = qrImageURL(session.qr_url || "");
           el.loginQRImage.classList.remove("hidden");
         } else if (session.status === "completed") {
-          el.loginStatus.textContent = "登录完成";
-          el.loginHint.textContent = "Cookie 已自动回传，现在可以直接下载。";
+          el.loginStatus.textContent = "登录成功";
+          el.loginHint.textContent = "扫码验证已完成，现在可以开始下载。";
           el.loginQRImage.classList.add("hidden");
         } else {
           el.loginStatus.textContent = "登录失败";
-          el.loginHint.textContent = session.error_message || "请重试。";
+          el.loginHint.textContent = session.error_message || "登录失败，请重试。";
           el.loginQRImage.classList.add("hidden");
         }
       }
@@ -1223,13 +1502,14 @@ export function renderApp(appOrigin: string, page: AppPage): string {
         }
 
         if (PAGE === "login" && el.registerCardHint) {
-          el.registerCardHint.textContent = state.registrationOpen ? "创建账号后会自动进入工作台。" : "当前未开放注册。";
+          el.registerCardHint.textContent = state.registrationOpen ? "注册成功后请使用新账号登录" : "当前未开放注册";
         }
-        if (PAGE === "login" && el.registerPanel) {
+        if (PAGE === "login" && el.authTabRegister && el.registerFormPanel) {
           if (state.registrationOpen) {
-            el.registerPanel.classList.remove("hidden");
+            el.authTabRegister.classList.remove("hidden");
           } else {
-            el.registerPanel.classList.add("hidden");
+            el.authTabRegister.classList.add("hidden");
+            switchAuthTab("login");
           }
         }
 
@@ -1292,14 +1572,25 @@ export function renderApp(appOrigin: string, page: AppPage): string {
       }
 
       async function registerUser() {
+        const username = (el.registerUsername ? el.registerUsername.value : "").trim();
+        const password = (el.registerPassword ? el.registerPassword.value : "").trim();
+        const confirmPassword = (el.registerPasswordConfirm ? el.registerPasswordConfirm.value : "").trim();
+        if (password !== confirmPassword) {
+          throw new Error("两次输入的密码不一致");
+        }
         await request("/api/auth/register", {
           method: "POST",
           body: JSON.stringify({
-            username: (el.registerUsername ? el.registerUsername.value : "").trim(),
-            password: (el.registerPassword ? el.registerPassword.value : "").trim(),
+            username,
+            password,
           }),
         });
-        redirectTo("/download");
+        await request("/api/auth/logout", { method: "POST" });
+        if (el.registerUsername) el.registerUsername.value = "";
+        if (el.registerPassword) el.registerPassword.value = "";
+        if (el.registerPasswordConfirm) el.registerPasswordConfirm.value = "";
+        switchAuthTab("login");
+        setNotice("注册成功，请登录", "ok");
       }
 
       async function logout() {
@@ -1329,7 +1620,7 @@ export function renderApp(appOrigin: string, page: AppPage): string {
 
       async function createJob() {
         if (!state.authenticated) throw new Error("请先登录。");
-        if (!state.legalAccepted || !state.cookiesReady) throw new Error("请先完成条款和 Cookie 设置。");
+        if (!state.legalAccepted || !state.cookiesReady) throw new Error("请先完成条款确认和扫码登录。");
         const urls = (el.urls ? el.urls.value : "").split("\\n").map((item) => item.trim()).filter(Boolean);
         if (urls.length === 0) throw new Error("请先填入回放链接。");
 
@@ -1382,7 +1673,7 @@ export function renderApp(appOrigin: string, page: AppPage): string {
           try {
             await login();
           } catch (error) {
-            setNotice(error.message, "error");
+            setNotice(normalizeErrorMessage(error.message), "error");
           } finally {
             setBusy(el.loginBtn, false);
           }
@@ -1395,7 +1686,7 @@ export function renderApp(appOrigin: string, page: AppPage): string {
           try {
             await registerUser();
           } catch (error) {
-            setNotice(error.message, "error");
+            setNotice(normalizeErrorMessage(error.message), "error");
           } finally {
             setBusy(el.registerBtn, false);
           }
@@ -1408,7 +1699,7 @@ export function renderApp(appOrigin: string, page: AppPage): string {
           try {
             await logout();
           } catch (error) {
-            setNotice(error.message, "error");
+            setNotice(normalizeErrorMessage(error.message), "error");
             setBusy(el.topbarLogoutBtn, false);
           }
         });
@@ -1420,7 +1711,7 @@ export function renderApp(appOrigin: string, page: AppPage): string {
           try {
             await logout();
           } catch (error) {
-            setNotice(error.message, "error");
+            setNotice(normalizeErrorMessage(error.message), "error");
             setBusy(el.topbarLogoutBtnInline, false);
           }
         });
@@ -1441,7 +1732,7 @@ export function renderApp(appOrigin: string, page: AppPage): string {
           try {
             await acceptLegal();
           } catch (error) {
-            setNotice(error.message, "error");
+            setNotice(normalizeErrorMessage(error.message), "error");
           } finally {
             setBusy(el.acceptLegalBtn, false);
           }
@@ -1454,7 +1745,7 @@ export function renderApp(appOrigin: string, page: AppPage): string {
           try {
             await startLoginWorkflow();
           } catch (error) {
-            setNotice(error.message, "error");
+            setNotice(normalizeErrorMessage(error.message), "error");
           } finally {
             setBusy(el.startLoginWorkflowBtn, false);
           }
@@ -1467,7 +1758,7 @@ export function renderApp(appOrigin: string, page: AppPage): string {
           try {
             await createJob();
           } catch (error) {
-            setNotice(error.message, "error");
+            setNotice(normalizeErrorMessage(error.message), "error");
           } finally {
             setBusy(el.createJobBtn, false);
           }
@@ -1479,7 +1770,7 @@ export function renderApp(appOrigin: string, page: AppPage): string {
           try {
             await refreshAll();
           } catch (error) {
-            setNotice(error.message, "error");
+            setNotice(normalizeErrorMessage(error.message), "error");
           }
         });
       }
@@ -1490,7 +1781,7 @@ export function renderApp(appOrigin: string, page: AppPage): string {
           try {
             await changePassword();
           } catch (error) {
-            setNotice(error.message, "error");
+            setNotice(normalizeErrorMessage(error.message), "error");
           } finally {
             setBusy(el.changePasswordBtn, false);
           }
@@ -1509,11 +1800,19 @@ export function renderApp(appOrigin: string, page: AppPage): string {
           try {
             await saveAdminLegal();
           } catch (error) {
-            setNotice(error.message, "error");
+            setNotice(normalizeErrorMessage(error.message), "error");
           } finally {
             setBusy(el.saveLegalBtn, false);
           }
         });
+      }
+
+      if (el.authTabLogin) {
+        el.authTabLogin.addEventListener("click", () => switchAuthTab("login"));
+      }
+
+      if (el.authTabRegister) {
+        el.authTabRegister.addEventListener("click", () => switchAuthTab("register"));
       }
 
       async function refreshAll() {
@@ -1533,7 +1832,8 @@ export function renderApp(appOrigin: string, page: AppPage): string {
         }
       }
 
-      refreshAll().catch((error) => setNotice(error.message, "error"));
+      switchAuthTab("login");
+      refreshAll().catch((error) => setNotice(normalizeErrorMessage(error.message), "error"));
       if (pollingHandle) clearInterval(pollingHandle);
       pollingHandle = setInterval(() => {
         refreshAll().catch(() => {});
