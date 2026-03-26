@@ -395,10 +395,49 @@ function renderAccountPage(): string {
         <div class="panel-head">
           <div>
             <span class="panel-kicker">Admin</span>
-            <h2>条款管理</h2>
+            <h2>管理区</h2>
           </div>
         </div>
-        <div id="admin-users" class="admin-users"><div class="empty">暂无数据</div></div>
+        <section class="admin-section">
+          <div class="panel-head">
+            <div>
+              <span class="panel-kicker">R2 Storage</span>
+              <h2>R2 文件</h2>
+            </div>
+          </div>
+          <div class="storage-toolbar">
+            <div class="field storage-search">
+              <label for="admin-storage-prefix">对象前缀</label>
+              <input id="admin-storage-prefix" placeholder="例如 dedup/" />
+            </div>
+            <div class="actions storage-actions">
+              <button id="admin-storage-refresh-btn" class="primary" type="button">刷新文件</button>
+            </div>
+          </div>
+          <div id="admin-storage-meta" class="meta-line"></div>
+          <div id="admin-storage-list" class="storage-list"><div class="empty">正在加载 R2 文件...</div></div>
+          <div class="actions">
+            <button id="admin-storage-more-btn" class="hidden" type="button">加载更多</button>
+          </div>
+        </section>
+
+        <section class="admin-section">
+          <div class="panel-head">
+            <div>
+              <span class="panel-kicker">Users</span>
+              <h2>用户状态</h2>
+            </div>
+          </div>
+          <div id="admin-users" class="admin-users"><div class="empty">暂无数据</div></div>
+        </section>
+
+        <section class="admin-section">
+          <div class="panel-head">
+            <div>
+              <span class="panel-kicker">Legal</span>
+              <h2>条款管理</h2>
+            </div>
+          </div>
         <div class="field admin-field">
           <label for="admin-legal-text">条款内容</label>
           <textarea id="admin-legal-text" class="large-textarea" placeholder="输入新的条款正文"></textarea>
@@ -407,6 +446,7 @@ function renderAccountPage(): string {
           <button id="save-legal-btn" class="primary" type="button">保存条款</button>
         </div>
         <div id="admin-legal-meta" class="meta-line"></div>
+        </section>
       </section>`;
 }
 
@@ -1189,6 +1229,16 @@ export function renderApp(appOrigin: string, page: AppPage): string {
         display: grid;
         gap: 12px;
       }
+      .admin-section {
+        margin-top: 22px;
+        padding-top: 22px;
+        border-top: 1px solid rgba(207, 216, 227, 0.65);
+      }
+      .admin-section:first-of-type {
+        margin-top: 0;
+        padding-top: 0;
+        border-top: 0;
+      }
       .admin-user {
         border: 1px solid var(--line);
         border-radius: var(--radius-md);
@@ -1201,6 +1251,74 @@ export function renderApp(appOrigin: string, page: AppPage): string {
       }
       .admin-field {
         margin-top: 18px;
+      }
+      .storage-toolbar {
+        display: flex;
+        gap: 14px;
+        align-items: end;
+        flex-wrap: wrap;
+      }
+      .storage-search {
+        flex: 1 1 280px;
+      }
+      .storage-actions {
+        margin-top: 0;
+      }
+      .storage-list {
+        display: grid;
+        gap: 12px;
+        margin-top: 14px;
+      }
+      .storage-item {
+        border: 1px solid var(--line);
+        border-radius: var(--radius-md);
+        background: #fbfcfe;
+        padding: 16px;
+        display: grid;
+        gap: 10px;
+      }
+      .storage-head {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 12px;
+      }
+      .storage-name {
+        font-size: 17px;
+        font-weight: 800;
+        line-height: 1.45;
+        word-break: break-word;
+      }
+      .storage-key {
+        color: var(--muted);
+        font-size: 12px;
+        word-break: break-all;
+      }
+      .storage-meta-grid {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px 14px;
+        color: var(--muted);
+        font-size: 13px;
+      }
+      .storage-meta-grid strong {
+        color: var(--text);
+      }
+      .storage-tags {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+      .storage-tag {
+        display: inline-flex;
+        min-height: 28px;
+        align-items: center;
+        padding: 0 10px;
+        border-radius: 999px;
+        background: rgba(37, 99, 235, 0.08);
+        color: var(--accent);
+        font-size: 12px;
+        font-weight: 700;
       }
       .guide-list {
         display: grid;
@@ -1324,6 +1442,10 @@ export function renderApp(appOrigin: string, page: AppPage): string {
         .header-right {
           justify-content: flex-start;
         }
+        .storage-head {
+          flex-direction: column;
+          align-items: flex-start;
+        }
       }
       @media (max-width: 560px) {
         .app-shell {
@@ -1379,6 +1501,10 @@ export function renderApp(appOrigin: string, page: AppPage): string {
         registrationOpen: false,
         authTab: "login",
         jobsFilter: "all",
+        adminStorageItems: [],
+        adminStorageCursor: "",
+        adminStorageHasMore: false,
+        adminStoragePrefix: "",
         legalAccepted: false,
         legalAcceptedAt: "",
         legalVersion: "",
@@ -1456,6 +1582,11 @@ export function renderApp(appOrigin: string, page: AppPage): string {
         changePasswordBtn: document.getElementById("change-password-btn"),
         adminPanel: document.getElementById("admin-panel"),
         adminUsers: document.getElementById("admin-users"),
+        adminStoragePrefix: document.getElementById("admin-storage-prefix"),
+        adminStorageRefreshBtn: document.getElementById("admin-storage-refresh-btn"),
+        adminStorageMeta: document.getElementById("admin-storage-meta"),
+        adminStorageList: document.getElementById("admin-storage-list"),
+        adminStorageMoreBtn: document.getElementById("admin-storage-more-btn"),
         adminLegalText: document.getElementById("admin-legal-text"),
         saveLegalBtn: document.getElementById("save-legal-btn"),
         adminLegalMeta: document.getElementById("admin-legal-meta"),
@@ -1513,6 +1644,20 @@ export function renderApp(appOrigin: string, page: AppPage): string {
         if (!value) return "-";
         const date = new Date(value);
         return Number.isNaN(date.getTime()) ? value : date.toLocaleString();
+      }
+
+      function formatBytes(value) {
+        const size = Number(value || 0);
+        if (!Number.isFinite(size) || size <= 0) return "0 B";
+        const units = ["B", "KB", "MB", "GB", "TB"];
+        let current = size;
+        let index = 0;
+        while (current >= 1024 && index < units.length - 1) {
+          current /= 1024;
+          index += 1;
+        }
+        const digits = current >= 100 || index === 0 ? 0 : 1;
+        return current.toFixed(digits) + " " + units[index];
       }
 
       function formatStage(stage) {
@@ -1809,6 +1954,45 @@ export function renderApp(appOrigin: string, page: AppPage): string {
         }
       }
 
+      function renderAdminStorage() {
+        if (!el.adminStorageList || !el.adminStorageMeta) return;
+        const items = Array.isArray(state.adminStorageItems) ? state.adminStorageItems : [];
+        const prefix = String(state.adminStoragePrefix || "").trim();
+        el.adminStorageMeta.textContent = (prefix ? ("前缀：" + prefix + " · ") : "") + "当前已加载 " + items.length + " 个对象";
+
+        if (items.length === 0) {
+          el.adminStorageList.innerHTML = '<div class="empty">当前没有匹配的 R2 文件</div>';
+        } else {
+          el.adminStorageList.innerHTML = items.map((item) => {
+            const names = Array.isArray(item.names) ? item.names : [];
+            const owners = Array.isArray(item.owners) ? item.owners : [];
+            const extraNames = names.length > 1 ? names.slice(1, 4) : [];
+            return [
+              '<section class="storage-item">',
+              '<div class="storage-head">',
+              '<div>',
+              '<div class="storage-name">' + escapeHTML(names[0] || item.key) + '</div>',
+              '<div class="storage-key">' + escapeHTML(item.key || "-") + '</div>',
+              '</div>',
+              item.download_url ? '<a class="button-link primary" href="' + escapeHTML(item.download_url) + '" target="_blank" rel="noreferrer">下载文件</a>' : '',
+              '</div>',
+              '<div class="storage-meta-grid">',
+              '<span><strong>大小</strong> ' + escapeHTML(formatBytes(item.size)) + '</span>',
+              '<span><strong>上传时间</strong> ' + escapeHTML(formatTime(item.uploaded_at)) + '</span>',
+              '<span><strong>引用</strong> ' + escapeHTML(String(item.refs || 0)) + '</span>',
+              '</div>',
+              owners.length ? '<div class="storage-tags">' + owners.slice(0, 6).map((owner) => '<span class="storage-tag">' + escapeHTML(owner) + '</span>').join("") + '</div>' : '',
+              extraNames.length ? '<div class="meta-line">别名：' + extraNames.map(escapeHTML).join(" / ") + '</div>' : '',
+              '</section>',
+            ].join("");
+          }).join("");
+        }
+
+        if (el.adminStorageMoreBtn) {
+          if (state.adminStorageHasMore) el.adminStorageMoreBtn.classList.remove("hidden"); else el.adminStorageMoreBtn.classList.add("hidden");
+        }
+      }
+
       function renderJobs(jobs) {
         if (!el.jobs) return;
         const records = Array.isArray(jobs) ? jobs : [];
@@ -2037,6 +2221,20 @@ export function renderApp(appOrigin: string, page: AppPage): string {
         const payload = await request("/api/admin/legal");
         state.legalText = payload.text || state.legalText;
         renderAdminLegal(payload.version || "", payload.text || "", false);
+      }
+
+      async function refreshAdminStorage(reset) {
+        if (!state.authenticated || !state.user || !state.user.is_sudo || !el.adminStorageList) return;
+        const prefix = (el.adminStoragePrefix ? el.adminStoragePrefix.value : state.adminStoragePrefix || "").trim();
+        const params = new URLSearchParams();
+        if (prefix) params.set("prefix", prefix);
+        if (!reset && state.adminStorageCursor) params.set("cursor", state.adminStorageCursor);
+        const payload = await request("/api/admin/storage" + (params.toString() ? ("?" + params.toString()) : ""));
+        state.adminStoragePrefix = prefix;
+        state.adminStorageCursor = payload.cursor || "";
+        state.adminStorageHasMore = Boolean(payload.has_more);
+        state.adminStorageItems = reset ? (payload.items || []) : state.adminStorageItems.concat(payload.items || []);
+        renderAdminStorage();
       }
 
       async function login() {
@@ -2286,6 +2484,48 @@ export function renderApp(appOrigin: string, page: AppPage): string {
         });
       }
 
+      if (el.adminStorageRefreshBtn) {
+        el.adminStorageRefreshBtn.addEventListener("click", async () => {
+          setBusy(el.adminStorageRefreshBtn, true);
+          try {
+            await refreshAdminStorage(true);
+          } catch (error) {
+            setNotice(normalizeErrorMessage(error.message), "error");
+          } finally {
+            setBusy(el.adminStorageRefreshBtn, false);
+          }
+        });
+      }
+
+      if (el.adminStoragePrefix) {
+        el.adminStoragePrefix.addEventListener("keydown", async (event) => {
+          if (event.key !== "Enter") return;
+          event.preventDefault();
+          if (!el.adminStorageRefreshBtn) return;
+          setBusy(el.adminStorageRefreshBtn, true);
+          try {
+            await refreshAdminStorage(true);
+          } catch (error) {
+            setNotice(normalizeErrorMessage(error.message), "error");
+          } finally {
+            setBusy(el.adminStorageRefreshBtn, false);
+          }
+        });
+      }
+
+      if (el.adminStorageMoreBtn) {
+        el.adminStorageMoreBtn.addEventListener("click", async () => {
+          setBusy(el.adminStorageMoreBtn, true);
+          try {
+            await refreshAdminStorage(false);
+          } catch (error) {
+            setNotice(normalizeErrorMessage(error.message), "error");
+          } finally {
+            setBusy(el.adminStorageMoreBtn, false);
+          }
+        });
+      }
+
       if (el.authTabLogin) {
         el.authTabLogin.addEventListener("click", () => switchAuthTab("login"));
       }
@@ -2385,6 +2625,7 @@ export function renderApp(appOrigin: string, page: AppPage): string {
         if (PAGE === "account") {
           await refreshAdminUsers();
           await refreshAdminLegal();
+          await refreshAdminStorage(true);
         }
 
         setupSurfaceMotion();

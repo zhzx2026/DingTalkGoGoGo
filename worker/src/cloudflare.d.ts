@@ -22,6 +22,27 @@ interface R2ObjectBody {
   writeHttpMetadata(headers: Headers): void;
 }
 
+interface R2Object {
+  key: string;
+  size: number;
+  etag: string;
+  httpEtag: string;
+  uploaded: Date;
+}
+
+interface R2ListOptions {
+  limit?: number;
+  prefix?: string;
+  cursor?: string;
+}
+
+interface R2Objects {
+  objects: R2Object[];
+  truncated: boolean;
+  cursor?: string;
+}
+
 interface R2Bucket {
   get(key: string): Promise<R2ObjectBody | null>;
+  list(options?: R2ListOptions): Promise<R2Objects>;
 }

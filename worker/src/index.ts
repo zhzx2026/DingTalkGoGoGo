@@ -172,6 +172,27 @@ interface AdminUserRecord {
   total_jobs: number;
 }
 
+interface AdminStorageIndexRow {
+  id: string;
+  owner_user_id: string;
+  username: string | null;
+  updated_at: string;
+  files_json: string;
+}
+
+interface AdminStorageItem {
+  key: string;
+  size: number;
+  uploaded_at: string;
+  etag: string;
+  refs: number;
+  names: string[];
+  owners: string[];
+  job_ids: string[];
+  latest_job_updated_at: string | null;
+  download_url: string;
+}
+
 interface LoginSessionRow {
   id: string;
   user_id: string;
@@ -352,6 +373,14 @@ function jobFileDownloadURL(jobID: string, relativePath: string, storage?: "r2" 
     params.set("storage", storage);
   }
   return `/api/files?${params.toString()}`;
+}
+
+function adminStorageDownloadURL(key: string, name?: string): string {
+  const params = new URLSearchParams({ key });
+  if (name) {
+    params.set("name", name);
+  }
+  return `/api/admin/storage/file?${params.toString()}`;
 }
 
 function resolveR2BucketKey(file: JobFileRecord, env: Env): string {
@@ -770,6 +799,115 @@ async function listAdminUsers(env: Env): Promise<AdminUserRecord[]> {
       total_jobs: toNumber(row.total_jobs),
     };
   });
+}
+
+function pushUniqueLimited(target: string[], value: string, limit = 5): void {
+  const normalized = value.trim();
+  if (!normalized || target.includes(normalized) || target.length >= limit) {
+    return;
+  }
+  target.push(normalized);
+}
+
+async function buildAdminStorageMetadataMap(env: Env): Promise<Map<string, {
+  refs: number;
+  names: string[];
+  owners: string[];
+  job_ids: string[];
+  latest_job_updated_at: string | null;
+}>> {
+  const result = await env.DB
+    .prepare(
+      `SELECT
+         jobs.id AS id,
+         jobs.owner_user_id AS owner_user_id,
+         users.username AS username,
+         jobs.updated_at AS updated_at,
+         jobs.files_json AS files_json
+       FROM jobs
+       LEFT JOIN users ON users.id = jobs.owner_user_id
+       WHERE jobs.files_json IS NOT NULL
+         AND jobs.files_json != '[]'`,
+    )
+    .all<AdminStorageIndexRow>();
+
+  const rows = Array.isArray(result.results) ? result.results : [];
+  const metadata = new Map<string, {
+    refs: number;
+    names: string[];
+    owners: string[];
+    job_ids: string[];
+    latest_job_updated_at: string | null;
+  }>();
+
+  rows.forEach((row) => {
+    const files = parseJSON<JobFileRecord[]>(row.files_json, []);
+    files.forEach((file) => {
+      const key = resolveR2BucketKey(file, env);
+      if (!key) {
+        return;
+      }
+
+      const current = metadata.get(key) || {
+        refs: 0,
+        names: [],
+        owners: [],
+        job_ids: [],
+        latest_job_updated_at: null,
+      };
+
+      current.refs += 1;
+      pushUniqueLimited(current.names, file.name || file.relative_path || key, 6);
+      pushUniqueLimited(current.owners, row.username || row.owner_user_id, 6);
+      pushUniqueLimited(current.job_ids, row.id, 8);
+      if (!current.latest_job_updated_at || row.updated_at > current.latest_job_updated_at) {
+        current.latest_job_updated_at = row.updated_at;
+      }
+      metadata.set(key, current);
+    });
+  });
+
+  return metadata;
+}
+
+async function listAdminStorage(
+  env: Env,
+  options: { cursor?: string; prefix?: string; limit?: number },
+): Promise<{ items: AdminStorageItem[]; cursor: string; has_more: boolean }> {
+  const prefix = (options.prefix || "").trim();
+  const limit = Math.min(100, Math.max(1, toNumber(options.limit || 50)));
+  const [metadataMap, listResult] = await Promise.all([
+    buildAdminStorageMetadataMap(env),
+    env.FILES.list({
+      cursor: (options.cursor || "").trim() || undefined,
+      prefix: prefix || undefined,
+      limit,
+    }),
+  ]);
+
+  const objects = Array.isArray(listResult.objects) ? listResult.objects : [];
+  const items = objects.map((object) => {
+    const metadata = metadataMap.get(object.key);
+    const displayName = metadata?.names?.[0] || object.key.split("/").pop() || object.key;
+    return {
+      key: object.key,
+      size: toNumber(object.size),
+      uploaded_at: object.uploaded instanceof Date ? object.uploaded.toISOString() : String(object.uploaded || ""),
+      etag: object.httpEtag || object.etag || "",
+      refs: metadata?.refs || 0,
+      names: metadata?.names || [displayName],
+      owners: metadata?.owners || [],
+      job_ids: metadata?.job_ids || [],
+      latest_job_updated_at: metadata?.latest_job_updated_at || null,
+      download_url: adminStorageDownloadURL(object.key, displayName),
+    } satisfies AdminStorageItem;
+  });
+
+  return {
+    items,
+    cursor: listResult.cursor || "",
+    has_more: Boolean(listResult.truncated),
+  };
 }
 
 function requireSudo(user: AuthUser): Response | null {
@@ -1721,6 +1859,63 @@ async function handleAdminLegal(request: Request, env: Env, user: AuthUser): Pro
   return jsonResponse({ error: "method not allowed" }, { status: 405 });
 }
 
+async function handleAdminStorage(request: Request, env: Env, user: AuthUser): Promise<Response> {
+  if (request.method !== "GET") {
+    return jsonResponse({ error: "method not allowed" }, { status: 405 });
+  }
+
+  const sudoError = requireSudo(user);
+  if (sudoError) {
+    return sudoError;
+  }
+
+  const url = new URL(request.url);
+  const payload = await listAdminStorage(env, {
+    cursor: url.searchParams.get("cursor") || "",
+    prefix: url.searchParams.get("prefix") || "",
+    limit: toNumber(url.searchParams.get("limit") || 50) || 50,
+  });
+
+  return jsonResponse({
+    prefix: (url.searchParams.get("prefix") || "").trim(),
+    ...payload,
+  });
+}
+
+async function handleAdminStorageFile(request: Request, env: Env, user: AuthUser): Promise<Response> {
+  if (request.method !== "GET" && request.method !== "HEAD") {
+    return jsonResponse({ error: "method not allowed" }, { status: 405 });
+  }
+
+  const sudoError = requireSudo(user);
+  if (sudoError) {
+    return sudoError;
+  }
+
+  const url = new URL(request.url);
+  const key = (url.searchParams.get("key") || "").trim();
+  if (!key) {
+    return jsonResponse({ error: "key is required" }, { status: 400 });
+  }
+
+  const object = await env.FILES.get(key);
+  if (!object) {
+    return jsonResponse({ error: "object not found in r2" }, { status: 404 });
+  }
+
+  const downloadName = (url.searchParams.get("name") || key.split("/").pop() || "download.bin").trim();
+  const headers = new Headers();
+  object.writeHttpMetadata(headers);
+  headers.set("etag", object.httpEtag);
+  headers.set("cache-control", "private, max-age=120");
+  headers.set("content-disposition", `attachment; filename*=UTF-8''${encodeURIComponent(downloadName)}`);
+  if (!headers.get("content-type")) {
+    headers.set("content-type", "application/octet-stream");
+  }
+
+  return new Response(request.method === "HEAD" ? null : object.body, { headers });
+}
+
 async function handleStatus(env: Env, user: AuthUser): Promise<Response> {
   const [countsRow, cookieState, legalState] = await Promise.all([
     env.DB
@@ -2170,6 +2365,20 @@ export default {
           response = auth.response;
         } else {
           response = await handleAdminLegal(request, env, auth.user as AuthUser);
+        }
+      } else if (url.pathname === "/api/admin/storage") {
+        const auth = await requireUserAuth(request, env);
+        if (auth.response) {
+          response = auth.response;
+        } else {
+          response = await handleAdminStorage(request, env, auth.user as AuthUser);
+        }
+      } else if (url.pathname === "/api/admin/storage/file" && (request.method === "GET" || request.method === "HEAD")) {
+        const auth = await requireUserAuth(request, env);
+        if (auth.response) {
+          response = auth.response;
+        } else {
+          response = await handleAdminStorageFile(request, env, auth.user as AuthUser);
         }
       } else if (url.pathname === "/api/legal-config" && request.method === "GET") {
         response = jsonResponse(await getLegalConfig(env));
