@@ -14,7 +14,7 @@ function renderNav(page: AppPage): string {
     { key: "account", href: "/account", label: "账号" },
   ];
 
-  return `<nav class="app-nav">${items.map((item) => `<a href="${item.href}" class="nav-link ${page === item.key ? "active" : ""}">${item.label}</a>`).join("")}</nav>`;
+  return `<nav class="app-nav">${items.map((item) => `<a href="${item.href}" data-page-link data-nav-link class="nav-link ${page === item.key ? "active" : ""}">${item.label}</a>`).join("")}<span id="nav-indicator" class="nav-indicator"></span></nav>`;
 }
 
 function renderStatsRow(): string {
@@ -151,22 +151,22 @@ function renderOverviewPage(): string {
       ${renderFlowNavigator()}
 
       <section class="route-grid">
-        <a class="route-card" href="/legal">
+        <a class="route-card" data-page-link href="/legal">
           <span class="route-kicker">Step 1</span>
           <h3>条款确认</h3>
           <p>先阅读并确认当前版本条款。</p>
         </a>
-        <a class="route-card" href="/scan">
+        <a class="route-card" data-page-link href="/scan">
           <span class="route-kicker">Step 2</span>
           <h3>扫码登录</h3>
           <p>通过钉钉扫码获取当前账号的登录态。</p>
         </a>
-        <a class="route-card" href="/download">
+        <a class="route-card" data-page-link href="/download">
           <span class="route-kicker">Step 3</span>
           <h3>开始下载</h3>
           <p>完成前两步后粘贴回放链接开始下载。</p>
         </a>
-        <a class="route-card" href="/jobs">
+        <a class="route-card" data-page-link href="/jobs">
           <span class="route-kicker">Archive</span>
           <h3>任务列表</h3>
           <p>查看任务进度、错误信息和最终文件。</p>
@@ -227,8 +227,9 @@ function renderScanPage(): string {
 
       ${renderFlowNavigator()}
 
-      <section class="content-grid">
-        <section id="cookies-step" class="step-card">
+      <section class="content-grid scan-grid">
+        <section id="cookies-step" class="step-card scan-focus-card">
+          <div class="scan-glow"></div>
           <div class="step-head">
             <div>
               <span class="step-kicker">Step 2</span>
@@ -237,15 +238,21 @@ function renderScanPage(): string {
             <span id="cookie-badge" class="badge warn">未完成</span>
           </div>
           <p class="muted">扫码成功后，登录态会自动回传并绑定到当前账号。</p>
-          <div id="cookie-state" class="notice hidden"></div>
-          <div id="cookie-meta" class="meta-line"></div>
-          <div class="actions">
-            <button id="start-login-workflow-btn" class="primary" type="button">启动二维码登录</button>
-          </div>
-          <div id="login-box" class="login-box hidden">
-            <div id="login-status" class="login-status">正在生成二维码</div>
-            <div id="login-hint" class="muted">二维码出现后，请使用钉钉扫码登录。</div>
-            <img id="login-qr-image" class="qr-image hidden" alt="登录二维码" />
+          <div class="scan-focus-shell">
+            <div class="scan-focus-copy">
+              <div id="cookie-state" class="notice hidden"></div>
+              <div id="cookie-meta" class="meta-line"></div>
+              <div class="actions">
+                <button id="start-login-workflow-btn" class="primary" type="button">启动二维码登录</button>
+              </div>
+            </div>
+            <div id="login-box" class="login-box scan-login-box hidden">
+              <div id="login-status" class="login-status">正在生成二维码</div>
+              <div id="login-hint" class="muted">二维码出现后，请使用钉钉扫码登录。</div>
+              <div class="scan-qr-frame">
+                <img id="login-qr-image" class="qr-image hidden" alt="登录二维码" />
+              </div>
+            </div>
           </div>
         </section>
 
@@ -322,6 +329,15 @@ function renderJobsPage(): string {
           <div>
             <span class="panel-kicker">Jobs</span>
             <h2>任务列表</h2>
+          </div>
+        </div>
+        <div class="jobs-toolbar">
+          <div id="jobs-filter-summary" class="muted">全部任务</div>
+          <div class="jobs-filters">
+            <button class="filter-chip active" data-jobs-filter="all" data-filter-label="全部" type="button">全部</button>
+            <button class="filter-chip" data-jobs-filter="active" data-filter-label="进行中" type="button">进行中</button>
+            <button class="filter-chip" data-jobs-filter="completed" data-filter-label="已完成" type="button">已完成</button>
+            <button class="filter-chip" data-jobs-filter="failed" data-filter-label="失败" type="button">失败</button>
           </div>
         </div>
         <div id="jobs" class="jobs-list"><div class="empty">暂无任务</div></div>
@@ -452,7 +468,10 @@ export function renderApp(appOrigin: string, page: AppPage): string {
         color: var(--text);
         font-family: "Avenir Next", "PingFang SC", "Helvetica Neue", Arial, sans-serif;
       }
-      body { padding: 0; }
+      body {
+        padding: 0;
+        overflow-x: hidden;
+      }
       a { color: inherit; }
       button, input, textarea { font: inherit; }
       .hidden { display: none !important; }
@@ -460,6 +479,17 @@ export function renderApp(appOrigin: string, page: AppPage): string {
         max-width: 1100px;
         margin: 0 auto;
         padding: 24px 18px 64px;
+        opacity: 0;
+        transform: translateY(14px) scale(0.995);
+        transition: opacity 280ms ease, transform 320ms cubic-bezier(0.22, 1, 0.36, 1);
+      }
+      body.page-ready .app-shell {
+        opacity: 1;
+        transform: none;
+      }
+      body.page-leaving .app-shell {
+        opacity: 0;
+        transform: translateY(18px) scale(0.992);
       }
       .app-header {
         display: flex;
@@ -510,14 +540,21 @@ export function renderApp(appOrigin: string, page: AppPage): string {
         display: flex;
         gap: 8px;
         align-items: center;
+        position: relative;
+        padding: 4px;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.64);
+        border: 1px solid rgba(207, 216, 227, 0.8);
       }
       .nav-link {
+        position: relative;
+        z-index: 1;
         text-decoration: none;
         padding: 9px 14px;
         border-radius: 999px;
         color: var(--muted);
-        background: rgba(255, 255, 255, 0.72);
-        border: 1px solid var(--line);
+        background: transparent;
+        border: 1px solid transparent;
         font-weight: 600;
         transition: border-color 160ms ease, color 160ms ease, background 160ms ease, transform 160ms ease;
       }
@@ -528,8 +565,22 @@ export function renderApp(appOrigin: string, page: AppPage): string {
       }
       .nav-link.active {
         color: var(--text);
-        background: var(--surface-strong);
-        border-color: var(--line-strong);
+        background: transparent;
+        border-color: transparent;
+      }
+      .nav-indicator {
+        position: absolute;
+        top: 4px;
+        left: 4px;
+        height: calc(100% - 8px);
+        width: 0;
+        border-radius: 999px;
+        background: #ffffff;
+        border: 1px solid rgba(207, 216, 227, 0.9);
+        box-shadow: 0 8px 18px rgba(15, 23, 42, 0.08);
+        opacity: 0;
+        transform: translateX(0);
+        transition: transform 220ms cubic-bezier(0.22, 1, 0.36, 1), width 220ms cubic-bezier(0.22, 1, 0.36, 1), opacity 140ms ease;
       }
       .user-chip {
         color: var(--muted);
@@ -1012,10 +1063,58 @@ export function renderApp(appOrigin: string, page: AppPage): string {
         color: var(--muted);
         line-height: 1.68;
       }
+      .jobs-toolbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 14px;
+        flex-wrap: wrap;
+        margin-top: 10px;
+      }
+      .jobs-filters {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+      .filter-chip {
+        min-height: 38px;
+        padding: 0 14px;
+        border-radius: 999px;
+        border: 1px solid var(--line);
+        background: #ffffff;
+        color: var(--muted);
+        font-weight: 700;
+        transition: transform 160ms ease, border-color 160ms ease, color 160ms ease, background 160ms ease;
+      }
+      .filter-chip.active {
+        border-color: rgba(37, 99, 235, 0.22);
+        background: rgba(37, 99, 235, 0.08);
+        color: var(--accent);
+      }
       .jobs-list {
         display: grid;
         gap: 12px;
         margin-top: 12px;
+      }
+      .jobs-group {
+        display: grid;
+        gap: 12px;
+      }
+      .jobs-group-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+      }
+      .jobs-group-title {
+        margin: 0;
+        font-size: 18px;
+        letter-spacing: -0.02em;
+      }
+      .jobs-group-count {
+        color: var(--muted);
+        font-size: 13px;
+        font-weight: 700;
       }
       .job-card {
         border: 1px solid var(--line);
@@ -1129,10 +1228,81 @@ export function renderApp(appOrigin: string, page: AppPage): string {
         color: var(--muted);
         line-height: 1.7;
       }
+      .scan-grid {
+        grid-template-columns: minmax(0, 1.2fr) minmax(280px, 0.8fr);
+      }
+      .scan-focus-card {
+        isolation: isolate;
+      }
+      .scan-glow {
+        position: absolute;
+        inset: -30% auto auto -10%;
+        width: 320px;
+        height: 320px;
+        border-radius: 999px;
+        background: radial-gradient(circle, rgba(37, 99, 235, 0.18), transparent 70%);
+        pointer-events: none;
+        z-index: 0;
+      }
+      .scan-focus-shell {
+        position: relative;
+        z-index: 1;
+        display: grid;
+        grid-template-columns: minmax(0, 0.8fr) minmax(280px, 0.9fr);
+        gap: 20px;
+        align-items: start;
+      }
+      .scan-login-box {
+        margin-top: 0;
+        min-height: 100%;
+        display: grid;
+        gap: 14px;
+        align-content: start;
+        background: linear-gradient(180deg, rgba(255,255,255,0.98), rgba(244,247,255,0.92));
+        border-color: rgba(37, 99, 235, 0.18);
+        box-shadow: 0 18px 36px rgba(37, 99, 235, 0.10);
+      }
+      .scan-qr-frame {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 360px;
+        border-radius: 18px;
+        background:
+          radial-gradient(circle at center, rgba(37,99,235,0.08), transparent 64%),
+          linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
+        border: 1px dashed rgba(37, 99, 235, 0.22);
+      }
+      body[data-page="scan"] .qr-image {
+        width: 320px;
+        margin-top: 0;
+        box-shadow: 0 22px 44px rgba(15, 23, 42, 0.10);
+      }
+      body[data-page="scan"] .login-status {
+        font-size: 24px;
+      }
       .empty {
         padding: 24px 8px;
         text-align: center;
         color: var(--muted);
+      }
+      .empty-state {
+        padding: 30px 22px;
+        border-radius: var(--radius-md);
+        border: 1px dashed rgba(37, 99, 235, 0.20);
+        background: linear-gradient(180deg, rgba(255,255,255,0.92), rgba(248,251,255,0.92));
+        text-align: center;
+      }
+      .empty-state h3 {
+        margin: 10px 0 0;
+        font-size: 22px;
+        letter-spacing: -0.03em;
+      }
+      .empty-state p {
+        margin: 12px auto 0;
+        max-width: 42ch;
+        color: var(--muted);
+        line-height: 1.72;
       }
       @media (max-width: 860px) {
         .account-grid,
@@ -1140,6 +1310,7 @@ export function renderApp(appOrigin: string, page: AppPage): string {
           grid-template-columns: 1fr;
         }
         .content-grid,
+        .scan-focus-shell,
         .flow-steps {
           grid-template-columns: 1fr;
         }
@@ -1180,10 +1351,10 @@ export function renderApp(appOrigin: string, page: AppPage): string {
       }
     </style>
   </head>
-  <body>
+  <body data-page="${page}">
     <div class="app-shell">
       <header class="app-header">
-        <a class="brand" href="${page === "login" ? "/login" : "/overview"}">
+        <a class="brand" data-page-link href="${page === "login" ? "/login" : "/overview"}">
           <span class="brand-mark">GD</span>
           <span class="brand-copy">
             <strong>GoDingtalk</strong>
@@ -1207,6 +1378,7 @@ export function renderApp(appOrigin: string, page: AppPage): string {
         authenticated: false,
         registrationOpen: false,
         authTab: "login",
+        jobsFilter: "all",
         legalAccepted: false,
         legalAcceptedAt: "",
         legalVersion: "",
@@ -1226,6 +1398,8 @@ export function renderApp(appOrigin: string, page: AppPage): string {
         userChip: document.getElementById("user-chip"),
         topbarLogoutBtn: document.getElementById("topbar-logout-btn"),
         topbarLogoutBtnInline: document.getElementById("topbar-logout-btn-inline"),
+        navIndicator: document.getElementById("nav-indicator"),
+        navLinks: Array.from(document.querySelectorAll("[data-nav-link]")),
         authTabLogin: document.getElementById("auth-tab-login"),
         authTabRegister: document.getElementById("auth-tab-register"),
         loginFormPanel: document.getElementById("login-form-panel"),
@@ -1273,6 +1447,8 @@ export function renderApp(appOrigin: string, page: AppPage): string {
         statRunning: document.getElementById("stat-running"),
         statSuccess: document.getElementById("stat-success"),
         jobs: document.getElementById("jobs"),
+        jobsFilterSummary: document.getElementById("jobs-filter-summary"),
+        jobsFilterButtons: Array.from(document.querySelectorAll("[data-jobs-filter]")),
         accountSummary: document.getElementById("account-summary"),
         currentPassword: document.getElementById("current-password"),
         newPassword: document.getElementById("new-password"),
@@ -1418,6 +1594,14 @@ export function renderApp(appOrigin: string, page: AppPage): string {
         if (el.authTabRegister) el.authTabRegister.classList.toggle("active", state.authTab === "register");
         if (el.loginFormPanel) el.loginFormPanel.classList.toggle("hidden", state.authTab !== "login");
         if (el.registerFormPanel) el.registerFormPanel.classList.toggle("hidden", state.authTab !== "register");
+      }
+
+      function setJobsFilter(nextFilter) {
+        state.jobsFilter = nextFilter || "all";
+        el.jobsFilterButtons.forEach((button) => {
+          button.classList.toggle("active", button.getAttribute("data-jobs-filter") === state.jobsFilter);
+        });
+        renderJobs(state.jobs);
       }
 
       function setFlowChipState(element, phase) {
@@ -1629,13 +1813,58 @@ export function renderApp(appOrigin: string, page: AppPage): string {
         if (!el.jobs) return;
         const records = Array.isArray(jobs) ? jobs : [];
         state.jobs = records;
+
+        const groupedRecords = {
+          active: records.filter((job) => ["queued", "running"].includes(String(job.status || "").toLowerCase())),
+          completed: records.filter((job) => String(job.status || "").toLowerCase() === "succeeded"),
+          failed: records.filter((job) => String(job.status || "").toLowerCase() === "failed"),
+        };
+        const visibleRecords = state.jobsFilter === "all"
+          ? records
+          : (groupedRecords[state.jobsFilter] || []);
+
+        if (el.jobsFilterSummary) {
+          const labels = {
+            all: "全部任务",
+            active: "进行中的任务",
+            completed: "已完成的任务",
+            failed: "失败的任务",
+          };
+          el.jobsFilterSummary.textContent = (labels[state.jobsFilter] || labels.all) + " · " + visibleRecords.length + " 条";
+        }
+
+        el.jobsFilterButtons.forEach((button) => {
+          const key = button.getAttribute("data-jobs-filter") || "all";
+          const base = button.getAttribute("data-filter-label") || button.textContent || "";
+          const count = key === "all" ? records.length : (groupedRecords[key] || []).length;
+          button.textContent = base + " " + count;
+        });
+
         if (records.length === 0) {
-          el.jobs.innerHTML = '<div class="empty">暂无任务</div>';
+          el.jobs.innerHTML = [
+            '<section class="empty-state">',
+            '<div class="eyebrow">No Jobs</div>',
+            '<h3>暂无任务</h3>',
+            '<p>当前还没有下载任务。完成条款确认与扫码登录后，去下载页提交第一条回放链接。</p>',
+            '</section>',
+          ].join("");
           setupSurfaceMotion();
           return;
         }
 
-        el.jobs.innerHTML = records.map((job) => {
+        if (visibleRecords.length === 0) {
+          el.jobs.innerHTML = [
+            '<section class="empty-state">',
+            '<div class="eyebrow">Filtered</div>',
+            '<h3>当前筛选下暂无任务</h3>',
+            '<p>你可以切换筛选条件，或者返回下载页创建新的任务。</p>',
+            '</section>',
+          ].join("");
+          setupSurfaceMotion();
+          return;
+        }
+
+        const renderJobCard = (job) => {
           const title = job.current_title || (Array.isArray(job.titles) && job.titles[0]) || "下载任务";
           const progress = Math.max(0, Math.min(100, Number(job.progress_percent || 0)));
           const files = Array.isArray(job.files) ? job.files : [];
@@ -1660,7 +1889,33 @@ export function renderApp(appOrigin: string, page: AppPage): string {
             errors.length ? '<div class="job-errors">' + errors.map(escapeHTML).join("<br/>") + '</div>' : '',
             '</section>',
           ].join("");
-        }).join("");
+        };
+
+        const sections = state.jobsFilter === "all"
+          ? [
+            { title: "进行中", items: groupedRecords.active },
+            { title: "已完成", items: groupedRecords.completed },
+            { title: "失败", items: groupedRecords.failed },
+          ]
+          : [
+            {
+              title: state.jobsFilter === "active" ? "进行中" : (state.jobsFilter === "completed" ? "已完成" : "失败"),
+              items: visibleRecords,
+            },
+          ];
+
+        el.jobs.innerHTML = sections
+          .filter((section) => section.items.length > 0)
+          .map((section) => [
+            '<section class="jobs-group">',
+            '<div class="jobs-group-header">',
+            '<h3 class="jobs-group-title">' + escapeHTML(section.title) + '</h3>',
+            '<span class="jobs-group-count">' + escapeHTML(String(section.items.length)) + ' 条</span>',
+            '</div>',
+            section.items.map(renderJobCard).join(""),
+            '</section>',
+          ].join(""))
+          .join("");
         setupSurfaceMotion();
       }
 
@@ -2043,7 +2298,7 @@ export function renderApp(appOrigin: string, page: AppPage): string {
         if (!window.matchMedia("(hover: hover) and (pointer: fine)").matches) return;
         const surfaces = document.querySelectorAll(".panel, .step-card, .stat-card, .job-card, .flow-chip, .route-card");
         surfaces.forEach((surface) => {
-          const element = surface as HTMLElement;
+          const element = surface;
           if (element.dataset.motionBound === "1") return;
           element.dataset.motionBound = "1";
           element.addEventListener("mousemove", (event) => {
@@ -2062,6 +2317,55 @@ export function renderApp(appOrigin: string, page: AppPage): string {
             element.style.removeProperty("--rx");
             element.style.removeProperty("--ry");
             element.style.removeProperty("--lift");
+          });
+        });
+      }
+
+      function updateNavIndicator(target) {
+        if (!el.navIndicator || !el.navLinks.length) return;
+        const activeTarget = target || el.navLinks.find((link) => link.classList.contains("active"));
+        if (!activeTarget) {
+          el.navIndicator.style.opacity = "0";
+          return;
+        }
+        const navRect = activeTarget.parentElement.getBoundingClientRect();
+        const linkRect = activeTarget.getBoundingClientRect();
+        el.navIndicator.style.opacity = "1";
+        el.navIndicator.style.width = linkRect.width + "px";
+        el.navIndicator.style.transform = "translateX(" + (linkRect.left - navRect.left) + "px)";
+      }
+
+      function setupNavIndicator() {
+        if (!el.navIndicator || !el.navLinks.length) return;
+        updateNavIndicator();
+        el.navLinks.forEach((link) => {
+          link.addEventListener("mouseenter", () => updateNavIndicator(link));
+        });
+        const nav = el.navLinks[0].parentElement;
+        if (nav) {
+          nav.addEventListener("mouseleave", () => updateNavIndicator());
+        }
+        window.addEventListener("resize", () => updateNavIndicator());
+      }
+
+      function setupPageTransitions() {
+        requestAnimationFrame(() => {
+          document.body.classList.add("page-ready");
+        });
+        document.querySelectorAll("[data-page-link]").forEach((link) => {
+          const anchor = link;
+          if (anchor.dataset.transitionBound === "1") return;
+          anchor.dataset.transitionBound = "1";
+          anchor.addEventListener("click", (event) => {
+            if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+            if (anchor.target && anchor.target !== "_self") return;
+            const href = anchor.getAttribute("href") || "";
+            if (!href.startsWith("/")) return;
+            event.preventDefault();
+            document.body.classList.add("page-leaving");
+            window.setTimeout(() => {
+              window.location.href = href;
+            }, 170);
           });
         });
       }
@@ -2087,6 +2391,15 @@ export function renderApp(appOrigin: string, page: AppPage): string {
       }
 
       switchAuthTab("login");
+      setupNavIndicator();
+      setupPageTransitions();
+      if (el.jobsFilterButtons.length) {
+        el.jobsFilterButtons.forEach((button) => {
+          button.addEventListener("click", () => {
+            setJobsFilter(button.getAttribute("data-jobs-filter") || "all");
+          });
+        });
+      }
       refreshAll().catch((error) => setNotice(normalizeErrorMessage(error.message), "error"));
       if (pollingHandle) clearInterval(pollingHandle);
       pollingHandle = setInterval(() => {
