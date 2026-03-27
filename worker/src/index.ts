@@ -2393,8 +2393,6 @@ export default {
           } else if (url.pathname === "/scan" || url.pathname === "/settings") {
             if (!legalState.accepted) {
               response = redirectResponse(`${url.origin}/legal`);
-            } else if (cookieState.cookiesReady) {
-              response = redirectResponse(`${url.origin}/overview`);
             } else {
               response = htmlResponse(renderApp(url.origin, "scan"));
             }

@@ -6,10 +6,10 @@ function renderLoginPage(): string {
         <section class="panel login-brand-panel">
           <span class="eyebrow">Private Console</span>
           <h1>钉钉回放下载控制台</h1>
-          <p>登录后按顺序完成条款确认、Cookie 设置与下载提交。</p>
+          <p>登录后按顺序完成条款确认、钉钉验证与下载提交。</p>
           <div class="login-points">
             <div class="login-point"><strong>1</strong><span>同意当前条款</span></div>
-            <div class="login-point"><strong>2</strong><span>二维码登录获取 Cookie</span></div>
+            <div class="login-point"><strong>2</strong><span>二维码登录获取钉钉验证</span></div>
             <div class="login-point"><strong>3</strong><span>提交回放链接开始下载</span></div>
           </div>
         </section>
@@ -70,7 +70,7 @@ function renderUserMenu(): string {
           </div>
           <div class="user-menu-list">
             <a id="user-menu-account-link" data-page-link href="/account" class="user-menu-link">账号设置</a>
-            <a id="user-menu-scan-link" data-page-link href="/scan" class="user-menu-link">Cookie 设置</a>
+            <a id="user-menu-scan-link" data-page-link href="/scan" class="user-menu-link">钉钉验证</a>
             <a id="user-menu-jobs-link" data-page-link href="/jobs" class="user-menu-link">详细记录</a>
             <a id="user-menu-admin-link" data-page-link href="/admin" class="user-menu-link hidden">Admin</a>
             <button id="topbar-logout-btn" class="user-menu-link user-menu-action" type="button">退出登录</button>
@@ -99,11 +99,11 @@ function renderStatusStrip(): string {
         <div class="status-copy">
           <span class="eyebrow">Current State</span>
           <h2 id="user-status-line">请先同意使用条款</h2>
-          <p id="status-helper" class="muted">完成条款确认后，再进行 Cookie 设置与下载。</p>
+          <p id="status-helper" class="muted">完成条款确认后，再进行钉钉验证与下载。</p>
         </div>
         <div class="status-stats">
           <article class="stat-tile">
-            <span>Cookie</span>
+            <span>钉钉验证</span>
             <strong id="stat-cookies">-</strong>
           </article>
           <article class="stat-tile">
@@ -143,7 +143,7 @@ function renderOverviewPage(): string {
 
           <div id="overview-gate" class="gate-box">
             <div id="overview-gate-title" class="gate-title">请先同意条款</div>
-            <p id="overview-gate-copy" class="muted">完成条款确认后，才可以继续设置 Cookie。</p>
+            <p id="overview-gate-copy" class="muted">完成条款确认后，才可以继续完成钉钉验证。</p>
             <div class="actions">
               <a id="overview-gate-link" data-page-link href="/legal" class="button-link primary">去同意条款</a>
             </div>
@@ -217,9 +217,9 @@ function renderLegalPage(): string {
 function renderScanPage(): string {
   return `
       <section class="page-intro">
-        <span class="eyebrow">Cookie Settings</span>
-        <h1>Cookie 设置</h1>
-        <p>这里仅支持二维码登录。扫码成功后，Cookie 自动绑定到当前账号。</p>
+        <span class="eyebrow">Verification</span>
+        <h1>钉钉验证</h1>
+        <p>这里仅支持二维码登录。即使当前已有验证态，也可以重新扫码，因为钉钉验证会过期。</p>
       </section>
 
       <section class="scan-layout">
@@ -1347,7 +1347,7 @@ export function renderApp(_appOrigin: string, page: AppPage): string {
           "legal disclaimer must be accepted before starting QR login": "请先同意条款",
           "legal disclaimer must be accepted before creating jobs": "请先同意条款",
           "cookies are missing or invalid": "请先完成扫码登录",
-          "manual cookie upload disabled; use QR login": "Cookie 仅支持二维码登录获取",
+          "manual cookie upload disabled; use QR login": "钉钉验证仅支持二维码登录获取",
           "sudo required": "需要 sudo 权限",
         };
         return mapping[source] || source || "操作失败，请重试";
@@ -1519,14 +1519,14 @@ export function renderApp(_appOrigin: string, page: AppPage): string {
       function renderStatusStrip(payload) {
         if (!el.userStatusLine || !el.statusHelper) return;
         let title = "请先同意使用条款";
-        let helper = "完成条款确认后，再进行 Cookie 设置与下载。";
+        let helper = "完成条款确认后，再进行钉钉验证与下载。";
 
         if (!state.legalAccepted) {
           title = "请先同意使用条款";
           helper = "条款确认完成后才会继续下一步。";
         } else if (!state.cookiesReady) {
-          title = "请先完成 Cookie 设置";
-          helper = "当前仅支持二维码登录获取 Cookie。";
+          title = "请先完成钉钉验证";
+          helper = "当前仅支持二维码登录获取钉钉验证。";
         } else {
           title = "可以开始下载";
           helper = "现在可以直接粘贴回放链接并提交下载。";
@@ -1535,7 +1535,7 @@ export function renderApp(_appOrigin: string, page: AppPage): string {
         el.userStatusLine.textContent = title;
         el.statusHelper.textContent = helper;
 
-        if (el.statCookies) el.statCookies.textContent = state.cookiesReady ? "已就绪" : "未设置";
+        if (el.statCookies) el.statCookies.textContent = state.cookiesReady ? "已就绪" : "未验证";
         if (el.statTotal) el.statTotal.textContent = String(payload.total_jobs || 0);
         if (el.statRunning) el.statRunning.textContent = String((payload.running_jobs || 0) + (payload.queued_jobs || 0));
         if (el.statSuccess) el.statSuccess.textContent = String(payload.succeeded_jobs || 0);
@@ -1557,9 +1557,9 @@ export function renderApp(_appOrigin: string, page: AppPage): string {
         if (!state.cookiesReady) {
           el.overviewGate.classList.remove("hidden");
           el.overviewDownloadForm.classList.add("hidden");
-          el.overviewGateTitle.textContent = "请先完成 Cookie 设置";
-          el.overviewGateCopy.textContent = "当前仅支持二维码登录获取 Cookie。";
-          el.overviewGateLink.textContent = "去 Cookie 设置";
+          el.overviewGateTitle.textContent = "请先完成钉钉验证";
+          el.overviewGateCopy.textContent = "当前仅支持二维码登录获取钉钉验证。";
+          el.overviewGateLink.textContent = "去钉钉验证";
           el.overviewGateLink.setAttribute("href", "/scan");
           return;
         }
@@ -1617,7 +1617,7 @@ export function renderApp(_appOrigin: string, page: AppPage): string {
           el.acceptLegalBtn.classList.add("hidden");
         } else {
           setBadge(el.legalBadge, "warn", "未完成");
-          el.legalState.textContent = "同意当前版本后，将自动进入 Cookie 设置";
+          el.legalState.textContent = "同意当前版本后，将自动进入钉钉验证";
           el.legalState.className = "notice warn";
           el.legalState.classList.remove("hidden");
           el.legalCheckboxRow.classList.remove("hidden");
@@ -1638,17 +1638,17 @@ export function renderApp(_appOrigin: string, page: AppPage): string {
         const loginBusy = state.loginSessionStatus === "pending" || state.loginSessionStatus === "qr_ready";
         if (state.cookiesReady) {
           setBadge(el.cookieBadge, "ok", "已完成");
-          el.cookieState.textContent = "Cookie 已就绪";
+          el.cookieState.textContent = "钉钉验证已就绪";
           el.cookieState.className = "notice ok";
           el.cookieState.classList.remove("hidden");
           el.cookieMeta.textContent = state.cookiesUpdatedAt ? ("最近更新时间：" + formatTime(state.cookiesUpdatedAt)) : "";
           el.startLoginWorkflowBtn.textContent = "重新二维码登录";
         } else {
           setBadge(el.cookieBadge, loginBusy ? "active" : "warn", loginBusy ? "进行中" : "未完成");
-          el.cookieState.textContent = "Cookie 尚未就绪";
+          el.cookieState.textContent = "钉钉验证尚未就绪";
           el.cookieState.className = "notice warn";
           el.cookieState.classList.remove("hidden");
-          el.cookieMeta.textContent = "仅支持通过二维码登录获取";
+          el.cookieMeta.textContent = "仅支持通过二维码登录获取钉钉验证";
           el.startLoginWorkflowBtn.textContent = "启动二维码登录";
         }
         el.startLoginWorkflowBtn.disabled = !state.legalAccepted || loginBusy;
@@ -1675,12 +1675,12 @@ export function renderApp(_appOrigin: string, page: AppPage): string {
           el.loginQRImage.classList.add("hidden");
         } else if (session.status === "qr_ready") {
           el.loginStatus.textContent = "请使用钉钉扫码登录";
-          el.loginHint.textContent = "扫码成功后，Cookie 会自动绑定到当前账号。";
+          el.loginHint.textContent = "扫码成功后，钉钉验证会自动绑定到当前账号。";
           el.loginQRImage.src = qrImageURL(session.qr_url || "");
           el.loginQRImage.classList.remove("hidden");
         } else if (session.status === "completed") {
-          el.loginStatus.textContent = "Cookie 设置完成";
-          el.loginHint.textContent = "二维码登录成功，正在进入下载页面。";
+          el.loginStatus.textContent = "钉钉验证完成";
+          el.loginHint.textContent = "二维码登录成功，你现在可以返回下载页面，或随时重新扫码刷新验证态。";
           el.loginQRImage.classList.add("hidden");
         } else {
           el.loginStatus.textContent = "登录失败";
@@ -1764,7 +1764,7 @@ export function renderApp(_appOrigin: string, page: AppPage): string {
         }
         const status = [];
         if (!state.legalAccepted) status.push("待同意条款");
-        if (!state.cookiesReady) status.push("待 Cookie 设置");
+        if (!state.cookiesReady) status.push("待钉钉验证");
         if (status.length === 0) status.push("状态正常");
         el.accountSummary.textContent = "当前用户：" + state.user.username + " · " + status.join(" · ");
       }
@@ -1786,7 +1786,7 @@ export function renderApp(_appOrigin: string, page: AppPage): string {
           '<div class="admin-user-name">' + escapeHTML(user.username) + (user.is_sudo ? ' (sudo)' : '') + '</div>',
           '<div class="meta-line">注册时间：' + escapeHTML(formatTime(user.created_at)) + '</div>',
           (!user.legal_accepted ? '<div class="meta-line">待同意条款</div>' : ''),
-          (!user.cookies_ready ? '<div class="meta-line">待 Cookie 设置</div>' : ''),
+          (!user.cookies_ready ? '<div class="meta-line">待钉钉验证</div>' : ''),
           '<div class="meta-line">任务数：' + escapeHTML(String(user.total_jobs || 0)) + '</div>',
           '</section>',
         ].join("")).join("");
@@ -2177,10 +2177,6 @@ export function renderApp(_appOrigin: string, page: AppPage): string {
           redirectTo("/legal");
           return true;
         }
-        if (PAGE === "scan" && state.cookiesReady) {
-          redirectTo("/overview");
-          return true;
-        }
         if (PAGE === "admin" && state.user && !state.user.is_sudo) {
           redirectTo("/overview");
           return true;
@@ -2204,11 +2200,7 @@ export function renderApp(_appOrigin: string, page: AppPage): string {
           }
           if (PAGE === "scan") {
             tasks.push(refreshStatus());
-            tasks.push(refreshLoginSession().then(() => {
-              if (state.loginSessionStatus === "completed" && state.cookiesReady) {
-                redirectTo("/overview");
-              }
-            }));
+            tasks.push(refreshLoginSession());
           }
           if (PAGE === "jobs") {
             tasks.push(refreshJobsPage());
