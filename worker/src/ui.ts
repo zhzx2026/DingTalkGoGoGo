@@ -437,33 +437,32 @@ export function renderApp(_appOrigin: string, page: AppPage): string {
     <title>GoDingtalk</title>
     <style>
       :root {
-        --bg: #f4f6fb;
+        --bg: #f3f4f6;
         --surface: #ffffff;
-        --surface-soft: #f8fbff;
-        --line: #e5e7eb;
-        --line-strong: #cfd8e3;
-        --text: #101828;
+        --surface-soft: #f8fafc;
+        --line: #dfe3ea;
+        --line-strong: #c7d0db;
+        --text: #0f172a;
         --muted: #667085;
         --accent: #2563eb;
         --accent-strong: #1d4ed8;
-        --accent-soft: rgba(37, 99, 235, 0.08);
+        --accent-soft: rgba(37, 99, 235, 0.06);
         --ok: #157f3b;
         --warn: #b54708;
         --danger: #b42318;
-        --shadow: 0 18px 44px rgba(15, 23, 42, 0.06);
-        --radius-lg: 22px;
-        --radius-md: 16px;
-        --radius-sm: 12px;
+        --shadow: 0 6px 18px rgba(15, 23, 42, 0.04);
+        --shadow-hover: 0 12px 28px rgba(15, 23, 42, 0.06);
+        --radius-lg: 14px;
+        --radius-md: 10px;
+        --radius-sm: 8px;
       }
       * { box-sizing: border-box; }
       html, body {
         margin: 0;
         min-height: 100%;
-        background:
-          radial-gradient(circle at top left, rgba(37, 99, 235, 0.08), transparent 28%),
-          linear-gradient(180deg, #f8fbff 0%, #f4f6fb 48%, #edf2f7 100%);
+        background: var(--bg);
         color: var(--text);
-        font-family: "Avenir Next", "PingFang SC", "Helvetica Neue", Arial, sans-serif;
+        font-family: "SF Pro Text", "PingFang SC", "Helvetica Neue", Arial, sans-serif;
       }
       body { padding: 0; overflow-x: hidden; }
       body.page-ready .app-shell { opacity: 1; transform: none; }
@@ -474,17 +473,17 @@ export function renderApp(_appOrigin: string, page: AppPage): string {
       .app-shell {
         max-width: 1180px;
         margin: 0 auto;
-        padding: 24px 18px 64px;
+        padding: 18px 18px 40px;
         opacity: 0;
-        transform: translateY(6px);
-        transition: opacity 180ms ease, transform 220ms ease;
+        transform: translateY(4px);
+        transition: opacity 140ms ease, transform 160ms ease;
       }
       .app-header {
         display: flex;
         align-items: center;
         justify-content: space-between;
         gap: 16px;
-        padding: 10px 0 26px;
+        padding: 0 0 18px;
       }
       .brand {
         display: inline-flex;
@@ -493,50 +492,51 @@ export function renderApp(_appOrigin: string, page: AppPage): string {
         text-decoration: none;
       }
       .brand-mark {
-        width: 42px;
-        height: 42px;
-        border-radius: 14px;
+        width: 36px;
+        height: 36px;
+        border-radius: 10px;
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        background: linear-gradient(180deg, var(--accent) 0%, var(--accent-strong) 100%);
+        background: linear-gradient(180deg, #1f2937 0%, #111827 100%);
         color: #eff6ff;
-        font-size: 12px;
+        font-size: 11px;
         font-weight: 800;
         letter-spacing: 0.10em;
       }
       .brand-copy {
         display: grid;
-        gap: 3px;
+        gap: 2px;
       }
       .brand-copy strong {
-        font-size: 17px;
-        letter-spacing: -0.02em;
+        font-size: 15px;
+        letter-spacing: -0.01em;
       }
       .brand-copy span {
         color: var(--muted);
-        font-size: 12px;
+        font-size: 11px;
       }
       .page-intro {
-        margin-bottom: 18px;
+        margin-bottom: 12px;
       }
       .page-intro h1 {
-        margin: 10px 0 0;
-        font-size: 40px;
-        line-height: 1.04;
-        letter-spacing: -0.04em;
+        margin: 8px 0 0;
+        font-size: 28px;
+        line-height: 1.15;
+        letter-spacing: -0.03em;
       }
       .page-intro p {
-        margin: 14px 0 0;
+        margin: 10px 0 0;
         max-width: 64ch;
         color: var(--muted);
-        line-height: 1.72;
+        line-height: 1.65;
+        font-size: 14px;
       }
       .eyebrow, .panel-kicker {
         color: var(--muted);
         text-transform: uppercase;
-        letter-spacing: 0.12em;
-        font-size: 11px;
+        letter-spacing: 0.08em;
+        font-size: 10px;
         font-weight: 700;
       }
       .panel {
@@ -544,26 +544,36 @@ export function renderApp(_appOrigin: string, page: AppPage): string {
         border: 1px solid var(--line);
         box-shadow: var(--shadow);
         border-radius: var(--radius-lg);
-        padding: 22px;
+        padding: 16px;
+        transition: border-color 120ms ease, background-color 120ms ease, box-shadow 120ms ease;
+      }
+      .panel:hover,
+      .stat-tile:hover,
+      .recent-row:hover,
+      .job-row:hover,
+      .admin-user:hover,
+      .storage-item:hover {
+        border-color: var(--line-strong);
+        box-shadow: var(--shadow-hover);
       }
       .panel-head {
         display: flex;
         align-items: start;
         justify-content: space-between;
-        gap: 12px;
+        gap: 10px;
       }
       .panel-head h2 {
-        margin: 6px 0 0;
-        font-size: 24px;
-        letter-spacing: -0.03em;
+        margin: 4px 0 0;
+        font-size: 18px;
+        letter-spacing: -0.02em;
       }
       .field {
         display: grid;
         gap: 8px;
-        margin-top: 16px;
+        margin-top: 12px;
       }
       .field > label {
-        font-size: 13px;
+        font-size: 12px;
         font-weight: 700;
       }
       input, textarea {
@@ -572,45 +582,45 @@ export function renderApp(_appOrigin: string, page: AppPage): string {
         background: #ffffff;
         color: var(--text);
         border-radius: var(--radius-md);
-        padding: 14px 16px;
+        padding: 10px 12px;
       }
       input:focus, textarea:focus {
         outline: none;
         border-color: rgba(37, 99, 235, 0.42);
-        box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.10);
+        box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.08);
       }
       textarea {
-        min-height: 150px;
+        min-height: 120px;
         resize: vertical;
-        line-height: 1.7;
+        line-height: 1.6;
       }
-      .large-textarea { min-height: 280px; }
+      .large-textarea { min-height: 220px; }
       .actions {
         display: flex;
         flex-wrap: wrap;
-        gap: 10px;
-        margin-top: 16px;
+        gap: 8px;
+        margin-top: 12px;
       }
       button, .button-link, .mini-link {
         appearance: none;
         border: 1px solid var(--line);
         background: rgba(255, 255, 255, 0.95);
         color: var(--text);
-        border-radius: 999px;
-        min-height: 42px;
-        padding: 0 16px;
+        border-radius: 8px;
+        min-height: 36px;
+        padding: 0 12px;
         font-weight: 700;
         text-decoration: none;
         cursor: pointer;
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        transition: box-shadow 140ms ease, border-color 140ms ease, background 140ms ease;
+        transition: box-shadow 120ms ease, border-color 120ms ease, background 120ms ease, color 120ms ease;
       }
       .mini-link {
-        min-height: 34px;
-        padding: 0 12px;
-        font-size: 13px;
+        min-height: 30px;
+        padding: 0 10px;
+        font-size: 12px;
       }
       button.primary, .button-link.primary {
         color: #eff6ff;
@@ -618,18 +628,20 @@ export function renderApp(_appOrigin: string, page: AppPage): string {
         background: linear-gradient(180deg, var(--accent) 0%, var(--accent-strong) 100%);
       }
       button:hover, .button-link:hover, .mini-link:hover {
-        box-shadow: 0 6px 16px rgba(37, 99, 235, 0.10);
+        box-shadow: 0 4px 10px rgba(15, 23, 42, 0.08);
+        border-color: var(--line-strong);
       }
       button:disabled {
         opacity: 0.62;
         cursor: wait;
       }
       .notice {
-        margin-top: 14px;
-        padding: 14px 16px;
+        margin-top: 12px;
+        padding: 10px 12px;
         border-radius: var(--radius-md);
-        line-height: 1.65;
+        line-height: 1.55;
         border: 1px solid transparent;
+        font-size: 13px;
       }
       .notice.ok {
         background: rgba(21, 127, 59, 0.08);
@@ -648,16 +660,16 @@ export function renderApp(_appOrigin: string, page: AppPage): string {
       }
       .meta-line, .muted {
         color: var(--muted);
-        line-height: 1.7;
-        font-size: 13px;
+        line-height: 1.6;
+        font-size: 12px;
       }
       .badge {
         display: inline-flex;
         align-items: center;
-        min-height: 30px;
-        padding: 0 12px;
+        min-height: 24px;
+        padding: 0 8px;
         border-radius: 999px;
-        font-size: 12px;
+        font-size: 11px;
         font-weight: 700;
         white-space: nowrap;
         border: 1px solid transparent;
@@ -678,13 +690,17 @@ export function renderApp(_appOrigin: string, page: AppPage): string {
         position: relative;
       }
       .avatar-trigger {
-        width: 44px;
-        height: 44px;
+        width: 36px;
+        height: 36px;
         padding: 0;
         border-radius: 999px;
         background: #ffffff;
         border: 1px solid var(--line-strong);
-        box-shadow: 0 8px 18px rgba(15, 23, 42, 0.08);
+        box-shadow: 0 2px 8px rgba(15, 23, 42, 0.06);
+      }
+      .avatar-trigger:hover {
+        border-color: var(--line-strong);
+        box-shadow: 0 4px 12px rgba(15, 23, 42, 0.08);
       }
       .avatar-fallback {
         display: inline-flex;
@@ -698,44 +714,46 @@ export function renderApp(_appOrigin: string, page: AppPage): string {
         position: absolute;
         top: calc(100% + 10px);
         right: 0;
-        width: 240px;
-        border-radius: 18px;
+        width: 220px;
+        border-radius: 12px;
         border: 1px solid var(--line);
         background: rgba(255,255,255,0.98);
-        box-shadow: 0 20px 40px rgba(15, 23, 42, 0.12);
-        padding: 14px;
+        box-shadow: 0 12px 24px rgba(15, 23, 42, 0.10);
+        padding: 10px;
         z-index: 30;
       }
       .user-menu-head {
-        padding: 4px 4px 12px;
+        padding: 4px 4px 10px;
         border-bottom: 1px solid var(--line);
       }
       .user-menu-name {
         font-weight: 800;
+        font-size: 13px;
       }
       .user-menu-role {
-        margin-top: 6px;
+        margin-top: 4px;
         color: var(--muted);
-        font-size: 12px;
+        font-size: 11px;
         font-weight: 700;
         text-transform: uppercase;
         letter-spacing: 0.08em;
       }
       .user-menu-list {
         display: grid;
-        gap: 8px;
-        margin-top: 12px;
+        gap: 6px;
+        margin-top: 10px;
       }
       .user-menu-link {
-        min-height: 40px;
-        border-radius: 12px;
-        padding: 0 12px;
+        min-height: 34px;
+        border-radius: 8px;
+        padding: 0 10px;
         text-decoration: none;
         display: flex;
         align-items: center;
         color: var(--text);
         border: 1px solid transparent;
         background: transparent;
+        font-size: 13px;
       }
       .user-menu-link:hover {
         background: var(--surface-soft);
@@ -747,45 +765,46 @@ export function renderApp(_appOrigin: string, page: AppPage): string {
       .login-shell {
         display: grid;
         grid-template-columns: minmax(0, 1.1fr) minmax(380px, 0.9fr);
-        gap: 18px;
+        gap: 14px;
         align-items: stretch;
       }
       .login-brand-panel {
         display: grid;
         align-content: start;
-        gap: 18px;
+        gap: 14px;
       }
       .login-brand-panel h1 {
         margin: 8px 0 0;
-        font-size: 42px;
-        line-height: 1.04;
+        font-size: 32px;
+        line-height: 1.1;
         letter-spacing: -0.04em;
       }
       .login-brand-panel p {
         margin: 0;
         color: var(--muted);
-        line-height: 1.76;
+        line-height: 1.62;
+        font-size: 14px;
       }
       .login-points {
         display: grid;
-        gap: 14px;
+        gap: 10px;
       }
       .login-point {
         display: grid;
         grid-template-columns: 34px minmax(0, 1fr);
-        gap: 12px;
+        gap: 10px;
         align-items: start;
       }
       .login-point strong {
-        width: 34px;
-        height: 34px;
+        width: 28px;
+        height: 28px;
         border-radius: 999px;
         background: var(--accent-soft);
         color: var(--accent);
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        font-size: 12px;
+        font-size: 11px;
       }
       .auth-tabs {
         display: inline-flex;
@@ -796,13 +815,14 @@ export function renderApp(_appOrigin: string, page: AppPage): string {
         border: 1px solid var(--line);
       }
       .auth-tab {
-        min-height: 40px;
-        padding: 0 16px;
+        min-height: 34px;
+        padding: 0 12px;
         border-radius: 999px;
         border: 0;
         background: transparent;
         color: var(--muted);
         font-weight: 700;
+        font-size: 13px;
       }
       .auth-tab.active {
         background: #ffffff;
@@ -810,43 +830,43 @@ export function renderApp(_appOrigin: string, page: AppPage): string {
         box-shadow: 0 2px 10px rgba(15, 23, 42, 0.08);
       }
       .auth-form-panel {
-        margin-top: 22px;
+        margin-top: 16px;
       }
       .auth-main-btn {
-        min-width: 132px;
+        min-width: 112px;
       }
       .status-strip {
         display: grid;
-        gap: 18px;
+        gap: 12px;
       }
       .status-copy h2 {
-        margin: 8px 0 0;
-        font-size: 30px;
-        letter-spacing: -0.04em;
+        margin: 6px 0 0;
+        font-size: 22px;
+        letter-spacing: -0.02em;
       }
       .status-copy p {
-        margin: 12px 0 0;
+        margin: 8px 0 0;
       }
       .status-stats {
         display: grid;
         grid-template-columns: repeat(4, minmax(0, 1fr));
-        gap: 14px;
+        gap: 10px;
       }
       .stat-tile {
         border: 1px solid var(--line);
         border-radius: var(--radius-md);
         background: var(--surface-soft);
-        padding: 16px;
+        padding: 12px;
       }
       .stat-tile span {
         color: var(--muted);
-        font-size: 13px;
+        font-size: 12px;
       }
       .stat-tile strong {
         display: block;
-        margin-top: 8px;
-        font-size: 28px;
-        letter-spacing: -0.04em;
+        margin-top: 6px;
+        font-size: 22px;
+        letter-spacing: -0.02em;
       }
       .overview-grid,
       .legal-layout,
@@ -854,8 +874,8 @@ export function renderApp(_appOrigin: string, page: AppPage): string {
       .account-layout,
       .admin-layout {
         display: grid;
-        gap: 18px;
-        margin-top: 18px;
+        gap: 14px;
+        margin-top: 14px;
       }
       .overview-grid {
         grid-template-columns: minmax(0, 1.15fr) 380px;
@@ -878,31 +898,32 @@ export function renderApp(_appOrigin: string, page: AppPage): string {
         border: 1px dashed rgba(37, 99, 235, 0.24);
         border-radius: var(--radius-md);
         background: linear-gradient(180deg, rgba(255,255,255,0.95), rgba(248,251,255,0.95));
-        padding: 22px;
+        padding: 14px;
       }
       .gate-title {
-        font-size: 22px;
+        font-size: 18px;
         font-weight: 800;
-        letter-spacing: -0.03em;
+        letter-spacing: -0.02em;
       }
       .recent-panel {
         display: grid;
-        gap: 12px;
+        gap: 10px;
       }
       .recent-list {
         display: grid;
-        gap: 10px;
+        gap: 8px;
       }
       .recent-row {
         display: grid;
         grid-template-columns: minmax(0, 1fr) auto auto;
-        gap: 10px;
+        gap: 8px;
         align-items: center;
-        min-height: 42px;
-        padding: 0 10px;
-        border-radius: 12px;
+        min-height: 36px;
+        padding: 0 8px;
+        border-radius: 8px;
         background: var(--surface-soft);
         border: 1px solid var(--line);
+        transition: border-color 120ms ease, background 120ms ease, box-shadow 120ms ease;
       }
       .recent-title {
         min-width: 0;
@@ -913,7 +934,7 @@ export function renderApp(_appOrigin: string, page: AppPage): string {
       }
       .recent-time {
         color: var(--muted);
-        font-size: 12px;
+        font-size: 11px;
         white-space: nowrap;
       }
       .legal-action-panel, .legal-doc-panel, .scan-focus-panel, .scan-side-panel {
@@ -933,12 +954,12 @@ export function renderApp(_appOrigin: string, page: AppPage): string {
       }
       .legal-text {
         display: grid;
-        gap: 12px;
-        line-height: 1.75;
+        gap: 10px;
+        line-height: 1.65;
       }
       .legal-text h3 {
         margin: 0;
-        font-size: 18px;
+        font-size: 16px;
       }
       .legal-text p {
         margin: 0;
@@ -948,26 +969,26 @@ export function renderApp(_appOrigin: string, page: AppPage): string {
         border-radius: var(--radius-md);
         border: 1px solid rgba(37, 99, 235, 0.18);
         background: linear-gradient(180deg, rgba(255,255,255,0.98), rgba(245,248,255,0.95));
-        padding: 18px;
+        padding: 14px;
       }
       .scan-title {
-        font-size: 22px;
+        font-size: 18px;
         font-weight: 800;
-        letter-spacing: -0.03em;
+        letter-spacing: -0.02em;
       }
       .scan-qr-frame {
         display: flex;
         align-items: center;
         justify-content: center;
-        min-height: 320px;
-        margin-top: 16px;
-        border-radius: 18px;
+        min-height: 280px;
+        margin-top: 12px;
+        border-radius: 12px;
         background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
         border: 1px dashed rgba(37, 99, 235, 0.22);
       }
       .qr-image {
         display: block;
-        width: 280px;
+        width: 240px;
         max-width: 100%;
         border-radius: var(--radius-md);
         border: 1px solid var(--line);
@@ -975,34 +996,34 @@ export function renderApp(_appOrigin: string, page: AppPage): string {
       }
       .scan-steps {
         display: grid;
-        gap: 14px;
+        gap: 10px;
       }
       .scan-step {
         display: grid;
         grid-template-columns: 34px minmax(0, 1fr);
-        gap: 12px;
+        gap: 10px;
         align-items: start;
       }
       .scan-step strong {
-        width: 34px;
-        height: 34px;
+        width: 28px;
+        height: 28px;
         border-radius: 999px;
         display: inline-flex;
         align-items: center;
         justify-content: center;
         background: var(--accent-soft);
         color: var(--accent);
-        font-size: 12px;
+        font-size: 11px;
       }
       .records-panel {
-        margin-top: 18px;
+        margin-top: 14px;
       }
       .records-toolbar,
       .records-footer {
         display: flex;
         align-items: center;
         justify-content: space-between;
-        gap: 14px;
+        gap: 10px;
         flex-wrap: wrap;
       }
       .records-size-group {
@@ -1016,13 +1037,14 @@ export function renderApp(_appOrigin: string, page: AppPage): string {
         gap: 8px;
       }
       .size-chip {
-        min-height: 36px;
-        padding: 0 14px;
+        min-height: 32px;
+        padding: 0 12px;
         border-radius: 999px;
         border: 1px solid var(--line);
         background: #ffffff;
         color: var(--muted);
         font-weight: 700;
+        font-size: 12px;
       }
       .size-chip.active {
         border-color: rgba(37, 99, 235, 0.22);
@@ -1031,23 +1053,27 @@ export function renderApp(_appOrigin: string, page: AppPage): string {
       }
       .records-list {
         display: grid;
-        gap: 12px;
-        margin-top: 16px;
+        gap: 10px;
+        margin-top: 12px;
       }
       .job-row {
         border: 1px solid var(--line);
         border-radius: var(--radius-md);
         background: var(--surface-soft);
         overflow: hidden;
+        transition: border-color 120ms ease, box-shadow 120ms ease;
       }
       .job-row-main {
         display: grid;
         grid-template-columns: minmax(0, 1fr) 100px 110px 70px auto;
-        gap: 10px;
+        gap: 8px;
         align-items: center;
-        min-height: 52px;
-        padding: 0 14px;
+        min-height: 42px;
+        padding: 0 10px;
         cursor: pointer;
+      }
+      .job-row-main:hover {
+        background: #f3f6fb;
       }
       .job-row-title {
         min-width: 0;
@@ -1058,17 +1084,17 @@ export function renderApp(_appOrigin: string, page: AppPage): string {
       }
       .job-row-meta {
         color: var(--muted);
-        font-size: 12px;
+        font-size: 11px;
         white-space: nowrap;
       }
       .job-row-detail {
         border-top: 1px solid var(--line);
-        padding: 14px;
+        padding: 12px;
         background: #ffffff;
       }
       .job-row-detail-grid {
         display: grid;
-        gap: 12px;
+        gap: 10px;
       }
       .job-inline-files {
         display: grid;
@@ -1080,9 +1106,9 @@ export function renderApp(_appOrigin: string, page: AppPage): string {
         justify-content: space-between;
         gap: 12px;
         border: 1px solid var(--line);
-        border-radius: 12px;
+        border-radius: 8px;
         background: var(--surface-soft);
-        padding: 10px 12px;
+        padding: 8px 10px;
       }
       .job-inline-errors {
         color: var(--danger);
@@ -1098,17 +1124,18 @@ export function renderApp(_appOrigin: string, page: AppPage): string {
         border: 1px solid var(--line);
         border-radius: var(--radius-md);
         background: var(--surface-soft);
-        padding: 16px;
+        padding: 12px;
+        transition: border-color 120ms ease, box-shadow 120ms ease;
       }
       .admin-user-name,
       .storage-name {
-        font-size: 17px;
+        font-size: 15px;
         font-weight: 800;
       }
       .storage-toolbar {
         display: flex;
         align-items: end;
-        gap: 14px;
+        gap: 10px;
         flex-wrap: wrap;
       }
       .storage-search {
@@ -1118,19 +1145,19 @@ export function renderApp(_appOrigin: string, page: AppPage): string {
         display: flex;
         align-items: start;
         justify-content: space-between;
-        gap: 12px;
+        gap: 10px;
       }
       .storage-key {
         color: var(--muted);
-        font-size: 12px;
+        font-size: 11px;
         word-break: break-all;
       }
       .storage-meta-grid {
         display: flex;
         flex-wrap: wrap;
-        gap: 8px 14px;
+        gap: 6px 12px;
         color: var(--muted);
-        font-size: 13px;
+        font-size: 12px;
       }
       .storage-meta-grid strong {
         color: var(--text);
@@ -1142,19 +1169,20 @@ export function renderApp(_appOrigin: string, page: AppPage): string {
       }
       .storage-tag {
         display: inline-flex;
-        min-height: 28px;
+        min-height: 24px;
         align-items: center;
-        padding: 0 10px;
+        padding: 0 8px;
         border-radius: 999px;
         background: rgba(37, 99, 235, 0.08);
         color: var(--accent);
-        font-size: 12px;
+        font-size: 11px;
         font-weight: 700;
       }
       .empty {
-        padding: 28px 12px;
+        padding: 20px 12px;
         text-align: center;
         color: var(--muted);
+        font-size: 13px;
       }
       @media (max-width: 980px) {
         .overview-grid,
