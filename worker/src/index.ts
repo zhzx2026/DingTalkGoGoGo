@@ -229,6 +229,7 @@ const SESSION_COOKIE_NAME = "godingtalk_session";
 const SESSION_TTL_SECONDS = 60 * 60 * 24 * 14;
 const DEFAULT_THREAD = 100;
 const MAX_THREAD = 100;
+const DEFAULT_JOBS_PAGE_SIZE = 10;
 const FILE_RETENTION_LIMIT_BYTES = 2 * 1024 * 1024 * 1024;
 const DEFAULT_LEGAL_VERSION = "2026-03-21";
 const DEFAULT_LEGAL_TEXT = `## 一、用途限制
@@ -599,6 +600,19 @@ function registrationOpen(env: Env, usersCount: number): boolean {
 
 function clampThread(value: number): number {
   return Math.min(MAX_THREAD, Math.max(1, value));
+}
+
+function normalizeJobsPageSize(value: string | null): number {
+  const parsed = toNumber(value);
+  if (parsed === 20 || parsed === 50) {
+    return parsed;
+  }
+  return DEFAULT_JOBS_PAGE_SIZE;
+}
+
+function normalizePageNumber(value: string | null): number {
+  const parsed = toNumber(value);
+  return parsed > 0 ? parsed : 1;
 }
 
 async function sha256Hex(input: string): Promise<string> {
@@ -1252,6 +1266,43 @@ async function listJobs(env: Env, ownerUserID: string): Promise<JobRecord[]> {
     .all<JobRow>();
   const rows = Array.isArray(result.results) ? result.results : [];
   return rows.map((row) => parseJobRow(env, row));
+}
+
+async function listJobsPage(
+  env: Env,
+  ownerUserID: string,
+  page: number,
+  pageSize: number,
+): Promise<{ jobs: JobRecord[]; total: number; page: number; page_size: number; total_pages: number }> {
+  const safePageSize = normalizeJobsPageSize(String(pageSize));
+  const safePage = Math.max(1, page);
+  const totalRow = await env.DB
+    .prepare("SELECT COUNT(*) AS c FROM jobs WHERE owner_user_id = ?1")
+    .bind(ownerUserID)
+    .first<{ c: number | string | null }>();
+  const total = toNumber(totalRow?.c);
+  const totalPages = Math.max(1, Math.ceil(total / safePageSize));
+  const currentPage = Math.min(safePage, totalPages);
+  const offset = (currentPage - 1) * safePageSize;
+
+  const result = await env.DB
+    .prepare(
+      `SELECT *
+       FROM jobs
+       WHERE owner_user_id = ?1
+       ORDER BY updated_at DESC
+       LIMIT ?2 OFFSET ?3`,
+    )
+    .bind(ownerUserID, safePageSize, offset)
+    .all<JobRow>();
+  const rows = Array.isArray(result.results) ? result.results : [];
+  return {
+    jobs: rows.map((row) => parseJobRow(env, row)),
+    total,
+    page: currentPage,
+    page_size: safePageSize,
+    total_pages: totalPages,
+  };
 }
 
 async function listJobEvents(env: Env, jobID: string, limit = 80): Promise<JobEventRecord[]> {
@@ -2059,7 +2110,15 @@ async function handleCookies(request: Request, env: Env, user: AuthUser): Promis
 
 async function handleJobs(request: Request, env: Env, user: AuthUser): Promise<Response> {
   if (request.method === "GET") {
-    return jsonResponse({ jobs: await listJobs(env, user.id) });
+    const url = new URL(request.url);
+    return jsonResponse(
+      await listJobsPage(
+        env,
+        user.id,
+        normalizePageNumber(url.searchParams.get("page")),
+        normalizeJobsPageSize(url.searchParams.get("page_size")),
+      ),
+    );
   }
   if (request.method === "POST") {
     try {
@@ -2281,6 +2340,7 @@ export default {
         || url.pathname === "/download"
         || url.pathname === "/jobs"
         || url.pathname === "/scan"
+        || url.pathname === "/admin"
         || url.pathname === "/login"
         || url.pathname === "/settings"
         || url.pathname === "/legal"
@@ -2289,25 +2349,66 @@ export default {
         const authUser = await getAuthUser(request, env);
 
         if (url.pathname === "/") {
-          response = redirectResponse(`${url.origin}${authUser ? "/overview" : "/login"}`);
+          if (!authUser) {
+            response = redirectResponse(`${url.origin}/login`);
+          } else {
+            const [legalState, cookieState] = await Promise.all([
+              getUserLegalState(env, authUser.id),
+              getUserCookieState(env, authUser.id),
+            ]);
+            if (!legalState.accepted) {
+              response = redirectResponse(`${url.origin}/legal`);
+            } else if (!cookieState.cookiesReady) {
+              response = redirectResponse(`${url.origin}/scan`);
+            } else {
+              response = redirectResponse(`${url.origin}/overview`);
+            }
+          }
         } else if (!authUser) {
           response = url.pathname === "/login"
             ? htmlResponse(renderApp(url.origin, "login"))
             : redirectResponse(`${url.origin}/login`);
-        } else if (url.pathname === "/overview") {
-          response = htmlResponse(renderApp(url.origin, "overview"));
-        } else if (url.pathname === "/jobs") {
-          response = htmlResponse(renderApp(url.origin, "jobs"));
-        } else if (url.pathname === "/scan" || url.pathname === "/settings") {
-          response = htmlResponse(renderApp(url.origin, "scan"));
-        } else if (url.pathname === "/legal") {
-          response = htmlResponse(renderApp(url.origin, "legal"));
+        } else if (url.pathname === "/login") {
+          response = redirectResponse(`${url.origin}/`);
         } else if (url.pathname === "/account") {
           response = htmlResponse(renderApp(url.origin, "account"));
-        } else if (url.pathname === "/login") {
-          response = redirectResponse(`${url.origin}/overview`);
+        } else if (url.pathname === "/admin") {
+          if (!authUser.is_sudo) {
+            response = redirectResponse(`${url.origin}/overview`);
+          } else {
+            response = htmlResponse(renderApp(url.origin, "admin"));
+          }
+        } else if (url.pathname === "/jobs") {
+          response = htmlResponse(renderApp(url.origin, "jobs"));
         } else {
-          response = htmlResponse(renderApp(url.origin, "download"));
+          const [legalState, cookieState] = await Promise.all([
+            getUserLegalState(env, authUser.id),
+            getUserCookieState(env, authUser.id),
+          ]);
+
+          if (url.pathname === "/legal") {
+            response = legalState.accepted
+              ? redirectResponse(`${url.origin}${cookieState.cookiesReady ? "/overview" : "/scan"}`)
+              : htmlResponse(renderApp(url.origin, "legal"));
+          } else if (url.pathname === "/scan" || url.pathname === "/settings") {
+            if (!legalState.accepted) {
+              response = redirectResponse(`${url.origin}/legal`);
+            } else if (cookieState.cookiesReady) {
+              response = redirectResponse(`${url.origin}/overview`);
+            } else {
+              response = htmlResponse(renderApp(url.origin, "scan"));
+            }
+          } else if (url.pathname === "/download" || url.pathname === "/overview") {
+            if (!legalState.accepted) {
+              response = redirectResponse(`${url.origin}/legal`);
+            } else if (!cookieState.cookiesReady) {
+              response = redirectResponse(`${url.origin}/scan`);
+            } else {
+              response = htmlResponse(renderApp(url.origin, "overview"));
+            }
+          } else {
+            response = jsonResponse({ error: "not found" }, { status: 404 });
+          }
         }
       } else if (url.pathname === "/api/auth/me" && request.method === "GET") {
         response = await handleAuthMe(request, env);
