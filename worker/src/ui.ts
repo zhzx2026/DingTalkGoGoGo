@@ -38,10 +38,19 @@ function renderTopbar(title: string, subtitle: string): string {
         </div>
 
         <div class="topbar-actions">
+          <button type="button" class="icon-chip">🔔</button>
+          <div class="top-chip top-chip-light">🇨🇳 ZH</div>
+          <div id="top-jobs-chip" class="top-chip top-chip-light">🗂 0</div>
+          <div id="top-balance-chip" class="top-chip top-chip-money">💵 $0.00</div>
           <div id="top-status-chip" class="top-chip">钉钉验证未完成</div>
           <div id="user-menu-wrap" class="user-menu-wrap hidden">
-            <button id="user-menu-trigger" class="avatar-trigger" type="button" aria-haspopup="menu" aria-expanded="false">
+            <button id="user-menu-trigger" class="profile-trigger" type="button" aria-haspopup="menu" aria-expanded="false">
               <span id="avatar-fallback" class="avatar-fallback">U</span>
+              <span class="profile-copy">
+                <strong id="profile-name">未登录</strong>
+                <span id="profile-role">User</span>
+              </span>
+              <span class="profile-caret">⌄</span>
             </button>
             <div id="user-menu" class="user-menu hidden">
               <div class="user-menu-head">
@@ -73,7 +82,7 @@ function renderMetricCards(): string {
           </div>
         </article>
         <article class="metric-card">
-          <div class="metric-icon blue">≡</div>
+          <div class="metric-icon blue">⌁</div>
           <div class="metric-copy">
             <span>总任务</span>
             <strong id="stat-total">0</strong>
@@ -94,6 +103,38 @@ function renderMetricCards(): string {
             <span>已完成</span>
             <strong id="stat-success">0</strong>
             <small>已完成下载</small>
+          </div>
+        </article>
+        <article class="metric-card">
+          <div class="metric-icon red">!</div>
+          <div class="metric-copy">
+            <span>失败任务</span>
+            <strong id="stat-failed">0</strong>
+            <small>需要处理</small>
+          </div>
+        </article>
+        <article class="metric-card">
+          <div class="metric-icon yellow">7</div>
+          <div class="metric-copy">
+            <span>近 7 天创建</span>
+            <strong id="stat-created-week">0</strong>
+            <small>滚动统计</small>
+          </div>
+        </article>
+        <article class="metric-card">
+          <div class="metric-icon blue">%</div>
+          <div class="metric-copy">
+            <span>完成率</span>
+            <strong id="stat-completion-rate">0%</strong>
+            <small>最近任务</small>
+          </div>
+        </article>
+        <article class="metric-card">
+          <div class="metric-icon mint">⏱</div>
+          <div class="metric-copy">
+            <span>最近验证</span>
+            <strong id="stat-cookie-time">-</strong>
+            <small>更新时间</small>
           </div>
         </article>
       </section>`;
@@ -482,7 +523,7 @@ export function renderApp(_appOrigin: string, page: AppPage): string {
     <style>
       :root {
         --bg: #f4f6fb;
-        --sidebar-bg: rgba(255,255,255,0.86);
+        --sidebar-bg: rgba(255,255,255,0.92);
         --surface: rgba(255,255,255,0.96);
         --surface-soft: #fbfdff;
         --line: #dfe6ee;
@@ -497,7 +538,7 @@ export function renderApp(_appOrigin: string, page: AppPage): string {
         --purple: #8b5cf6;
         --yellow: #f59e0b;
         --red: #ef4444;
-        --shadow: 0 10px 28px rgba(15, 23, 42, 0.06);
+        --shadow: 0 12px 30px rgba(15, 23, 42, 0.06);
         --radius-xl: 24px;
         --radius-lg: 18px;
         --radius-md: 14px;
@@ -533,12 +574,12 @@ export function renderApp(_appOrigin: string, page: AppPage): string {
         grid-template-columns: var(--sidebar-collapsed-width) minmax(0, 1fr);
       }
       .sidebar {
-        padding: 18px 14px 18px 18px;
+        padding: 16px 14px 16px 16px;
         background: var(--sidebar-bg);
         border-right: 1px solid var(--line);
         display: grid;
         grid-template-rows: auto 1fr auto;
-        gap: 18px;
+        gap: 16px;
       }
       .sidebar-head {
         display: grid;
@@ -547,7 +588,7 @@ export function renderApp(_appOrigin: string, page: AppPage): string {
         display: flex;
         align-items: center;
         gap: 14px;
-        padding: 10px 12px;
+        padding: 12px 12px 14px;
         text-decoration: none;
       }
       .brand-mark {
@@ -583,33 +624,33 @@ export function renderApp(_appOrigin: string, page: AppPage): string {
         align-content: start;
       }
       .nav-item {
-        min-height: 54px;
-        border-radius: 16px;
+        min-height: 50px;
+        border-radius: 14px;
         display: grid;
         grid-template-columns: 28px minmax(0, 1fr);
         align-items: center;
         gap: 12px;
-        padding: 0 16px;
+        padding: 0 14px;
         color: #374151;
-        font-size: 16px;
+        font-size: 15px;
         font-weight: 600;
         text-decoration: none;
         border: 1px solid transparent;
         transition: background 140ms ease, border-color 140ms ease, color 140ms ease, box-shadow 140ms ease;
       }
       .nav-item.active {
-        background: linear-gradient(180deg, rgba(22,163,163,0.10), rgba(22,163,163,0.05));
+        background: linear-gradient(180deg, rgba(22,163,163,0.12), rgba(22,163,163,0.06));
         color: var(--accent);
       }
       .nav-item:hover {
-        background: rgba(255,255,255,0.72);
+        background: rgba(255,255,255,0.88);
         border-color: var(--line);
         box-shadow: 0 6px 16px rgba(15,23,42,0.04);
       }
       .nav-icon {
-        width: 22px;
-        height: 22px;
-        border-radius: 7px;
+        width: 24px;
+        height: 24px;
+        border-radius: 8px;
         border: 1.5px solid currentColor;
         display: inline-flex;
         align-items: center;
@@ -627,10 +668,10 @@ export function renderApp(_appOrigin: string, page: AppPage): string {
         gap: 10px;
       }
       .sidebar-toggle {
-        min-height: 48px;
-        border-radius: 16px;
+        min-height: 44px;
+        border-radius: 14px;
         border: 1px solid var(--line);
-        background: rgba(255,255,255,0.72);
+        background: rgba(255,255,255,0.88);
         display: flex;
         align-items: center;
         justify-content: center;
@@ -647,10 +688,10 @@ export function renderApp(_appOrigin: string, page: AppPage): string {
         align-items: center;
         justify-content: space-between;
         gap: 18px;
-        padding: 14px 18px;
+        padding: 14px 20px;
         border: 1px solid var(--line);
         border-radius: var(--radius-lg);
-        background: rgba(255,255,255,0.86);
+        background: rgba(255,255,255,0.92);
         box-shadow: 0 6px 18px rgba(15, 23, 42, 0.04);
       }
       .topbar-copy .eyebrow {
@@ -677,9 +718,21 @@ export function renderApp(_appOrigin: string, page: AppPage): string {
         align-items: center;
         gap: 10px;
       }
+      .icon-chip {
+        width: 38px;
+        height: 38px;
+        border-radius: 999px;
+        border: 1px solid var(--line);
+        background: #ffffff;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 16px;
+        box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
+      }
       .top-chip {
-        min-height: 36px;
-        padding: 0 12px;
+        min-height: 38px;
+        padding: 0 14px;
         border-radius: 999px;
         border: 1px solid var(--line);
         background: #ffffff;
@@ -689,10 +742,30 @@ export function renderApp(_appOrigin: string, page: AppPage): string {
         font-size: 13px;
         font-weight: 700;
       }
+      .top-chip-light {
+        color: #374151;
+      }
+      .top-chip-money {
+        color: var(--accent);
+      }
       .user-menu-wrap {
         position: relative;
       }
-      .avatar-trigger {
+      .profile-trigger {
+        min-height: 46px;
+        padding: 0 12px 0 0;
+        border-radius: 999px;
+        border: 0;
+        background: transparent;
+        color: var(--text);
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+      }
+      .profile-trigger:hover {
+        background: rgba(255,255,255,0.76);
+      }
+      .avatar-fallback {
         width: 42px;
         height: 42px;
         border-radius: 999px;
@@ -704,6 +777,22 @@ export function renderApp(_appOrigin: string, page: AppPage): string {
         justify-content: center;
         font-weight: 900;
         box-shadow: 0 8px 18px rgba(15, 23, 42, 0.08);
+      }
+      .profile-copy {
+        display: grid;
+        text-align: left;
+        line-height: 1.15;
+      }
+      .profile-copy strong {
+        font-size: 15px;
+      }
+      .profile-copy span {
+        font-size: 12px;
+        color: var(--muted);
+      }
+      .profile-caret {
+        color: #94a3b8;
+        font-size: 14px;
       }
       .user-menu {
         position: absolute;
@@ -765,13 +854,14 @@ export function renderApp(_appOrigin: string, page: AppPage): string {
       .metric-card {
         background: var(--surface);
         border: 1px solid var(--line);
-        border-radius: var(--radius-xl);
+        border-radius: 22px;
         box-shadow: var(--shadow);
-        padding: 18px;
+        padding: 18px 18px 16px;
         display: grid;
         grid-template-columns: 56px minmax(0, 1fr);
         gap: 14px;
         align-items: center;
+        min-height: 108px;
       }
       .metric-icon {
         width: 46px;
@@ -795,7 +885,7 @@ export function renderApp(_appOrigin: string, page: AppPage): string {
       .metric-copy strong {
         display: block;
         margin-top: 4px;
-        font-size: 22px;
+        font-size: 24px;
         line-height: 1.1;
       }
       .metric-copy small {
@@ -895,6 +985,7 @@ export function renderApp(_appOrigin: string, page: AppPage): string {
         gap: 20px;
         align-items: center;
         margin-top: 14px;
+        min-height: 300px;
       }
       .donut {
         width: 220px;
@@ -923,10 +1014,19 @@ export function renderApp(_appOrigin: string, page: AppPage): string {
         color: var(--muted);
         font-weight: 700;
       }
+      .mini-table-row {
+        min-height: 34px;
+        align-items: center;
+        padding: 0 10px;
+        border-radius: 10px;
+        background: var(--surface-soft);
+        border: 1px solid #edf2f7;
+      }
       .trend-layout {
         margin-top: 14px;
         display: grid;
         gap: 12px;
+        min-height: 300px;
       }
       .trend-legend {
         display: flex;
@@ -953,10 +1053,21 @@ export function renderApp(_appOrigin: string, page: AppPage): string {
         overflow: hidden;
         position: relative;
       }
+      .trend-chart::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background:
+          linear-gradient(to right, transparent 0, transparent calc(33.333% - 1px), rgba(211,218,228,0.7) calc(33.333% - 1px), rgba(211,218,228,0.7) 33.333%, transparent 33.333%) 0 0 / 100% 100%,
+          linear-gradient(to top, rgba(211,218,228,0.55) 1px, transparent 1px) 0 0 / 100% 22%;
+        pointer-events: none;
+      }
       .trend-chart svg {
         width: 100%;
         height: 100%;
         display: block;
+        position: relative;
+        z-index: 1;
       }
       .overview-grid {
         display: grid;
@@ -1015,31 +1126,59 @@ export function renderApp(_appOrigin: string, page: AppPage): string {
       }
       .recent-list {
         display: grid;
-        gap: 10px;
+        gap: 12px;
         margin-top: 10px;
       }
       .recent-row {
-        min-height: 40px;
+        min-height: 82px;
         display: grid;
-        grid-template-columns: minmax(0, 1fr) 74px 62px;
-        gap: 8px;
+        grid-template-columns: 48px minmax(0, 1fr) auto;
+        gap: 12px;
         align-items: center;
-        padding: 0 10px;
-        border-radius: 10px;
+        padding: 0 14px;
+        border-radius: 18px;
         background: var(--surface-soft);
         border: 1px solid var(--line);
+      }
+      .recent-icon {
+        width: 44px;
+        height: 44px;
+        border-radius: 14px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        background: rgba(22,163,163,0.12);
+        color: var(--accent);
+        font-size: 20px;
+        font-weight: 900;
+      }
+      .recent-main {
+        min-width: 0;
       }
       .recent-title {
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
-        font-size: 13px;
-        font-weight: 600;
+        font-size: 16px;
+        font-weight: 700;
       }
-      .recent-time {
+      .recent-subtitle {
+        margin-top: 4px;
+        color: var(--muted);
+        font-size: 13px;
+      }
+      .recent-side {
+        text-align: right;
+      }
+      .recent-amount {
+        font-size: 14px;
+        font-weight: 800;
+        color: var(--green);
+      }
+      .recent-meta {
+        margin-top: 4px;
         color: var(--muted);
         font-size: 12px;
-        text-align: right;
       }
       .legal-layout,
       .scan-grid {
@@ -1452,6 +1591,8 @@ export function renderApp(_appOrigin: string, page: AppPage): string {
         navAccount: document.getElementById("nav-account"),
         navAdmin: document.getElementById("nav-admin"),
         topStatusChip: document.getElementById("top-status-chip"),
+        topJobsChip: document.getElementById("top-jobs-chip"),
+        topBalanceChip: document.getElementById("top-balance-chip"),
         userMenuWrap: document.getElementById("user-menu-wrap"),
         userMenuTrigger: document.getElementById("user-menu-trigger"),
         userMenu: document.getElementById("user-menu"),
@@ -1459,6 +1600,8 @@ export function renderApp(_appOrigin: string, page: AppPage): string {
         userMenuRole: document.getElementById("user-menu-role"),
         userMenuAdminLink: document.getElementById("user-menu-admin-link"),
         avatarFallback: document.getElementById("avatar-fallback"),
+        profileName: document.getElementById("profile-name"),
+        profileRole: document.getElementById("profile-role"),
         topbarLogoutBtn: document.getElementById("topbar-logout-btn"),
         topbarLogoutBtnInline: document.getElementById("topbar-logout-btn-inline"),
         authTabLogin: document.getElementById("auth-tab-login"),
@@ -1479,6 +1622,10 @@ export function renderApp(_appOrigin: string, page: AppPage): string {
         statTotal: document.getElementById("stat-total"),
         statRunning: document.getElementById("stat-running"),
         statSuccess: document.getElementById("stat-success"),
+        statFailed: document.getElementById("stat-failed"),
+        statCreatedWeek: document.getElementById("stat-created-week"),
+        statCompletionRate: document.getElementById("stat-completion-rate"),
+        statCookieTime: document.getElementById("stat-cookie-time"),
         overviewGate: document.getElementById("overview-gate"),
         overviewGateTitle: document.getElementById("overview-gate-title"),
         overviewGateCopy: document.getElementById("overview-gate-copy"),
@@ -1734,6 +1881,8 @@ export function renderApp(_appOrigin: string, page: AppPage): string {
         const username = state.user.username || "";
         const initials = username.slice(0, 2).toUpperCase() || "U";
         if (el.avatarFallback) el.avatarFallback.textContent = initials;
+        if (el.profileName) el.profileName.textContent = username;
+        if (el.profileRole) el.profileRole.textContent = state.user.is_sudo ? "Sudo" : "User";
         if (el.userMenuName) el.userMenuName.textContent = username;
         if (el.userMenuRole) el.userMenuRole.textContent = state.user.is_sudo ? "sudo" : "user";
         if (el.userMenuAdminLink) {
@@ -1754,6 +1903,12 @@ export function renderApp(_appOrigin: string, page: AppPage): string {
             el.topStatusChip.textContent = "钉钉验证已就绪";
           }
         }
+        if (el.topJobsChip) {
+          el.topJobsChip.textContent = "🗂 " + (state.overviewJobs.length || 0);
+        }
+        if (el.topBalanceChip) {
+          el.topBalanceChip.textContent = "💵 " + (state.cookiesReady ? "$0.00" : "$-.--");
+        }
         [
           [el.navOverview, PAGE === "overview"],
           [el.navLegal, PAGE === "legal"],
@@ -1771,6 +1926,18 @@ export function renderApp(_appOrigin: string, page: AppPage): string {
         if (el.statTotal) el.statTotal.textContent = String(payload.total_jobs || 0);
         if (el.statRunning) el.statRunning.textContent = String((payload.running_jobs || 0) + (payload.queued_jobs || 0));
         if (el.statSuccess) el.statSuccess.textContent = String(payload.succeeded_jobs || 0);
+        if (el.statFailed) el.statFailed.textContent = String(payload.failed_jobs || 0);
+        if (el.statCookieTime) el.statCookieTime.textContent = state.cookiesUpdatedAt ? formatTime(state.cookiesUpdatedAt).replace(/.*\s/, "") : "-";
+        const recentJobs = Array.isArray(state.overviewJobs) ? state.overviewJobs : [];
+        const weekCutoff = Date.now() - (7 * 24 * 60 * 60 * 1000);
+        const weeklyCreated = recentJobs.filter((job) => {
+          const ts = new Date(job.created_at || "").getTime();
+          return Number.isFinite(ts) && ts >= weekCutoff;
+        }).length;
+        const completed = recentJobs.filter((job) => String(job.status).toLowerCase() === "succeeded").length;
+        const completionRate = recentJobs.length ? Math.round((completed / recentJobs.length) * 100) : 0;
+        if (el.statCreatedWeek) el.statCreatedWeek.textContent = String(weeklyCreated);
+        if (el.statCompletionRate) el.statCompletionRate.textContent = completionRate + "%";
       }
 
       function renderOverviewGate() {
@@ -1874,11 +2041,15 @@ export function renderApp(_appOrigin: string, page: AppPage): string {
         el.recentRecords.innerHTML = records.slice(0, 10).map((job) => {
           const title = job.current_title || (Array.isArray(job.titles) && job.titles[0]) || "下载任务";
           const badgeClass = job.status === "succeeded" ? "ok" : (job.status === "failed" ? "warn" : "active");
+          const amountText = job.status === "succeeded"
+            ? "已完成"
+            : (job.status === "failed" ? "失败" : "进行中");
+          const subtitle = formatTime(job.updated_at || job.created_at);
           return [
             '<div class="recent-row">',
-            '<div class="recent-title">' + escapeHTML(title) + '</div>',
-            '<span class="badge ' + badgeClass + '">' + escapeHTML(formatStatus(job.status)) + '</span>',
-            '<div class="recent-time">' + escapeHTML(formatTime(job.updated_at || job.created_at)) + '</div>',
+            '<div class="recent-icon">⌁</div>',
+            '<div class="recent-main"><div class="recent-title">' + escapeHTML(title) + '</div><div class="recent-subtitle">' + escapeHTML(subtitle) + '</div></div>',
+            '<div class="recent-side"><div class="recent-amount ' + badgeClass + '">' + escapeHTML(amountText) + '</div><div class="recent-meta">' + escapeHTML(String(Math.round(Number(job.progress_percent || 0)))) + '%</div></div>',
             '</div>',
           ].join("");
         }).join("");
