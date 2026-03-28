@@ -8,7 +8,7 @@ function renderSidebar(): string {
             <span class="brand-mark">S</span>
             <span class="brand-copy">
               <strong>GoDingtalk</strong>
-              <span>Private Console</span>
+              <span>Control Console</span>
             </span>
           </a>
         </div>
@@ -23,7 +23,8 @@ function renderSidebar(): string {
         </nav>
 
         <div class="sidebar-foot">
-          <button id="sidebar-toggle-btn" type="button" class="sidebar-toggle">收起</button>
+          <button type="button" class="sidebar-ghost" aria-disabled="true">◐ 深色模式</button>
+          <button id="sidebar-toggle-btn" type="button" class="sidebar-toggle"><span class="sidebar-toggle-icon">〈〈</span><span class="sidebar-toggle-label">收起</span></button>
         </div>
       </aside>`;
 }
@@ -522,37 +523,36 @@ export function renderApp(_appOrigin: string, page: AppPage): string {
     <title>GoDingtalk</title>
     <style>
       :root {
-        --bg: #f4f6fb;
-        --sidebar-bg: rgba(255,255,255,0.92);
-        --surface: rgba(255,255,255,0.96);
-        --surface-soft: #fbfdff;
-        --line: #dfe6ee;
-        --line-strong: #c7d0db;
-        --text: #111827;
+        --bg: #f6f8fb;
+        --sidebar-bg: #ffffff;
+        --surface: #ffffff;
+        --surface-soft: #f9fbfe;
+        --line: #e4e9f0;
+        --line-strong: #ccd6e3;
+        --text: #101828;
         --muted: #6b7280;
-        --accent: #16a3a3;
-        --accent-strong: #0f766e;
-        --accent-soft: rgba(22,163,163,0.10);
+        --accent: #12a594;
+        --accent-strong: #0e8b7d;
+        --accent-soft: rgba(18,165,148,0.10);
         --blue: #3b82f6;
         --green: #10b981;
         --purple: #8b5cf6;
         --yellow: #f59e0b;
         --red: #ef4444;
-        --shadow: 0 12px 30px rgba(15, 23, 42, 0.06);
+        --warn: #d97706;
+        --shadow: 0 8px 20px rgba(15, 23, 42, 0.05);
         --radius-xl: 24px;
-        --radius-lg: 18px;
-        --radius-md: 14px;
+        --radius-lg: 16px;
+        --radius-md: 12px;
         --radius-sm: 10px;
-        --sidebar-width: 280px;
-        --sidebar-collapsed-width: 86px;
+        --sidebar-width: 252px;
+        --sidebar-collapsed-width: 74px;
       }
       * { box-sizing: border-box; }
       html, body {
         margin: 0;
         min-height: 100%;
-        background:
-          radial-gradient(circle at 24% 16%, rgba(22,163,163,0.10), transparent 30%),
-          linear-gradient(180deg, #f9fbff 0%, #f4f6fb 45%, #eef3f8 100%);
+        background: var(--bg);
         color: var(--text);
         font-family: "SF Pro Text", "PingFang SC", "Helvetica Neue", Arial, sans-serif;
       }
@@ -574,12 +574,12 @@ export function renderApp(_appOrigin: string, page: AppPage): string {
         grid-template-columns: var(--sidebar-collapsed-width) minmax(0, 1fr);
       }
       .sidebar {
-        padding: 16px 14px 16px 16px;
+        padding: 10px 10px 14px 10px;
         background: var(--sidebar-bg);
         border-right: 1px solid var(--line);
         display: grid;
         grid-template-rows: auto 1fr auto;
-        gap: 16px;
+        gap: 14px;
       }
       .sidebar-head {
         display: grid;
@@ -587,31 +587,35 @@ export function renderApp(_appOrigin: string, page: AppPage): string {
       .sidebar-brand {
         display: flex;
         align-items: center;
-        gap: 14px;
-        padding: 12px 12px 14px;
+        gap: 12px;
+        padding: 12px;
         text-decoration: none;
       }
       .brand-mark {
-        width: 44px;
-        height: 44px;
-        border-radius: 14px;
-        background: linear-gradient(135deg, #164ee4, #16a3a3);
+        width: 40px;
+        height: 40px;
+        border-radius: 12px;
+        border: 1px solid rgba(14, 139, 125, 0.24);
+        background: linear-gradient(135deg, #0a57de, #14b8a6);
         color: white;
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        font-size: 20px;
+        font-size: 18px;
         font-weight: 900;
       }
       .brand-copy strong {
         display: block;
         font-size: 18px;
+        line-height: 1;
       }
       .brand-copy span {
         display: block;
-        margin-top: 2px;
+        margin-top: 4px;
         color: var(--muted);
-        font-size: 12px;
+        font-size: 11px;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
       }
       body.sidebar-collapsed .brand-copy,
       body.sidebar-collapsed .nav-label,
@@ -620,42 +624,42 @@ export function renderApp(_appOrigin: string, page: AppPage): string {
       }
       .sidebar-nav {
         display: grid;
-        gap: 8px;
+        gap: 6px;
         align-content: start;
       }
       .nav-item {
-        min-height: 50px;
-        border-radius: 14px;
+        min-height: 44px;
+        border-radius: 12px;
         display: grid;
-        grid-template-columns: 28px minmax(0, 1fr);
+        grid-template-columns: 22px minmax(0, 1fr);
         align-items: center;
-        gap: 12px;
-        padding: 0 14px;
+        gap: 10px;
+        padding: 0 12px;
         color: #374151;
         font-size: 15px;
-        font-weight: 600;
+        font-weight: 700;
         text-decoration: none;
         border: 1px solid transparent;
-        transition: background 140ms ease, border-color 140ms ease, color 140ms ease, box-shadow 140ms ease;
+        transition: background 140ms ease, border-color 140ms ease, color 140ms ease;
       }
       .nav-item.active {
-        background: linear-gradient(180deg, rgba(22,163,163,0.12), rgba(22,163,163,0.06));
+        background: #e9f8f4;
+        border-color: #d2efe8;
         color: var(--accent);
       }
       .nav-item:hover {
-        background: rgba(255,255,255,0.88);
-        border-color: var(--line);
-        box-shadow: 0 6px 16px rgba(15,23,42,0.04);
+        background: #f5f8fc;
+        border-color: #e3e8f0;
       }
       .nav-icon {
-        width: 24px;
-        height: 24px;
-        border-radius: 8px;
-        border: 1.5px solid currentColor;
+        width: 18px;
+        height: 18px;
+        border-radius: 5px;
+        border: 1px solid currentColor;
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        font-size: 10px;
+        font-size: 9px;
         font-weight: 800;
       }
       body.sidebar-collapsed .nav-item {
@@ -665,34 +669,52 @@ export function renderApp(_appOrigin: string, page: AppPage): string {
       }
       .sidebar-foot {
         display: grid;
-        gap: 10px;
+        gap: 8px;
+      }
+      .sidebar-ghost {
+        min-height: 38px;
+        border-radius: 10px;
+        border: 1px solid var(--line);
+        background: #ffffff;
+        color: #475467;
+        font-size: 13px;
+        font-weight: 700;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
       }
       .sidebar-toggle {
-        min-height: 44px;
-        border-radius: 14px;
+        min-height: 38px;
+        border-radius: 10px;
         border: 1px solid var(--line);
-        background: rgba(255,255,255,0.88);
+        background: #ffffff;
         display: flex;
         align-items: center;
         justify-content: center;
-        gap: 10px;
-        color: #4b5563;
-        font-size: 14px;
+        gap: 8px;
+        color: #475467;
+        font-size: 13px;
         font-weight: 700;
+      }
+      .sidebar-toggle-icon {
+        font-size: 11px;
+        letter-spacing: -0.16em;
       }
       .main {
         padding: 18px 20px 24px;
+        background:
+          linear-gradient(180deg, #f4fbfb 0%, #f0f7f7 52%, #eff5f7 100%);
       }
       .topbar {
         display: flex;
         align-items: center;
         justify-content: space-between;
         gap: 18px;
-        padding: 14px 20px;
+        padding: 12px 18px;
         border: 1px solid var(--line);
-        border-radius: var(--radius-lg);
-        background: rgba(255,255,255,0.92);
-        box-shadow: 0 6px 18px rgba(15, 23, 42, 0.04);
+        border-radius: 14px;
+        background: #ffffff;
       }
       .topbar-copy .eyebrow {
         text-transform: uppercase;
@@ -703,43 +725,42 @@ export function renderApp(_appOrigin: string, page: AppPage): string {
       }
       .topbar-copy h1 {
         margin: 6px 0 0;
-        font-size: 34px;
+        font-size: 32px;
         line-height: 1.08;
-        letter-spacing: -0.04em;
+        letter-spacing: -0.03em;
       }
       .topbar-copy p {
-        margin: 8px 0 0;
+        margin: 7px 0 0;
         color: var(--muted);
-        font-size: 14px;
-        line-height: 1.6;
+        font-size: 13px;
+        line-height: 1.5;
       }
       .topbar-actions {
         display: flex;
         align-items: center;
-        gap: 10px;
+        gap: 8px;
       }
       .icon-chip {
-        width: 38px;
-        height: 38px;
+        width: 34px;
+        height: 34px;
         border-radius: 999px;
         border: 1px solid var(--line);
         background: #ffffff;
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        font-size: 16px;
-        box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
+        font-size: 14px;
       }
       .top-chip {
-        min-height: 38px;
-        padding: 0 14px;
+        min-height: 34px;
+        padding: 0 12px;
         border-radius: 999px;
         border: 1px solid var(--line);
         background: #ffffff;
         display: inline-flex;
         align-items: center;
         color: var(--muted);
-        font-size: 13px;
+        font-size: 12px;
         font-weight: 700;
       }
       .top-chip-light {
@@ -752,7 +773,7 @@ export function renderApp(_appOrigin: string, page: AppPage): string {
         position: relative;
       }
       .profile-trigger {
-        min-height: 46px;
+        min-height: 40px;
         padding: 0 12px 0 0;
         border-radius: 999px;
         border: 0;
@@ -766,8 +787,8 @@ export function renderApp(_appOrigin: string, page: AppPage): string {
         background: rgba(255,255,255,0.76);
       }
       .avatar-fallback {
-        width: 42px;
-        height: 42px;
+        width: 34px;
+        height: 34px;
         border-radius: 999px;
         border: 1px solid var(--line-strong);
         background: linear-gradient(135deg, #0f766e, #14b8a6);
@@ -784,10 +805,10 @@ export function renderApp(_appOrigin: string, page: AppPage): string {
         line-height: 1.15;
       }
       .profile-copy strong {
-        font-size: 15px;
+        font-size: 14px;
       }
       .profile-copy span {
-        font-size: 12px;
+        font-size: 11px;
         color: var(--muted);
       }
       .profile-caret {
@@ -848,30 +869,30 @@ export function renderApp(_appOrigin: string, page: AppPage): string {
       .metric-grid {
         display: grid;
         grid-template-columns: repeat(4, minmax(0, 1fr));
-        gap: 16px;
-        margin-top: 16px;
+        gap: 14px;
+        margin-top: 14px;
       }
       .metric-card {
         background: var(--surface);
         border: 1px solid var(--line);
-        border-radius: 22px;
-        box-shadow: var(--shadow);
-        padding: 18px 18px 16px;
+        border-radius: 16px;
+        box-shadow: 0 2px 8px rgba(15, 23, 42, 0.03);
+        padding: 14px 16px;
         display: grid;
-        grid-template-columns: 56px minmax(0, 1fr);
-        gap: 14px;
+        grid-template-columns: 48px minmax(0, 1fr);
+        gap: 12px;
         align-items: center;
-        min-height: 108px;
+        min-height: 92px;
       }
       .metric-icon {
-        width: 46px;
-        height: 46px;
-        border-radius: 14px;
+        width: 40px;
+        height: 40px;
+        border-radius: 12px;
         display: inline-flex;
         align-items: center;
         justify-content: center;
         font-weight: 900;
-        font-size: 18px;
+        font-size: 15px;
       }
       .metric-icon.mint { background: rgba(16,185,129,0.14); color: var(--green); }
       .metric-icon.blue { background: rgba(59,130,246,0.14); color: var(--blue); }
@@ -880,18 +901,18 @@ export function renderApp(_appOrigin: string, page: AppPage): string {
       .metric-copy span {
         display: block;
         color: var(--muted);
-        font-size: 13px;
+        font-size: 12px;
       }
       .metric-copy strong {
         display: block;
-        margin-top: 4px;
-        font-size: 24px;
+        margin-top: 2px;
+        font-size: 22px;
         line-height: 1.1;
       }
       .metric-copy small {
         display: block;
-        margin-top: 6px;
-        font-size: 13px;
+        margin-top: 4px;
+        font-size: 12px;
         color: var(--muted);
       }
       .toolbar-card {
@@ -899,12 +920,12 @@ export function renderApp(_appOrigin: string, page: AppPage): string {
         align-items: center;
         justify-content: space-between;
         gap: 16px;
-        padding: 16px 18px;
-        margin-top: 16px;
+        padding: 12px 16px;
+        margin-top: 14px;
         background: var(--surface);
         border: 1px solid var(--line);
-        border-radius: 22px;
-        box-shadow: var(--shadow);
+        border-radius: 16px;
+        box-shadow: 0 2px 8px rgba(15, 23, 42, 0.03);
       }
       .toolbar-group {
         display: flex;
@@ -918,13 +939,13 @@ export function renderApp(_appOrigin: string, page: AppPage): string {
       .button-link,
       .mini-link,
       .size-chip {
-        min-height: 42px;
-        padding: 0 14px;
-        border-radius: 14px;
+        min-height: 36px;
+        padding: 0 12px;
+        border-radius: 10px;
         border: 1px solid var(--line);
         background: #ffffff;
         color: #374151;
-        font-size: 14px;
+        font-size: 13px;
         font-weight: 600;
         text-decoration: none;
         display: inline-flex;
@@ -943,7 +964,7 @@ export function renderApp(_appOrigin: string, page: AppPage): string {
       .size-chip:hover,
       .select-chip:hover {
         border-color: var(--line-strong);
-        box-shadow: 0 8px 18px rgba(15, 23, 42, 0.06);
+        background: #f8fafc;
       }
       .button-link:disabled,
       .size-chip:disabled {
@@ -953,17 +974,17 @@ export function renderApp(_appOrigin: string, page: AppPage): string {
       .analytics-grid {
         display: grid;
         grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-        gap: 16px;
-        margin-top: 16px;
+        gap: 14px;
+        margin-top: 14px;
       }
       .chart-card,
       .card,
       .records-card {
         background: var(--surface);
         border: 1px solid var(--line);
-        border-radius: 24px;
-        box-shadow: var(--shadow);
-        padding: 18px;
+        border-radius: 16px;
+        box-shadow: 0 2px 8px rgba(15, 23, 42, 0.03);
+        padding: 16px;
       }
       .section-head {
         display: flex;
@@ -981,15 +1002,15 @@ export function renderApp(_appOrigin: string, page: AppPage): string {
       }
       .donut-layout {
         display: grid;
-        grid-template-columns: 250px minmax(0, 1fr);
-        gap: 20px;
+        grid-template-columns: 220px minmax(0, 1fr);
+        gap: 16px;
         align-items: center;
-        margin-top: 14px;
-        min-height: 300px;
+        margin-top: 12px;
+        min-height: 264px;
       }
       .donut {
-        width: 220px;
-        height: 220px;
+        width: 180px;
+        height: 180px;
         border-radius: 999px;
         background: conic-gradient(var(--blue) 0 88%, var(--green) 88% 96%, var(--red) 96% 100%);
         display: grid;
@@ -998,8 +1019,8 @@ export function renderApp(_appOrigin: string, page: AppPage): string {
       }
       .donut::after {
         content: "";
-        width: 100px;
-        height: 100px;
+        width: 80px;
+        height: 80px;
         border-radius: 999px;
         background: white;
       }
@@ -1015,18 +1036,18 @@ export function renderApp(_appOrigin: string, page: AppPage): string {
         font-weight: 700;
       }
       .mini-table-row {
-        min-height: 34px;
+        min-height: 32px;
         align-items: center;
-        padding: 0 10px;
-        border-radius: 10px;
+        padding: 0 8px;
+        border-radius: 8px;
         background: var(--surface-soft);
         border: 1px solid #edf2f7;
       }
       .trend-layout {
-        margin-top: 14px;
+        margin-top: 12px;
         display: grid;
         gap: 12px;
-        min-height: 300px;
+        min-height: 264px;
       }
       .trend-legend {
         display: flex;
@@ -1046,9 +1067,9 @@ export function renderApp(_appOrigin: string, page: AppPage): string {
       .legend-dot.green { background: var(--green); }
       .legend-dot.red { background: var(--red); }
       .trend-chart {
-        min-height: 286px;
+        min-height: 236px;
         border: 1px solid #eef2f7;
-        border-radius: 18px;
+        border-radius: 12px;
         background: linear-gradient(180deg, rgba(22,163,163,0.05), transparent 70%), #ffffff;
         overflow: hidden;
         position: relative;
@@ -1072,17 +1093,17 @@ export function renderApp(_appOrigin: string, page: AppPage): string {
       .overview-grid {
         display: grid;
         grid-template-columns: minmax(0, 1.15fr) 360px;
-        gap: 16px;
-        margin-top: 16px;
+        gap: 14px;
+        margin-top: 14px;
       }
       .work-card,
       .scan-main-card,
       .scan-side-card {
         background: var(--surface);
         border: 1px solid var(--line);
-        border-radius: 24px;
-        box-shadow: var(--shadow);
-        padding: 18px;
+        border-radius: 16px;
+        box-shadow: 0 2px 8px rgba(15, 23, 42, 0.03);
+        padding: 16px;
       }
       .field {
         display: grid;
@@ -1114,42 +1135,47 @@ export function renderApp(_appOrigin: string, page: AppPage): string {
       }
       .gate-card {
         margin-top: 12px;
-        padding: 14px;
-        border-radius: 16px;
+        padding: 12px;
+        border-radius: 12px;
         border: 1px dashed rgba(22,163,163,0.28);
-        background: linear-gradient(180deg, rgba(255,255,255,0.95), rgba(245,252,252,0.95));
+        background: linear-gradient(180deg, rgba(255,255,255,0.98), rgba(246,252,252,0.98));
       }
       .gate-title {
-        font-size: 18px;
+        font-size: 16px;
         font-weight: 800;
         letter-spacing: -0.02em;
       }
       .recent-list {
         display: grid;
-        gap: 12px;
+        gap: 8px;
         margin-top: 10px;
       }
       .recent-row {
-        min-height: 82px;
+        min-height: 62px;
         display: grid;
-        grid-template-columns: 48px minmax(0, 1fr) auto;
-        gap: 12px;
+        grid-template-columns: 40px minmax(0, 1fr) auto;
+        gap: 10px;
         align-items: center;
-        padding: 0 14px;
-        border-radius: 18px;
-        background: var(--surface-soft);
+        padding: 0 12px;
+        border-radius: 12px;
+        background: #f8fafc;
         border: 1px solid var(--line);
+        transition: background 120ms ease, border-color 120ms ease;
+      }
+      .recent-row:hover {
+        background: #ffffff;
+        border-color: var(--line-strong);
       }
       .recent-icon {
-        width: 44px;
-        height: 44px;
-        border-radius: 14px;
+        width: 30px;
+        height: 30px;
+        border-radius: 10px;
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        background: rgba(22,163,163,0.12);
+        background: rgba(22,163,163,0.14);
         color: var(--accent);
-        font-size: 20px;
+        font-size: 13px;
         font-weight: 900;
       }
       .recent-main {
@@ -1159,26 +1185,29 @@ export function renderApp(_appOrigin: string, page: AppPage): string {
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
-        font-size: 16px;
+        font-size: 14px;
         font-weight: 700;
       }
       .recent-subtitle {
-        margin-top: 4px;
+        margin-top: 2px;
         color: var(--muted);
-        font-size: 13px;
+        font-size: 12px;
       }
       .recent-side {
         text-align: right;
       }
       .recent-amount {
-        font-size: 14px;
+        font-size: 13px;
         font-weight: 800;
         color: var(--green);
       }
+      .recent-amount.ok { color: #16a34a; }
+      .recent-amount.warn { color: #dc2626; }
+      .recent-amount.active { color: #2563eb; }
       .recent-meta {
-        margin-top: 4px;
+        margin-top: 2px;
         color: var(--muted);
-        font-size: 12px;
+        font-size: 11px;
       }
       .legal-layout,
       .scan-grid {
@@ -1241,10 +1270,10 @@ export function renderApp(_appOrigin: string, page: AppPage): string {
       }
       .scan-box {
         margin-top: 16px;
-        border-radius: 18px;
+        border-radius: 14px;
         border: 1px solid rgba(22,163,163,0.18);
         background: linear-gradient(180deg, rgba(255,255,255,0.98), rgba(245,252,252,0.95));
-        padding: 16px;
+        padding: 14px;
       }
       .scan-title {
         font-size: 20px;
@@ -1255,17 +1284,17 @@ export function renderApp(_appOrigin: string, page: AppPage): string {
         display: flex;
         align-items: center;
         justify-content: center;
-        min-height: 300px;
+        min-height: 250px;
         margin-top: 14px;
-        border-radius: 18px;
+        border-radius: 14px;
         background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
         border: 1px dashed rgba(22,163,163,0.24);
       }
       .qr-image {
         display: block;
-        width: 260px;
+        width: 220px;
         max-width: 100%;
-        border-radius: 16px;
+        border-radius: 12px;
         border: 1px solid var(--line);
         background: #fff;
       }
@@ -1796,7 +1825,9 @@ export function renderApp(_appOrigin: string, page: AppPage): string {
       function setSidebarCollapsed(collapsed) {
         document.body.classList.toggle("sidebar-collapsed", collapsed);
         if (el.sidebarToggleBtn) {
-          el.sidebarToggleBtn.textContent = collapsed ? "展开" : "收起";
+          el.sidebarToggleBtn.innerHTML = collapsed
+            ? '<span class="sidebar-toggle-icon">〉〉</span><span class="sidebar-toggle-label">展开</span>'
+            : '<span class="sidebar-toggle-icon">〈〈</span><span class="sidebar-toggle-label">收起</span>';
         }
         localStorage.setItem(SIDEBAR_KEY, collapsed ? "1" : "0");
       }
