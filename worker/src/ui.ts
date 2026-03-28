@@ -14,16 +14,16 @@ function renderSidebar(): string {
         </div>
 
         <nav class="sidebar-nav">
-          <a id="nav-overview" class="nav-item" data-page-link href="/overview"><span class="nav-icon">▦</span><span class="nav-label">仪表盘</span></a>
-          <a id="nav-legal" class="nav-item" data-page-link href="/legal"><span class="nav-icon">§</span><span class="nav-label">条款确认</span></a>
-          <a id="nav-scan" class="nav-item" data-page-link href="/scan"><span class="nav-icon">⌁</span><span class="nav-label">钉钉验证</span></a>
-          <a id="nav-jobs" class="nav-item" data-page-link href="/jobs"><span class="nav-icon">☷</span><span class="nav-label">详细记录</span></a>
-          <a id="nav-account" class="nav-item" data-page-link href="/account"><span class="nav-icon">◌</span><span class="nav-label">账号设置</span></a>
-          <a id="nav-admin" class="nav-item hidden" data-page-link href="/admin"><span class="nav-icon">⌘</span><span class="nav-label">Admin</span></a>
+          <a id="nav-overview" class="nav-item" data-page-link href="/overview"><span class="nav-icon"><svg viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="7.5" height="7.5" rx="2"/><rect x="13.5" y="3" width="7.5" height="7.5" rx="2"/><rect x="3" y="13.5" width="7.5" height="7.5" rx="2"/><rect x="13.5" y="13.5" width="7.5" height="7.5" rx="2"/></svg></span><span class="nav-label">仪表盘</span></a>
+          <a id="nav-legal" class="nav-item" data-page-link href="/legal"><span class="nav-icon"><svg viewBox="0 0 24 24" fill="none"><path d="M6 4h12v16H6z"/><path d="M9 8h6M9 12h6M9 16h4"/></svg></span><span class="nav-label">条款确认</span></a>
+          <a id="nav-scan" class="nav-item" data-page-link href="/scan"><span class="nav-icon"><svg viewBox="0 0 24 24" fill="none"><path d="M4 8V4h4M20 8V4h-4M4 16v4h4M20 16v4h-4"/><path d="M9 12h6M12 9v6"/></svg></span><span class="nav-label">钉钉验证</span></a>
+          <a id="nav-jobs" class="nav-item" data-page-link href="/jobs"><span class="nav-icon"><svg viewBox="0 0 24 24" fill="none"><path d="M6 4h12M6 10h12M6 16h12"/><circle cx="4" cy="4" r="1.5"/><circle cx="4" cy="10" r="1.5"/><circle cx="4" cy="16" r="1.5"/></svg></span><span class="nav-label">详细记录</span></a>
+          <a id="nav-account" class="nav-item" data-page-link href="/account"><span class="nav-icon"><svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="8" r="4"/><path d="M4 20c1.8-3.4 5-5 8-5s6.2 1.6 8 5"/></svg></span><span class="nav-label">账号设置</span></a>
+          <a id="nav-admin" class="nav-item hidden" data-page-link href="/admin"><span class="nav-icon"><svg viewBox="0 0 24 24" fill="none"><path d="M12 3l8 4v5c0 5-3.4 8.2-8 9-4.6-.8-8-4-8-9V7z"/><path d="M9.5 12l2 2 3-3"/></svg></span><span class="nav-label">Admin</span></a>
         </nav>
 
         <div class="sidebar-foot">
-          <button type="button" class="sidebar-ghost" aria-disabled="true">◐ 深色模式</button>
+          <div class="sidebar-ghost">企业模式</div>
           <button id="sidebar-toggle-btn" type="button" class="sidebar-toggle"><span class="sidebar-toggle-icon">〈〈</span><span class="sidebar-toggle-label">收起</span></button>
         </div>
       </aside>`;
@@ -39,7 +39,9 @@ function renderTopbar(title: string, subtitle: string): string {
         </div>
 
         <div class="topbar-actions">
-          <button type="button" class="icon-chip">🔔</button>
+          <span class="icon-chip" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none"><path d="M6 10a6 6 0 1 1 12 0v4l2 2H4l2-2zM10 18a2 2 0 0 0 4 0" /></svg>
+          </span>
           <div class="top-chip top-chip-light">🇨🇳 ZH</div>
           <div id="top-jobs-chip" class="top-chip top-chip-light">🗂 0</div>
           <div id="top-balance-chip" class="top-chip top-chip-money">💵 $0.00</div>
@@ -206,11 +208,11 @@ function renderOverviewPage(): string {
       <section class="toolbar-card">
         <div class="toolbar-group">
           <strong>时间范围:</strong>
-          <button type="button" class="select-chip">近 7 天</button>
+          <button id="overview-range-btn" type="button" class="select-chip">近 7 天</button>
         </div>
         <div class="toolbar-group">
           <strong>粒度:</strong>
-          <button type="button" class="select-chip">按天</button>
+          <button id="overview-granularity-btn" type="button" class="select-chip">按天</button>
         </div>
       </section>
 
@@ -227,7 +229,7 @@ function renderOverviewPage(): string {
 
         <section class="chart-card">
           <div class="section-head">
-            <h2>近 7 天任务趋势</h2>
+            <h2 id="overview-trend-title">近 7 天任务趋势</h2>
           </div>
           <div class="trend-layout">
             <div class="trend-legend">
@@ -663,8 +665,18 @@ export function renderApp(_appOrigin: string, page: AppPage): string {
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        font-size: 12px;
-        font-weight: 800;
+        line-height: 1;
+      }
+      .nav-icon svg {
+        width: 18px;
+        height: 18px;
+      }
+      .nav-icon svg * {
+        stroke: currentColor;
+        stroke-width: 1.8;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+        fill: none;
       }
       body.sidebar-collapsed .nav-item {
         grid-template-columns: 1fr;
@@ -752,7 +764,18 @@ export function renderApp(_appOrigin: string, page: AppPage): string {
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        font-size: 14px;
+        color: #667085;
+      }
+      .icon-chip svg {
+        width: 15px;
+        height: 15px;
+      }
+      .icon-chip svg path {
+        stroke: currentColor;
+        stroke-width: 1.8;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+        fill: none;
       }
       .top-chip {
         min-height: 34px;
@@ -1598,6 +1621,8 @@ export function renderApp(_appOrigin: string, page: AppPage): string {
         loginSessionStatus: "",
         recentJobs: [],
         overviewJobs: [],
+        overviewRangeDays: 7,
+        overviewGranularity: "day",
         jobsPageItems: [],
         jobsPage: 1,
         jobsPageSize: 10,
@@ -1666,6 +1691,9 @@ export function renderApp(_appOrigin: string, page: AppPage): string {
         overviewDonut: document.getElementById("overview-donut"),
         overviewDonutTable: document.getElementById("overview-donut-table"),
         overviewTrend: document.getElementById("overview-trend"),
+        overviewTrendTitle: document.getElementById("overview-trend-title"),
+        overviewRangeBtn: document.getElementById("overview-range-btn"),
+        overviewGranularityBtn: document.getElementById("overview-granularity-btn"),
         urls: document.getElementById("urls"),
         createJobBtn: document.getElementById("create-job-btn"),
         refreshBtn: document.getElementById("refresh-btn"),
@@ -1998,8 +2026,25 @@ export function renderApp(_appOrigin: string, page: AppPage): string {
         el.overviewDownloadForm.classList.remove("hidden");
       }
 
+      function renderOverviewToolbar() {
+        if (el.overviewRangeBtn) {
+          el.overviewRangeBtn.textContent = state.overviewRangeDays === 30 ? "近 30 天" : "近 7 天";
+        }
+        if (el.overviewGranularityBtn) {
+          el.overviewGranularityBtn.textContent = state.overviewGranularity === "hour" ? "按小时" : "按天";
+        }
+        if (el.overviewTrendTitle) {
+          if (state.overviewGranularity === "hour") {
+            el.overviewTrendTitle.textContent = "近 24 小时任务趋势";
+          } else {
+            el.overviewTrendTitle.textContent = state.overviewRangeDays === 30 ? "近 30 天任务趋势" : "近 7 天任务趋势";
+          }
+        }
+      }
+
       function renderOverviewCharts(jobs) {
         if (!el.overviewDonut || !el.overviewDonutTable || !el.overviewTrend) return;
+        renderOverviewToolbar();
         const records = Array.isArray(jobs) ? jobs : [];
         const counts = {
           succeeded: records.filter((job) => String(job.status).toLowerCase() === "succeeded").length,
@@ -2017,34 +2062,65 @@ export function renderApp(_appOrigin: string, page: AppPage): string {
           '<div class="mini-table-row"><div>失败</div><div>' + counts.failed + '</div><div>' + Math.round((counts.failed / total) * 100) + '%</div><div style="color:var(--red);">需重试</div></div>',
         ].join("");
 
-        const last7 = [];
-        for (let offset = 6; offset >= 0; offset -= 1) {
-          const date = new Date();
-          date.setHours(0, 0, 0, 0);
-          date.setDate(date.getDate() - offset);
-          const key = date.toISOString().slice(0, 10);
-          last7.push({
-            key,
-            created: 0,
-            done: 0,
-            failed: 0,
+        const timeline = [];
+        if (state.overviewGranularity === "hour") {
+          for (let offset = 23; offset >= 0; offset -= 1) {
+            const date = new Date();
+            date.setMinutes(0, 0, 0);
+            date.setHours(date.getHours() - offset);
+            const key = date.toISOString().slice(0, 13);
+            timeline.push({
+              key,
+              label: String(date.getHours()).padStart(2, "0") + ":00",
+              created: 0,
+              done: 0,
+              failed: 0,
+            });
+          }
+          records.forEach((job) => {
+            const raw = job.updated_at || job.created_at || "";
+            const ts = new Date(raw);
+            if (Number.isNaN(ts.getTime())) return;
+            const key = ts.toISOString().slice(0, 13);
+            const target = timeline.find((entry) => entry.key === key);
+            if (!target) return;
+            target.created += 1;
+            if (String(job.status).toLowerCase() === "succeeded") target.done += 1;
+            if (String(job.status).toLowerCase() === "failed") target.failed += 1;
+          });
+        } else {
+          for (let offset = state.overviewRangeDays - 1; offset >= 0; offset -= 1) {
+            const date = new Date();
+            date.setHours(0, 0, 0, 0);
+            date.setDate(date.getDate() - offset);
+            const key = date.toISOString().slice(0, 10);
+            timeline.push({
+              key,
+              label: key.slice(5),
+              created: 0,
+              done: 0,
+              failed: 0,
+            });
+          }
+          records.forEach((job) => {
+            const raw = job.updated_at || job.created_at || "";
+            const ts = new Date(raw);
+            if (Number.isNaN(ts.getTime())) return;
+            const key = ts.toISOString().slice(0, 10);
+            const target = timeline.find((entry) => entry.key === key);
+            if (!target) return;
+            target.created += 1;
+            if (String(job.status).toLowerCase() === "succeeded") target.done += 1;
+            if (String(job.status).toLowerCase() === "failed") target.failed += 1;
           });
         }
-        records.forEach((job) => {
-          const key = String(job.updated_at || job.created_at || "").slice(0, 10);
-          const target = last7.find((entry) => entry.key === key);
-          if (!target) return;
-          target.created += 1;
-          if (String(job.status).toLowerCase() === "succeeded") target.done += 1;
-          if (String(job.status).toLowerCase() === "failed") target.failed += 1;
-        });
-        const maxValue = Math.max(1, ...last7.flatMap((item) => [item.created, item.done, item.failed]));
+        const maxValue = Math.max(1, ...timeline.flatMap((item) => [item.created, item.done, item.failed]));
         const width = 640;
         const height = 220;
         const paddingX = 36;
         const paddingY = 24;
-        const step = (width - paddingX * 2) / Math.max(1, last7.length - 1);
-        const pathFor = (key) => last7
+        const step = (width - paddingX * 2) / Math.max(1, timeline.length - 1);
+        const pathFor = (key) => timeline
           .map((item, index) => {
             const x = paddingX + step * index;
             const y = height - paddingY - ((item[key] / maxValue) * (height - paddingY * 2));
@@ -2052,24 +2128,28 @@ export function renderApp(_appOrigin: string, page: AppPage): string {
           })
           .join(" ");
         const areaFor = (key) => {
-          const points = last7.map((item, index) => {
+          const points = timeline.map((item, index) => {
             const x = paddingX + step * index;
             const y = height - paddingY - ((item[key] / maxValue) * (height - paddingY * 2));
             return x + " " + y;
           });
           const startX = paddingX;
-          const endX = paddingX + step * Math.max(0, last7.length - 1);
+          const endX = paddingX + step * Math.max(0, timeline.length - 1);
           const baselineY = height - paddingY;
           return "M " + startX + " " + baselineY + " L " + points.join(" L ") + " L " + endX + " " + baselineY + " Z";
         };
-        const pointsFor = (key, color) => last7.map((item, index) => {
+        const pointsFor = (key, color) => timeline.map((item, index) => {
           const x = paddingX + step * index;
           const y = height - paddingY - ((item[key] / maxValue) * (height - paddingY * 2));
           return '<circle cx="' + x + '" cy="' + y + '" r="3" fill="' + color + '" stroke="white" stroke-width="1.5"></circle>';
         }).join("");
-        const labels = last7.map((item, index) => {
+        const labelStep = state.overviewGranularity === "hour"
+          ? 3
+          : (timeline.length > 14 ? 4 : 1);
+        const labels = timeline.map((item, index) => {
+          if (index !== timeline.length - 1 && index % labelStep !== 0) return "";
           const x = paddingX + step * index;
-          return '<text x="' + x + '" y="' + (height - 4) + '" text-anchor="middle" fill="#94a3b8" font-size="11">' + item.key.slice(5) + '</text>';
+          return '<text x="' + x + '" y="' + (height - 4) + '" text-anchor="middle" fill="#94a3b8" font-size="11">' + item.label + '</text>';
         }).join("");
         el.overviewTrend.innerHTML = [
           '<svg viewBox="0 0 ' + width + ' ' + height + '" preserveAspectRatio="none">',
@@ -2631,6 +2711,14 @@ export function renderApp(_appOrigin: string, page: AppPage): string {
         });
         if (el.refreshBtn) el.refreshBtn.addEventListener("click", () => {
           refreshAll().catch((error) => setNotice(normalizeErrorMessage(error.message), "error"));
+        });
+        if (el.overviewRangeBtn) el.overviewRangeBtn.addEventListener("click", () => {
+          state.overviewRangeDays = state.overviewRangeDays === 7 ? 30 : 7;
+          renderOverviewCharts(state.overviewJobs);
+        });
+        if (el.overviewGranularityBtn) el.overviewGranularityBtn.addEventListener("click", () => {
+          state.overviewGranularity = state.overviewGranularity === "day" ? "hour" : "day";
+          renderOverviewCharts(state.overviewJobs);
         });
         if (el.changePasswordBtn) el.changePasswordBtn.addEventListener("click", () => {
           setBusy(el.changePasswordBtn, true);
