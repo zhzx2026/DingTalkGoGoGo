@@ -43,7 +43,6 @@ function renderTopbar(title: string, subtitle: string): string {
           <div class="top-chip top-chip-light">🇨🇳 ZH</div>
           <div id="top-jobs-chip" class="top-chip top-chip-light">🗂 0</div>
           <div id="top-balance-chip" class="top-chip top-chip-money">💵 $0.00</div>
-          <div id="top-status-chip" class="top-chip">钉钉验证未完成</div>
           <div id="user-menu-wrap" class="user-menu-wrap hidden">
             <button id="user-menu-trigger" class="profile-trigger" type="button" aria-haspopup="menu" aria-expanded="false">
               <span id="avatar-fallback" class="avatar-fallback">U</span>
@@ -574,26 +573,31 @@ export function renderApp(_appOrigin: string, page: AppPage): string {
         grid-template-columns: var(--sidebar-collapsed-width) minmax(0, 1fr);
       }
       .sidebar {
-        padding: 10px 10px 14px 10px;
+        padding: 0;
         background: var(--sidebar-bg);
         border-right: 1px solid var(--line);
         display: grid;
         grid-template-rows: auto 1fr auto;
-        gap: 14px;
+        gap: 0;
       }
       .sidebar-head {
-        display: grid;
+        display: flex;
+        align-items: center;
+        min-height: 64px;
+        padding: 0 16px;
+        border-bottom: 1px solid #f0f3f8;
       }
       .sidebar-brand {
         display: flex;
         align-items: center;
         gap: 12px;
-        padding: 12px;
+        padding: 0;
         text-decoration: none;
+        width: 100%;
       }
       .brand-mark {
-        width: 40px;
-        height: 40px;
+        width: 36px;
+        height: 36px;
         border-radius: 12px;
         border: 1px solid rgba(14, 139, 125, 0.24);
         background: linear-gradient(135deg, #0a57de, #14b8a6);
@@ -626,6 +630,7 @@ export function renderApp(_appOrigin: string, page: AppPage): string {
         display: grid;
         gap: 6px;
         align-content: start;
+        padding: 10px;
       }
       .nav-item {
         min-height: 44px;
@@ -652,14 +657,13 @@ export function renderApp(_appOrigin: string, page: AppPage): string {
         border-color: #e3e8f0;
       }
       .nav-icon {
-        width: 18px;
-        height: 18px;
-        border-radius: 5px;
-        border: 1px solid currentColor;
+        width: auto;
+        height: auto;
+        border: 0;
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        font-size: 9px;
+        font-size: 12px;
         font-weight: 800;
       }
       body.sidebar-collapsed .nav-item {
@@ -670,6 +674,8 @@ export function renderApp(_appOrigin: string, page: AppPage): string {
       .sidebar-foot {
         display: grid;
         gap: 8px;
+        border-top: 1px solid #f0f3f8;
+        padding: 12px 10px 14px;
       }
       .sidebar-ghost {
         min-height: 38px;
@@ -711,41 +717,38 @@ export function renderApp(_appOrigin: string, page: AppPage): string {
         align-items: center;
         justify-content: space-between;
         gap: 18px;
-        padding: 12px 18px;
-        border: 1px solid var(--line);
-        border-radius: 14px;
-        background: #ffffff;
+        margin: -18px -20px 14px;
+        padding: 12px 20px;
+        border-bottom: 1px solid #e5eaf1;
+        background: rgba(255, 255, 255, 0.84);
+        backdrop-filter: blur(8px);
       }
       .topbar-copy .eyebrow {
-        text-transform: uppercase;
-        letter-spacing: 0.08em;
-        font-size: 10px;
-        color: var(--muted);
-        font-weight: 700;
+        display: none;
       }
       .topbar-copy h1 {
-        margin: 6px 0 0;
-        font-size: 32px;
-        line-height: 1.08;
-        letter-spacing: -0.03em;
+        margin: 0;
+        font-size: 28px;
+        line-height: 1.18;
+        letter-spacing: -0.02em;
       }
       .topbar-copy p {
-        margin: 7px 0 0;
+        margin: 2px 0 0;
         color: var(--muted);
-        font-size: 13px;
-        line-height: 1.5;
+        font-size: 12px;
+        line-height: 1.35;
       }
       .topbar-actions {
         display: flex;
         align-items: center;
-        gap: 8px;
+        gap: 6px;
       }
       .icon-chip {
         width: 34px;
         height: 34px;
-        border-radius: 999px;
+        border-radius: 10px;
         border: 1px solid var(--line);
-        background: #ffffff;
+        background: #f8fafc;
         display: inline-flex;
         align-items: center;
         justify-content: center;
@@ -754,9 +757,9 @@ export function renderApp(_appOrigin: string, page: AppPage): string {
       .top-chip {
         min-height: 34px;
         padding: 0 12px;
-        border-radius: 999px;
+        border-radius: 10px;
         border: 1px solid var(--line);
-        background: #ffffff;
+        background: #f8fafc;
         display: inline-flex;
         align-items: center;
         color: var(--muted);
@@ -869,25 +872,25 @@ export function renderApp(_appOrigin: string, page: AppPage): string {
       .metric-grid {
         display: grid;
         grid-template-columns: repeat(4, minmax(0, 1fr));
-        gap: 14px;
+        gap: 12px;
         margin-top: 14px;
       }
       .metric-card {
         background: var(--surface);
         border: 1px solid var(--line);
-        border-radius: 16px;
-        box-shadow: 0 2px 8px rgba(15, 23, 42, 0.03);
-        padding: 14px 16px;
+        border-radius: 14px;
+        box-shadow: 0 1px 2px rgba(15, 23, 42, 0.03);
+        padding: 12px 14px;
         display: grid;
-        grid-template-columns: 48px minmax(0, 1fr);
-        gap: 12px;
+        grid-template-columns: 42px minmax(0, 1fr);
+        gap: 10px;
         align-items: center;
-        min-height: 92px;
+        min-height: 88px;
       }
       .metric-icon {
-        width: 40px;
-        height: 40px;
-        border-radius: 12px;
+        width: 36px;
+        height: 36px;
+        border-radius: 10px;
         display: inline-flex;
         align-items: center;
         justify-content: center;
@@ -905,7 +908,7 @@ export function renderApp(_appOrigin: string, page: AppPage): string {
       }
       .metric-copy strong {
         display: block;
-        margin-top: 2px;
+        margin-top: 3px;
         font-size: 22px;
         line-height: 1.1;
       }
@@ -920,12 +923,12 @@ export function renderApp(_appOrigin: string, page: AppPage): string {
         align-items: center;
         justify-content: space-between;
         gap: 16px;
-        padding: 12px 16px;
+        padding: 12px 14px;
         margin-top: 14px;
         background: var(--surface);
         border: 1px solid var(--line);
-        border-radius: 16px;
-        box-shadow: 0 2px 8px rgba(15, 23, 42, 0.03);
+        border-radius: 14px;
+        box-shadow: 0 1px 2px rgba(15, 23, 42, 0.03);
       }
       .toolbar-group {
         display: flex;
@@ -982,8 +985,8 @@ export function renderApp(_appOrigin: string, page: AppPage): string {
       .records-card {
         background: var(--surface);
         border: 1px solid var(--line);
-        border-radius: 16px;
-        box-shadow: 0 2px 8px rgba(15, 23, 42, 0.03);
+        border-radius: 14px;
+        box-shadow: 0 1px 2px rgba(15, 23, 42, 0.03);
         padding: 16px;
       }
       .section-head {
@@ -1002,15 +1005,15 @@ export function renderApp(_appOrigin: string, page: AppPage): string {
       }
       .donut-layout {
         display: grid;
-        grid-template-columns: 220px minmax(0, 1fr);
+        grid-template-columns: 210px minmax(0, 1fr);
         gap: 16px;
         align-items: center;
         margin-top: 12px;
-        min-height: 264px;
+        min-height: 252px;
       }
       .donut {
-        width: 180px;
-        height: 180px;
+        width: 170px;
+        height: 170px;
         border-radius: 999px;
         background: conic-gradient(var(--blue) 0 88%, var(--green) 88% 96%, var(--red) 96% 100%);
         display: grid;
@@ -1047,7 +1050,7 @@ export function renderApp(_appOrigin: string, page: AppPage): string {
         margin-top: 12px;
         display: grid;
         gap: 12px;
-        min-height: 264px;
+        min-height: 252px;
       }
       .trend-legend {
         display: flex;
@@ -1067,7 +1070,7 @@ export function renderApp(_appOrigin: string, page: AppPage): string {
       .legend-dot.green { background: var(--green); }
       .legend-dot.red { background: var(--red); }
       .trend-chart {
-        min-height: 236px;
+        min-height: 228px;
         border: 1px solid #eef2f7;
         border-radius: 12px;
         background: linear-gradient(180deg, rgba(22,163,163,0.05), transparent 70%), #ffffff;
@@ -1101,8 +1104,8 @@ export function renderApp(_appOrigin: string, page: AppPage): string {
       .scan-side-card {
         background: var(--surface);
         border: 1px solid var(--line);
-        border-radius: 16px;
-        box-shadow: 0 2px 8px rgba(15, 23, 42, 0.03);
+        border-radius: 14px;
+        box-shadow: 0 1px 2px rgba(15, 23, 42, 0.03);
         padding: 16px;
       }
       .field {
@@ -1151,12 +1154,12 @@ export function renderApp(_appOrigin: string, page: AppPage): string {
         margin-top: 10px;
       }
       .recent-row {
-        min-height: 62px;
+        min-height: 72px;
         display: grid;
         grid-template-columns: 40px minmax(0, 1fr) auto;
         gap: 10px;
         align-items: center;
-        padding: 0 12px;
+        padding: 0 14px;
         border-radius: 12px;
         background: #f8fafc;
         border: 1px solid var(--line);
@@ -1167,15 +1170,15 @@ export function renderApp(_appOrigin: string, page: AppPage): string {
         border-color: var(--line-strong);
       }
       .recent-icon {
-        width: 30px;
-        height: 30px;
+        width: 36px;
+        height: 36px;
         border-radius: 10px;
         display: inline-flex;
         align-items: center;
         justify-content: center;
         background: rgba(22,163,163,0.14);
         color: var(--accent);
-        font-size: 13px;
+        font-size: 14px;
         font-weight: 900;
       }
       .recent-main {
@@ -1185,7 +1188,7 @@ export function renderApp(_appOrigin: string, page: AppPage): string {
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
-        font-size: 14px;
+        font-size: 15px;
         font-weight: 700;
       }
       .recent-subtitle {
@@ -2048,15 +2051,35 @@ export function renderApp(_appOrigin: string, page: AppPage): string {
             return (index === 0 ? "M" : "L") + x + " " + y;
           })
           .join(" ");
+        const areaFor = (key) => {
+          const points = last7.map((item, index) => {
+            const x = paddingX + step * index;
+            const y = height - paddingY - ((item[key] / maxValue) * (height - paddingY * 2));
+            return x + " " + y;
+          });
+          const startX = paddingX;
+          const endX = paddingX + step * Math.max(0, last7.length - 1);
+          const baselineY = height - paddingY;
+          return "M " + startX + " " + baselineY + " L " + points.join(" L ") + " L " + endX + " " + baselineY + " Z";
+        };
+        const pointsFor = (key, color) => last7.map((item, index) => {
+          const x = paddingX + step * index;
+          const y = height - paddingY - ((item[key] / maxValue) * (height - paddingY * 2));
+          return '<circle cx="' + x + '" cy="' + y + '" r="3" fill="' + color + '" stroke="white" stroke-width="1.5"></circle>';
+        }).join("");
         const labels = last7.map((item, index) => {
           const x = paddingX + step * index;
           return '<text x="' + x + '" y="' + (height - 4) + '" text-anchor="middle" fill="#94a3b8" font-size="11">' + item.key.slice(5) + '</text>';
         }).join("");
         el.overviewTrend.innerHTML = [
           '<svg viewBox="0 0 ' + width + ' ' + height + '" preserveAspectRatio="none">',
+          '<path d="' + areaFor("created") + '" fill="rgba(59,130,246,0.16)"></path>',
           '<path d="' + pathFor("created") + '" fill="none" stroke="var(--blue)" stroke-width="3" stroke-linecap="round"></path>',
           '<path d="' + pathFor("done") + '" fill="none" stroke="var(--green)" stroke-width="3" stroke-linecap="round"></path>',
           '<path d="' + pathFor("failed") + '" fill="none" stroke="var(--red)" stroke-width="3" stroke-linecap="round"></path>',
+          pointsFor("created", "var(--blue)"),
+          pointsFor("done", "var(--green)"),
+          pointsFor("failed", "var(--red)"),
           labels,
           '</svg>',
         ].join("");
