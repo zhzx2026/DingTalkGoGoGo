@@ -1,12 +1,111 @@
 type AppPage = "overview" | "jobs" | "scan" | "login" | "account" | "legal" | "admin";
 
+function renderSidebar(): string {
+  return `
+      <aside class="sidebar" id="sidebar">
+        <div class="sidebar-head">
+          <a class="sidebar-brand" data-page-link href="/overview">
+            <span class="brand-mark">S</span>
+            <span class="brand-copy">
+              <strong>GoDingtalk</strong>
+              <span>Private Console</span>
+            </span>
+          </a>
+        </div>
+
+        <nav class="sidebar-nav">
+          <a id="nav-overview" class="nav-item" data-page-link href="/overview"><span class="nav-icon">▦</span><span class="nav-label">仪表盘</span></a>
+          <a id="nav-legal" class="nav-item" data-page-link href="/legal"><span class="nav-icon">§</span><span class="nav-label">条款确认</span></a>
+          <a id="nav-scan" class="nav-item" data-page-link href="/scan"><span class="nav-icon">⌁</span><span class="nav-label">钉钉验证</span></a>
+          <a id="nav-jobs" class="nav-item" data-page-link href="/jobs"><span class="nav-icon">☷</span><span class="nav-label">详细记录</span></a>
+          <a id="nav-account" class="nav-item" data-page-link href="/account"><span class="nav-icon">◌</span><span class="nav-label">账号设置</span></a>
+          <a id="nav-admin" class="nav-item hidden" data-page-link href="/admin"><span class="nav-icon">⌘</span><span class="nav-label">Admin</span></a>
+        </nav>
+
+        <div class="sidebar-foot">
+          <button id="sidebar-toggle-btn" type="button" class="sidebar-toggle">收起</button>
+        </div>
+      </aside>`;
+}
+
+function renderTopbar(title: string, subtitle: string): string {
+  return `
+      <header class="topbar">
+        <div class="topbar-copy">
+          <div class="eyebrow">Dashboard</div>
+          <h1>${title}</h1>
+          <p>${subtitle}</p>
+        </div>
+
+        <div class="topbar-actions">
+          <div id="top-status-chip" class="top-chip">钉钉验证未完成</div>
+          <div id="user-menu-wrap" class="user-menu-wrap hidden">
+            <button id="user-menu-trigger" class="avatar-trigger" type="button" aria-haspopup="menu" aria-expanded="false">
+              <span id="avatar-fallback" class="avatar-fallback">U</span>
+            </button>
+            <div id="user-menu" class="user-menu hidden">
+              <div class="user-menu-head">
+                <div id="user-menu-name" class="user-menu-name">未登录</div>
+                <div id="user-menu-role" class="user-menu-role">user</div>
+              </div>
+              <div class="user-menu-list">
+                <a id="user-menu-account-link" data-page-link href="/account" class="user-menu-link">账号设置</a>
+                <a id="user-menu-scan-link" data-page-link href="/scan" class="user-menu-link">钉钉验证</a>
+                <a id="user-menu-jobs-link" data-page-link href="/jobs" class="user-menu-link">详细记录</a>
+                <a id="user-menu-admin-link" data-page-link href="/admin" class="user-menu-link hidden">Admin</a>
+                <button id="topbar-logout-btn" class="user-menu-link user-menu-action" type="button">退出登录</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </header>`;
+}
+
+function renderMetricCards(): string {
+  return `
+      <section class="metric-grid">
+        <article class="metric-card">
+          <div class="metric-icon mint">✓</div>
+          <div class="metric-copy">
+            <span>钉钉验证</span>
+            <strong id="stat-cookies">-</strong>
+            <small>当前状态</small>
+          </div>
+        </article>
+        <article class="metric-card">
+          <div class="metric-icon blue">≡</div>
+          <div class="metric-copy">
+            <span>总任务</span>
+            <strong id="stat-total">0</strong>
+            <small>全部下载任务</small>
+          </div>
+        </article>
+        <article class="metric-card">
+          <div class="metric-icon green">↗</div>
+          <div class="metric-copy">
+            <span>进行中</span>
+            <strong id="stat-running">0</strong>
+            <small>队列 + 运行中</small>
+          </div>
+        </article>
+        <article class="metric-card">
+          <div class="metric-icon purple">◆</div>
+          <div class="metric-copy">
+            <span>已完成</span>
+            <strong id="stat-success">0</strong>
+            <small>已完成下载</small>
+          </div>
+        </article>
+      </section>`;
+}
+
 function renderLoginPage(): string {
   return `
       <section class="login-shell">
         <section class="panel login-brand-panel">
-          <span class="eyebrow">Private Console</span>
+          <div class="eyebrow">Private Console</div>
           <h1>钉钉回放下载控制台</h1>
-          <p>登录后按顺序完成条款确认、钉钉验证与下载提交。</p>
+          <p>沿用当前业务结构，但视觉语言切到更接近 Sub2API 的后台风格。登录后按顺序完成条款确认、钉钉验证与下载提交。</p>
           <div class="login-points">
             <div class="login-point"><strong>1</strong><span>同意当前条款</span></div>
             <div class="login-point"><strong>2</strong><span>二维码登录获取钉钉验证</span></div>
@@ -31,7 +130,7 @@ function renderLoginPage(): string {
             </div>
             <div class="muted form-note">登录后需完成条款确认与扫码验证</div>
             <div class="actions">
-              <button id="login-btn" class="primary auth-main-btn" type="button">登录</button>
+              <button id="login-btn" class="button-link primary" type="button">登录</button>
             </div>
           </section>
 
@@ -50,98 +149,66 @@ function renderLoginPage(): string {
             </div>
             <p id="register-card-hint" class="muted form-note">注册成功后将直接进入条款确认</p>
             <div class="actions">
-              <button id="register-btn" class="auth-main-btn" type="button">注册</button>
+              <button id="register-btn" class="button-link" type="button">注册</button>
             </div>
           </section>
         </section>
       </section>`;
 }
 
-function renderUserMenu(): string {
-  return `
-      <div id="user-menu-wrap" class="user-menu-wrap hidden">
-        <button id="user-menu-trigger" class="avatar-trigger" type="button" aria-haspopup="menu" aria-expanded="false">
-          <span id="avatar-fallback" class="avatar-fallback">U</span>
-        </button>
-        <div id="user-menu" class="user-menu hidden">
-          <div class="user-menu-head">
-            <div id="user-menu-name" class="user-menu-name">未登录</div>
-            <div id="user-menu-role" class="user-menu-role">user</div>
-          </div>
-          <div class="user-menu-list">
-            <a id="user-menu-account-link" data-page-link href="/account" class="user-menu-link">账号设置</a>
-            <a id="user-menu-scan-link" data-page-link href="/scan" class="user-menu-link">钉钉验证</a>
-            <a id="user-menu-jobs-link" data-page-link href="/jobs" class="user-menu-link">详细记录</a>
-            <a id="user-menu-admin-link" data-page-link href="/admin" class="user-menu-link hidden">Admin</a>
-            <button id="topbar-logout-btn" class="user-menu-link user-menu-action" type="button">退出登录</button>
-          </div>
-        </div>
-      </div>`;
-}
-
-function renderHeader(page: AppPage): string {
-  return `
-      <header class="app-header">
-        <a class="brand" data-page-link href="${page === "login" ? "/login" : "/overview"}">
-          <span class="brand-mark">GD</span>
-          <span class="brand-copy">
-            <strong>GoDingtalk</strong>
-            <span>Private Console</span>
-          </span>
-        </a>
-        ${page === "login" ? "" : renderUserMenu()}
-      </header>`;
-}
-
-function renderStatusStrip(): string {
-  return `
-      <section class="panel status-strip">
-        <div class="status-copy">
-          <span class="eyebrow">Current State</span>
-          <h2 id="user-status-line">请先同意使用条款</h2>
-          <p id="status-helper" class="muted">完成条款确认后，再进行钉钉验证与下载。</p>
-        </div>
-        <div class="status-stats">
-          <article class="stat-tile">
-            <span>钉钉验证</span>
-            <strong id="stat-cookies">-</strong>
-          </article>
-          <article class="stat-tile">
-            <span>总任务</span>
-            <strong id="stat-total">0</strong>
-          </article>
-          <article class="stat-tile">
-            <span>进行中</span>
-            <strong id="stat-running">0</strong>
-          </article>
-          <article class="stat-tile">
-            <span>已完成</span>
-            <strong id="stat-success">0</strong>
-          </article>
-        </div>
-      </section>`;
-}
-
 function renderOverviewPage(): string {
   return `
-      <section class="page-intro">
-        <span class="eyebrow">Overview</span>
-        <h1>下载页面</h1>
-        <p>左侧处理链接提交，右侧只保留最近 10 条简洁记录。完整记录请进入详细记录页面。</p>
+      ${renderTopbar("仪表盘", "欢迎回来！这是当前账号的概览。")}
+
+      ${renderMetricCards()}
+
+      <section class="toolbar-card">
+        <div class="toolbar-group">
+          <strong>时间范围:</strong>
+          <button type="button" class="select-chip">近 7 天</button>
+        </div>
+        <div class="toolbar-group">
+          <strong>粒度:</strong>
+          <button type="button" class="select-chip">按天</button>
+        </div>
       </section>
 
-      ${renderStatusStrip()}
+      <section class="analytics-grid">
+        <section class="chart-card">
+          <div class="section-head">
+            <h2>任务状态分布</h2>
+          </div>
+          <div class="donut-layout">
+            <div id="overview-donut" class="donut"></div>
+            <div id="overview-donut-table" class="mini-table"><div class="empty">正在加载...</div></div>
+          </div>
+        </section>
+
+        <section class="chart-card">
+          <div class="section-head">
+            <h2>近 7 天任务趋势</h2>
+          </div>
+          <div class="trend-layout">
+            <div class="trend-legend">
+              <span><i class="legend-dot blue"></i>创建</span>
+              <span><i class="legend-dot green"></i>完成</span>
+              <span><i class="legend-dot red"></i>失败</span>
+            </div>
+            <div id="overview-trend" class="trend-chart"><div class="empty">正在加载...</div></div>
+          </div>
+        </section>
+      </section>
 
       <section class="overview-grid">
-        <section class="panel composer-panel">
-          <div class="panel-head">
+        <section class="work-card">
+          <div class="section-head">
             <div>
-              <span class="panel-kicker">Submit</span>
+              <div class="eyebrow">Submit</div>
               <h2>提交下载</h2>
             </div>
           </div>
 
-          <div id="overview-gate" class="gate-box">
+          <div id="overview-gate" class="gate-card">
             <div id="overview-gate-title" class="gate-title">请先同意条款</div>
             <p id="overview-gate-copy" class="muted">完成条款确认后，才可以继续完成钉钉验证。</p>
             <div class="actions">
@@ -155,16 +222,16 @@ function renderOverviewPage(): string {
               <textarea id="urls" placeholder="粘贴回放链接，每行一个"></textarea>
             </div>
             <div class="actions">
-              <button id="create-job-btn" class="primary" type="button">开始下载</button>
-              <button id="refresh-btn" type="button">刷新状态</button>
+              <button id="create-job-btn" class="button-link primary" type="button">开始下载</button>
+              <button id="refresh-btn" class="button-link" type="button">刷新状态</button>
             </div>
           </div>
         </section>
 
-        <aside class="panel recent-panel">
-          <div class="panel-head">
+        <aside class="card">
+          <div class="section-head">
             <div>
-              <span class="panel-kicker">Recent</span>
+              <div class="eyebrow">Recent</div>
               <h2>近 10 条记录</h2>
             </div>
             <a data-page-link href="/jobs" class="mini-link">详细记录</a>
@@ -176,17 +243,13 @@ function renderOverviewPage(): string {
 
 function renderLegalPage(): string {
   return `
-      <section class="page-intro">
-        <span class="eyebrow">Legal</span>
-        <h1>条款确认</h1>
-        <p>新注册用户先在这里完成当前版本条款确认，一经同意，在条款变更前不会再次显示。</p>
-      </section>
+      ${renderTopbar("条款确认", "新注册用户先在这里完成当前版本条款确认，一经同意，在条款变更前不会再次显示。")}
 
-      <section class="legal-layout">
-        <section id="legal-step" class="panel legal-action-panel">
-          <div class="panel-head">
+      <section class="dual-grid">
+        <section id="legal-step" class="card">
+          <div class="section-head">
             <div>
-              <span class="panel-kicker">Step 1</span>
+              <div class="eyebrow">Step 1</div>
               <h2>同意当前条款</h2>
             </div>
             <span id="legal-badge" class="badge warn">未完成</span>
@@ -198,14 +261,14 @@ function renderLegalPage(): string {
             <span>我已阅读并同意条款</span>
           </label>
           <div class="actions">
-            <button id="accept-legal-btn" class="primary" type="button" disabled>同意条款</button>
+            <button id="accept-legal-btn" class="button-link primary" type="button" disabled>同意条款</button>
           </div>
         </section>
 
-        <section class="panel legal-doc-panel">
-          <div class="panel-head">
+        <section class="card">
+          <div class="section-head">
             <div>
-              <span class="panel-kicker">Document</span>
+              <div class="eyebrow">Document</div>
               <h2>条款全文</h2>
             </div>
           </div>
@@ -216,29 +279,24 @@ function renderLegalPage(): string {
 
 function renderScanPage(): string {
   return `
-      <section class="page-intro">
-        <span class="eyebrow">Verification</span>
-        <h1>钉钉验证</h1>
-        <p>这里仅支持二维码登录。即使当前已有验证态，也可以重新扫码，因为钉钉验证会过期。</p>
-      </section>
+      ${renderTopbar("钉钉验证", "这里仅支持二维码登录。即使当前已有验证态，也可以重新扫码，因为钉钉验证会过期。")}
 
-      <section class="scan-layout">
-        <section class="panel scan-focus-panel">
-          <div class="panel-head">
+      ${renderMetricCards()}
+
+      <section class="scan-grid">
+        <section class="scan-main-card">
+          <div class="section-head">
             <div>
-              <span class="panel-kicker">Step 2</span>
+              <div class="eyebrow">Step 2</div>
               <h2>二维码登录</h2>
             </div>
             <span id="cookie-badge" class="badge warn">未完成</span>
           </div>
-
           <div id="cookie-state" class="notice hidden"></div>
           <div id="cookie-meta" class="meta-line"></div>
-
           <div class="actions">
-            <button id="start-login-workflow-btn" class="primary" type="button">启动二维码登录</button>
+            <button id="start-login-workflow-btn" class="button-link primary" type="button">启动二维码登录</button>
           </div>
-
           <div id="login-box" class="scan-box hidden">
             <div id="login-status" class="scan-title">正在生成二维码</div>
             <div id="login-hint" class="muted">二维码出现后，请使用钉钉扫码登录。</div>
@@ -248,17 +306,17 @@ function renderScanPage(): string {
           </div>
         </section>
 
-        <aside class="panel scan-side-panel">
-          <div class="panel-head">
+        <aside class="scan-side-card">
+          <div class="section-head">
             <div>
-              <span class="panel-kicker">Flow</span>
+              <div class="eyebrow">Flow</div>
               <h2>下一步</h2>
             </div>
           </div>
           <div class="scan-steps">
             <div class="scan-step"><strong>1</strong><span>等待二维码出现</span></div>
             <div class="scan-step"><strong>2</strong><span>使用钉钉扫码登录</span></div>
-            <div class="scan-step"><strong>3</strong><span>登录成功后进入下载页面</span></div>
+            <div class="scan-step"><strong>3</strong><span>验证成功后可以继续下载，也可随时重新扫码</span></div>
           </div>
         </aside>
       </section>`;
@@ -266,15 +324,11 @@ function renderScanPage(): string {
 
 function renderJobsPage(): string {
   return `
-      <section class="page-intro">
-        <span class="eyebrow">Records</span>
-        <h1>详细记录</h1>
-        <p>记录采用单行列表展示，点击某一行后在下方展开详情。</p>
-      </section>
+      ${renderTopbar("详细记录", "记录采用单行列表展示，点击某一行后在下方展开详情。")}
 
-      ${renderStatusStrip()}
+      ${renderMetricCards()}
 
-      <section class="panel records-panel">
+      <section class="records-card">
         <div class="records-toolbar">
           <div class="records-size-group">
             <span class="muted">每页显示</span>
@@ -286,43 +340,37 @@ function renderJobsPage(): string {
           </div>
           <div id="jobs-pagination-summary" class="muted">第 1 页</div>
         </div>
-
         <div id="jobs-detail-list" class="records-list"><div class="empty">正在加载记录...</div></div>
-
         <div class="records-footer">
-          <button id="jobs-prev-btn" type="button">上一页</button>
+          <button id="jobs-prev-btn" class="button-link" type="button">上一页</button>
           <div id="jobs-page-indicator" class="muted">1 / 1</div>
-          <button id="jobs-next-btn" type="button">下一页</button>
+          <button id="jobs-next-btn" class="button-link" type="button">下一页</button>
         </div>
       </section>`;
 }
 
 function renderAccountPage(): string {
   return `
-      <section class="page-intro">
-        <span class="eyebrow">Account</span>
-        <h1>账号设置</h1>
-        <p>这里只保留当前账号信息、修改密码和退出登录。</p>
-      </section>
+      ${renderTopbar("账号设置", "这里只保留当前账号信息、修改密码和退出登录。")}
 
-      <section class="account-layout">
-        <section class="panel">
-          <div class="panel-head">
+      <section class="dual-grid">
+        <section class="card">
+          <div class="section-head">
             <div>
-              <span class="panel-kicker">Profile</span>
+              <div class="eyebrow">Profile</div>
               <h2>当前账号</h2>
             </div>
           </div>
           <p id="account-summary" class="muted">正在加载...</p>
           <div class="actions">
-            <button id="topbar-logout-btn-inline" type="button">退出登录</button>
+            <button id="topbar-logout-btn-inline" class="button-link" type="button">退出登录</button>
           </div>
         </section>
 
-        <section class="panel">
-          <div class="panel-head">
+        <section class="card">
+          <div class="section-head">
             <div>
-              <span class="panel-kicker">Security</span>
+              <div class="eyebrow">Security</div>
               <h2>修改密码</h2>
             </div>
           </div>
@@ -339,7 +387,7 @@ function renderAccountPage(): string {
             <input id="confirm-new-password" type="password" placeholder="再次输入新密码" autocomplete="new-password" />
           </div>
           <div class="actions">
-            <button id="change-password-btn" class="primary" type="button">保存新密码</button>
+            <button id="change-password-btn" class="button-link primary" type="button">保存新密码</button>
           </div>
         </section>
       </section>`;
@@ -347,17 +395,13 @@ function renderAccountPage(): string {
 
 function renderAdminPage(): string {
   return `
-      <section class="page-intro">
-        <span class="eyebrow">Admin</span>
-        <h1>管理页</h1>
-        <p>这里只展示 sudo 需要处理的内容：R2 文件、异常用户和条款管理。</p>
-      </section>
+      ${renderTopbar("管理页", "这里只展示 sudo 需要处理的内容：R2 文件、异常用户和条款管理。")}
 
-      <section class="admin-layout">
-        <section class="panel">
-          <div class="panel-head">
+      <section class="admin-grid">
+        <section class="card">
+          <div class="section-head">
             <div>
-              <span class="panel-kicker">R2 Storage</span>
+              <div class="eyebrow">R2 Storage</div>
               <h2>R2 文件</h2>
             </div>
           </div>
@@ -367,20 +411,20 @@ function renderAdminPage(): string {
               <input id="admin-storage-prefix" placeholder="例如 dedup/" />
             </div>
             <div class="actions">
-              <button id="admin-storage-refresh-btn" class="primary" type="button">刷新文件</button>
+              <button id="admin-storage-refresh-btn" class="button-link primary" type="button">刷新文件</button>
             </div>
           </div>
           <div id="admin-storage-meta" class="meta-line"></div>
           <div id="admin-storage-list" class="storage-list"><div class="empty">正在加载 R2 文件...</div></div>
           <div class="actions">
-            <button id="admin-storage-more-btn" class="hidden" type="button">加载更多</button>
+            <button id="admin-storage-more-btn" class="button-link hidden" type="button">加载更多</button>
           </div>
         </section>
 
-        <section class="panel">
-          <div class="panel-head">
+        <section class="card">
+          <div class="section-head">
             <div>
-              <span class="panel-kicker">Users</span>
+              <div class="eyebrow">Users</div>
               <h2>需要处理的用户</h2>
             </div>
           </div>
@@ -388,10 +432,10 @@ function renderAdminPage(): string {
           <div id="admin-users" class="admin-users"><div class="empty">正在加载用户数据...</div></div>
         </section>
 
-        <section class="panel">
-          <div class="panel-head">
+        <section class="card">
+          <div class="section-head">
             <div>
-              <span class="panel-kicker">Legal</span>
+              <div class="eyebrow">Legal</div>
               <h2>条款管理</h2>
             </div>
           </div>
@@ -400,7 +444,7 @@ function renderAdminPage(): string {
             <textarea id="admin-legal-text" class="large-textarea" placeholder="输入新的条款正文"></textarea>
           </div>
           <div class="actions">
-            <button id="save-legal-btn" class="primary" type="button">保存条款</button>
+            <button id="save-legal-btn" class="button-link primary" type="button">保存条款</button>
           </div>
           <div id="admin-legal-meta" class="meta-line"></div>
         </section>
@@ -437,143 +481,506 @@ export function renderApp(_appOrigin: string, page: AppPage): string {
     <title>GoDingtalk</title>
     <style>
       :root {
-        --bg: #f3f4f6;
-        --surface: #ffffff;
-        --surface-soft: #f8fafc;
-        --line: #dfe3ea;
+        --bg: #f4f6fb;
+        --sidebar-bg: rgba(255,255,255,0.86);
+        --surface: rgba(255,255,255,0.96);
+        --surface-soft: #fbfdff;
+        --line: #dfe6ee;
         --line-strong: #c7d0db;
-        --text: #0f172a;
-        --muted: #667085;
-        --accent: #2563eb;
-        --accent-strong: #1d4ed8;
-        --accent-soft: rgba(37, 99, 235, 0.06);
-        --ok: #157f3b;
-        --warn: #b54708;
-        --danger: #b42318;
-        --shadow: 0 6px 18px rgba(15, 23, 42, 0.04);
-        --shadow-hover: 0 12px 28px rgba(15, 23, 42, 0.06);
-        --radius-lg: 14px;
-        --radius-md: 10px;
-        --radius-sm: 8px;
+        --text: #111827;
+        --muted: #6b7280;
+        --accent: #16a3a3;
+        --accent-strong: #0f766e;
+        --accent-soft: rgba(22,163,163,0.10);
+        --blue: #3b82f6;
+        --green: #10b981;
+        --purple: #8b5cf6;
+        --yellow: #f59e0b;
+        --red: #ef4444;
+        --shadow: 0 10px 28px rgba(15, 23, 42, 0.06);
+        --radius-xl: 24px;
+        --radius-lg: 18px;
+        --radius-md: 14px;
+        --radius-sm: 10px;
+        --sidebar-width: 280px;
+        --sidebar-collapsed-width: 86px;
       }
       * { box-sizing: border-box; }
       html, body {
         margin: 0;
         min-height: 100%;
-        background: var(--bg);
+        background:
+          radial-gradient(circle at 24% 16%, rgba(22,163,163,0.10), transparent 30%),
+          linear-gradient(180deg, #f9fbff 0%, #f4f6fb 45%, #eef3f8 100%);
         color: var(--text);
         font-family: "SF Pro Text", "PingFang SC", "Helvetica Neue", Arial, sans-serif;
       }
       body { padding: 0; overflow-x: hidden; }
-      body.page-ready .app-shell { opacity: 1; transform: none; }
-      body.page-leaving .app-shell { opacity: 0; transform: translateY(8px); }
       a { color: inherit; }
       button, input, textarea { font: inherit; }
       .hidden { display: none !important; }
-      .app-shell {
-        max-width: 1180px;
-        margin: 0 auto;
-        padding: 18px 18px 40px;
+      body.page-ready .shell { opacity: 1; transform: none; }
+      body.page-leaving .shell { opacity: 0; transform: translateY(8px); }
+      .shell {
+        min-height: 100vh;
+        display: grid;
+        grid-template-columns: var(--sidebar-width) minmax(0, 1fr);
         opacity: 0;
-        transform: translateY(4px);
-        transition: opacity 140ms ease, transform 160ms ease;
+        transform: translateY(6px);
+        transition: opacity 180ms ease, transform 220ms ease;
       }
-      .app-header {
+      body.sidebar-collapsed .shell {
+        grid-template-columns: var(--sidebar-collapsed-width) minmax(0, 1fr);
+      }
+      .sidebar {
+        padding: 18px 14px 18px 18px;
+        background: var(--sidebar-bg);
+        border-right: 1px solid var(--line);
+        display: grid;
+        grid-template-rows: auto 1fr auto;
+        gap: 18px;
+      }
+      .sidebar-head {
+        display: grid;
+      }
+      .sidebar-brand {
         display: flex;
         align-items: center;
-        justify-content: space-between;
-        gap: 16px;
-        padding: 0 0 18px;
-      }
-      .brand {
-        display: inline-flex;
-        align-items: center;
-        gap: 12px;
+        gap: 14px;
+        padding: 10px 12px;
         text-decoration: none;
       }
       .brand-mark {
-        width: 36px;
-        height: 36px;
-        border-radius: 10px;
+        width: 44px;
+        height: 44px;
+        border-radius: 14px;
+        background: linear-gradient(135deg, #164ee4, #16a3a3);
+        color: white;
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        background: linear-gradient(180deg, #1f2937 0%, #111827 100%);
-        color: #eff6ff;
-        font-size: 11px;
-        font-weight: 800;
-        letter-spacing: 0.10em;
-      }
-      .brand-copy {
-        display: grid;
-        gap: 2px;
+        font-size: 20px;
+        font-weight: 900;
       }
       .brand-copy strong {
-        font-size: 15px;
-        letter-spacing: -0.01em;
+        display: block;
+        font-size: 18px;
       }
       .brand-copy span {
+        display: block;
+        margin-top: 2px;
         color: var(--muted);
-        font-size: 11px;
+        font-size: 12px;
       }
-      .page-intro {
-        margin-bottom: 12px;
+      body.sidebar-collapsed .brand-copy,
+      body.sidebar-collapsed .nav-label,
+      body.sidebar-collapsed .sidebar-toggle-label {
+        display: none;
       }
-      .page-intro h1 {
-        margin: 8px 0 0;
-        font-size: 28px;
-        line-height: 1.15;
-        letter-spacing: -0.03em;
+      .sidebar-nav {
+        display: grid;
+        gap: 8px;
+        align-content: start;
       }
-      .page-intro p {
-        margin: 10px 0 0;
-        max-width: 64ch;
-        color: var(--muted);
-        line-height: 1.65;
+      .nav-item {
+        min-height: 54px;
+        border-radius: 16px;
+        display: grid;
+        grid-template-columns: 28px minmax(0, 1fr);
+        align-items: center;
+        gap: 12px;
+        padding: 0 16px;
+        color: #374151;
+        font-size: 16px;
+        font-weight: 600;
+        text-decoration: none;
+        border: 1px solid transparent;
+        transition: background 140ms ease, border-color 140ms ease, color 140ms ease, box-shadow 140ms ease;
+      }
+      .nav-item.active {
+        background: linear-gradient(180deg, rgba(22,163,163,0.10), rgba(22,163,163,0.05));
+        color: var(--accent);
+      }
+      .nav-item:hover {
+        background: rgba(255,255,255,0.72);
+        border-color: var(--line);
+        box-shadow: 0 6px 16px rgba(15,23,42,0.04);
+      }
+      .nav-icon {
+        width: 22px;
+        height: 22px;
+        border-radius: 7px;
+        border: 1.5px solid currentColor;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 10px;
+        font-weight: 800;
+      }
+      body.sidebar-collapsed .nav-item {
+        grid-template-columns: 1fr;
+        justify-items: center;
+        padding: 0;
+      }
+      .sidebar-foot {
+        display: grid;
+        gap: 10px;
+      }
+      .sidebar-toggle {
+        min-height: 48px;
+        border-radius: 16px;
+        border: 1px solid var(--line);
+        background: rgba(255,255,255,0.72);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        color: #4b5563;
         font-size: 14px;
+        font-weight: 700;
       }
-      .eyebrow, .panel-kicker {
-        color: var(--muted);
+      .main {
+        padding: 18px 20px 24px;
+      }
+      .topbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 18px;
+        padding: 14px 18px;
+        border: 1px solid var(--line);
+        border-radius: var(--radius-lg);
+        background: rgba(255,255,255,0.86);
+        box-shadow: 0 6px 18px rgba(15, 23, 42, 0.04);
+      }
+      .topbar-copy .eyebrow {
         text-transform: uppercase;
         letter-spacing: 0.08em;
         font-size: 10px;
+        color: var(--muted);
         font-weight: 700;
       }
-      .panel {
-        background: var(--surface);
-        border: 1px solid var(--line);
-        box-shadow: var(--shadow);
-        border-radius: var(--radius-lg);
-        padding: 16px;
-        transition: border-color 120ms ease, background-color 120ms ease, box-shadow 120ms ease;
+      .topbar-copy h1 {
+        margin: 6px 0 0;
+        font-size: 34px;
+        line-height: 1.08;
+        letter-spacing: -0.04em;
       }
-      .panel:hover,
-      .stat-tile:hover,
-      .recent-row:hover,
-      .job-row:hover,
-      .admin-user:hover,
-      .storage-item:hover {
-        border-color: var(--line-strong);
-        box-shadow: var(--shadow-hover);
+      .topbar-copy p {
+        margin: 8px 0 0;
+        color: var(--muted);
+        font-size: 14px;
+        line-height: 1.6;
       }
-      .panel-head {
+      .topbar-actions {
         display: flex;
-        align-items: start;
-        justify-content: space-between;
+        align-items: center;
         gap: 10px;
       }
-      .panel-head h2 {
-        margin: 4px 0 0;
-        font-size: 18px;
-        letter-spacing: -0.02em;
+      .top-chip {
+        min-height: 36px;
+        padding: 0 12px;
+        border-radius: 999px;
+        border: 1px solid var(--line);
+        background: #ffffff;
+        display: inline-flex;
+        align-items: center;
+        color: var(--muted);
+        font-size: 13px;
+        font-weight: 700;
       }
-      .field {
+      .user-menu-wrap {
+        position: relative;
+      }
+      .avatar-trigger {
+        width: 42px;
+        height: 42px;
+        border-radius: 999px;
+        border: 1px solid var(--line-strong);
+        background: linear-gradient(135deg, #0f766e, #14b8a6);
+        color: white;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 900;
+        box-shadow: 0 8px 18px rgba(15, 23, 42, 0.08);
+      }
+      .user-menu {
+        position: absolute;
+        top: calc(100% + 10px);
+        right: 0;
+        width: 240px;
+        border-radius: 18px;
+        border: 1px solid var(--line);
+        background: rgba(255,255,255,0.98);
+        box-shadow: 0 20px 40px rgba(15, 23, 42, 0.12);
+        padding: 14px;
+        z-index: 30;
+      }
+      .user-menu-head {
+        padding: 4px 4px 12px;
+        border-bottom: 1px solid var(--line);
+      }
+      .user-menu-name {
+        font-weight: 800;
+      }
+      .user-menu-role {
+        margin-top: 6px;
+        color: var(--muted);
+        font-size: 12px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+      }
+      .user-menu-list {
         display: grid;
         gap: 8px;
         margin-top: 12px;
       }
+      .user-menu-link {
+        min-height: 40px;
+        border-radius: 12px;
+        padding: 0 12px;
+        text-decoration: none;
+        display: flex;
+        align-items: center;
+        color: var(--text);
+        border: 1px solid transparent;
+        background: transparent;
+      }
+      .user-menu-link:hover {
+        background: var(--surface-soft);
+        border-color: rgba(207, 216, 227, 0.8);
+      }
+      .user-menu-action {
+        justify-content: flex-start;
+        width: 100%;
+      }
+      .metric-grid {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 16px;
+        margin-top: 16px;
+      }
+      .metric-card {
+        background: var(--surface);
+        border: 1px solid var(--line);
+        border-radius: var(--radius-xl);
+        box-shadow: var(--shadow);
+        padding: 18px;
+        display: grid;
+        grid-template-columns: 56px minmax(0, 1fr);
+        gap: 14px;
+        align-items: center;
+      }
+      .metric-icon {
+        width: 46px;
+        height: 46px;
+        border-radius: 14px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 900;
+        font-size: 18px;
+      }
+      .metric-icon.mint { background: rgba(16,185,129,0.14); color: var(--green); }
+      .metric-icon.blue { background: rgba(59,130,246,0.14); color: var(--blue); }
+      .metric-icon.green { background: rgba(34,197,94,0.14); color: var(--green); }
+      .metric-icon.purple { background: rgba(139,92,246,0.14); color: var(--purple); }
+      .metric-copy span {
+        display: block;
+        color: var(--muted);
+        font-size: 13px;
+      }
+      .metric-copy strong {
+        display: block;
+        margin-top: 4px;
+        font-size: 22px;
+        line-height: 1.1;
+      }
+      .metric-copy small {
+        display: block;
+        margin-top: 6px;
+        font-size: 13px;
+        color: var(--muted);
+      }
+      .toolbar-card {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        padding: 16px 18px;
+        margin-top: 16px;
+        background: var(--surface);
+        border: 1px solid var(--line);
+        border-radius: 22px;
+        box-shadow: var(--shadow);
+      }
+      .toolbar-group {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+      .toolbar-group strong {
+        font-size: 15px;
+      }
+      .select-chip,
+      .button-link,
+      .mini-link,
+      .size-chip {
+        min-height: 42px;
+        padding: 0 14px;
+        border-radius: 14px;
+        border: 1px solid var(--line);
+        background: #ffffff;
+        color: #374151;
+        font-size: 14px;
+        font-weight: 600;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: background 140ms ease, border-color 140ms ease, box-shadow 140ms ease;
+      }
+      .button-link.primary {
+        border-color: transparent;
+        background: linear-gradient(180deg, var(--accent) 0%, var(--accent-strong) 100%);
+        color: white;
+      }
+      .button-link:hover,
+      .mini-link:hover,
+      .size-chip:hover,
+      .select-chip:hover {
+        border-color: var(--line-strong);
+        box-shadow: 0 8px 18px rgba(15, 23, 42, 0.06);
+      }
+      .button-link:disabled,
+      .size-chip:disabled {
+        opacity: 0.62;
+        cursor: wait;
+      }
+      .analytics-grid {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+        gap: 16px;
+        margin-top: 16px;
+      }
+      .chart-card,
+      .card,
+      .records-card {
+        background: var(--surface);
+        border: 1px solid var(--line);
+        border-radius: 24px;
+        box-shadow: var(--shadow);
+        padding: 18px;
+      }
+      .section-head {
+        display: flex;
+        justify-content: space-between;
+        align-items: start;
+        gap: 12px;
+      }
+      .section-head h2 {
+        margin: 6px 0 0;
+        font-size: 18px;
+      }
+      .mini-table {
+        display: grid;
+        gap: 10px;
+      }
+      .donut-layout {
+        display: grid;
+        grid-template-columns: 250px minmax(0, 1fr);
+        gap: 20px;
+        align-items: center;
+        margin-top: 14px;
+      }
+      .donut {
+        width: 220px;
+        height: 220px;
+        border-radius: 999px;
+        background: conic-gradient(var(--blue) 0 88%, var(--green) 88% 96%, var(--red) 96% 100%);
+        display: grid;
+        place-items: center;
+        margin: 0 auto;
+      }
+      .donut::after {
+        content: "";
+        width: 100px;
+        height: 100px;
+        border-radius: 999px;
+        background: white;
+      }
+      .mini-table-head,
+      .mini-table-row {
+        display: grid;
+        grid-template-columns: 1.15fr 0.7fr 0.7fr 0.8fr;
+        gap: 10px;
+        font-size: 13px;
+      }
+      .mini-table-head {
+        color: var(--muted);
+        font-weight: 700;
+      }
+      .trend-layout {
+        margin-top: 14px;
+        display: grid;
+        gap: 12px;
+      }
+      .trend-legend {
+        display: flex;
+        gap: 14px;
+        flex-wrap: wrap;
+        font-size: 12px;
+        color: var(--muted);
+      }
+      .legend-dot {
+        display: inline-block;
+        width: 10px;
+        height: 10px;
+        border-radius: 999px;
+        margin-right: 6px;
+      }
+      .legend-dot.blue { background: var(--blue); }
+      .legend-dot.green { background: var(--green); }
+      .legend-dot.red { background: var(--red); }
+      .trend-chart {
+        min-height: 286px;
+        border: 1px solid #eef2f7;
+        border-radius: 18px;
+        background: linear-gradient(180deg, rgba(22,163,163,0.05), transparent 70%), #ffffff;
+        overflow: hidden;
+        position: relative;
+      }
+      .trend-chart svg {
+        width: 100%;
+        height: 100%;
+        display: block;
+      }
+      .overview-grid {
+        display: grid;
+        grid-template-columns: minmax(0, 1.15fr) 360px;
+        gap: 16px;
+        margin-top: 16px;
+      }
+      .work-card,
+      .scan-main-card,
+      .scan-side-card {
+        background: var(--surface);
+        border: 1px solid var(--line);
+        border-radius: 24px;
+        box-shadow: var(--shadow);
+        padding: 18px;
+      }
+      .field {
+        display: grid;
+        gap: 8px;
+        margin-top: 16px;
+      }
       .field > label {
         font-size: 12px;
+        color: var(--muted);
         font-weight: 700;
       }
       input, textarea {
@@ -582,363 +989,64 @@ export function renderApp(_appOrigin: string, page: AppPage): string {
         background: #ffffff;
         color: var(--text);
         border-radius: var(--radius-md);
-        padding: 10px 12px;
+        padding: 12px 14px;
+      }
+      textarea {
+        min-height: 160px;
+        resize: vertical;
+        line-height: 1.65;
       }
       input:focus, textarea:focus {
         outline: none;
-        border-color: rgba(37, 99, 235, 0.42);
-        box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.08);
+        border-color: rgba(22, 163, 163, 0.42);
+        box-shadow: 0 0 0 4px rgba(22, 163, 163, 0.10);
       }
-      textarea {
-        min-height: 120px;
-        resize: vertical;
-        line-height: 1.6;
-      }
-      .large-textarea { min-height: 220px; }
-      .actions {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 8px;
+      .gate-card {
         margin-top: 12px;
-      }
-      button, .button-link, .mini-link {
-        appearance: none;
-        border: 1px solid var(--line);
-        background: rgba(255, 255, 255, 0.95);
-        color: var(--text);
-        border-radius: 8px;
-        min-height: 36px;
-        padding: 0 12px;
-        font-weight: 700;
-        text-decoration: none;
-        cursor: pointer;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        transition: box-shadow 120ms ease, border-color 120ms ease, background 120ms ease, color 120ms ease;
-      }
-      .mini-link {
-        min-height: 30px;
-        padding: 0 10px;
-        font-size: 12px;
-      }
-      button.primary, .button-link.primary {
-        color: #eff6ff;
-        border-color: transparent;
-        background: linear-gradient(180deg, var(--accent) 0%, var(--accent-strong) 100%);
-      }
-      button:hover, .button-link:hover, .mini-link:hover {
-        box-shadow: 0 4px 10px rgba(15, 23, 42, 0.08);
-        border-color: var(--line-strong);
-      }
-      button:disabled {
-        opacity: 0.62;
-        cursor: wait;
-      }
-      .notice {
-        margin-top: 12px;
-        padding: 10px 12px;
-        border-radius: var(--radius-md);
-        line-height: 1.55;
-        border: 1px solid transparent;
-        font-size: 13px;
-      }
-      .notice.ok {
-        background: rgba(21, 127, 59, 0.08);
-        color: var(--ok);
-        border-color: rgba(21, 127, 59, 0.14);
-      }
-      .notice.warn {
-        background: rgba(181, 71, 8, 0.08);
-        color: var(--warn);
-        border-color: rgba(181, 71, 8, 0.14);
-      }
-      .notice.error {
-        background: rgba(180, 35, 24, 0.08);
-        color: var(--danger);
-        border-color: rgba(180, 35, 24, 0.16);
-      }
-      .meta-line, .muted {
-        color: var(--muted);
-        line-height: 1.6;
-        font-size: 12px;
-      }
-      .badge {
-        display: inline-flex;
-        align-items: center;
-        min-height: 24px;
-        padding: 0 8px;
-        border-radius: 999px;
-        font-size: 11px;
-        font-weight: 700;
-        white-space: nowrap;
-        border: 1px solid transparent;
-      }
-      .badge.ok {
-        background: rgba(21, 127, 59, 0.10);
-        color: var(--ok);
-      }
-      .badge.warn {
-        background: rgba(181, 71, 8, 0.10);
-        color: var(--warn);
-      }
-      .badge.active {
-        background: rgba(37, 99, 235, 0.08);
-        color: var(--accent);
-      }
-      .user-menu-wrap {
-        position: relative;
-      }
-      .avatar-trigger {
-        width: 36px;
-        height: 36px;
-        padding: 0;
-        border-radius: 999px;
-        background: #ffffff;
-        border: 1px solid var(--line-strong);
-        box-shadow: 0 2px 8px rgba(15, 23, 42, 0.06);
-      }
-      .avatar-trigger:hover {
-        border-color: var(--line-strong);
-        box-shadow: 0 4px 12px rgba(15, 23, 42, 0.08);
-      }
-      .avatar-fallback {
-        display: inline-flex;
-        width: 100%;
-        height: 100%;
-        align-items: center;
-        justify-content: center;
-        font-weight: 800;
-      }
-      .user-menu {
-        position: absolute;
-        top: calc(100% + 10px);
-        right: 0;
-        width: 220px;
-        border-radius: 12px;
-        border: 1px solid var(--line);
-        background: rgba(255,255,255,0.98);
-        box-shadow: 0 12px 24px rgba(15, 23, 42, 0.10);
-        padding: 10px;
-        z-index: 30;
-      }
-      .user-menu-head {
-        padding: 4px 4px 10px;
-        border-bottom: 1px solid var(--line);
-      }
-      .user-menu-name {
-        font-weight: 800;
-        font-size: 13px;
-      }
-      .user-menu-role {
-        margin-top: 4px;
-        color: var(--muted);
-        font-size: 11px;
-        font-weight: 700;
-        text-transform: uppercase;
-        letter-spacing: 0.08em;
-      }
-      .user-menu-list {
-        display: grid;
-        gap: 6px;
-        margin-top: 10px;
-      }
-      .user-menu-link {
-        min-height: 34px;
-        border-radius: 8px;
-        padding: 0 10px;
-        text-decoration: none;
-        display: flex;
-        align-items: center;
-        color: var(--text);
-        border: 1px solid transparent;
-        background: transparent;
-        font-size: 13px;
-      }
-      .user-menu-link:hover {
-        background: var(--surface-soft);
-        border-color: rgba(207, 216, 227, 0.8);
-      }
-      .user-menu-action {
-        justify-content: flex-start;
-      }
-      .login-shell {
-        display: grid;
-        grid-template-columns: minmax(0, 1.1fr) minmax(380px, 0.9fr);
-        gap: 14px;
-        align-items: stretch;
-      }
-      .login-brand-panel {
-        display: grid;
-        align-content: start;
-        gap: 14px;
-      }
-      .login-brand-panel h1 {
-        margin: 8px 0 0;
-        font-size: 32px;
-        line-height: 1.1;
-        letter-spacing: -0.04em;
-      }
-      .login-brand-panel p {
-        margin: 0;
-        color: var(--muted);
-        line-height: 1.62;
-        font-size: 14px;
-      }
-      .login-points {
-        display: grid;
-        gap: 10px;
-      }
-      .login-point {
-        display: grid;
-        grid-template-columns: 34px minmax(0, 1fr);
-        gap: 10px;
-        align-items: start;
-      }
-      .login-point strong {
-        width: 28px;
-        height: 28px;
-        border-radius: 999px;
-        background: var(--accent-soft);
-        color: var(--accent);
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 11px;
-      }
-      .auth-tabs {
-        display: inline-flex;
-        gap: 6px;
-        padding: 6px;
-        border-radius: 999px;
-        background: #f8fafc;
-        border: 1px solid var(--line);
-      }
-      .auth-tab {
-        min-height: 34px;
-        padding: 0 12px;
-        border-radius: 999px;
-        border: 0;
-        background: transparent;
-        color: var(--muted);
-        font-weight: 700;
-        font-size: 13px;
-      }
-      .auth-tab.active {
-        background: #ffffff;
-        color: var(--text);
-        box-shadow: 0 2px 10px rgba(15, 23, 42, 0.08);
-      }
-      .auth-form-panel {
-        margin-top: 16px;
-      }
-      .auth-main-btn {
-        min-width: 112px;
-      }
-      .status-strip {
-        display: grid;
-        gap: 12px;
-      }
-      .status-copy h2 {
-        margin: 6px 0 0;
-        font-size: 22px;
-        letter-spacing: -0.02em;
-      }
-      .status-copy p {
-        margin: 8px 0 0;
-      }
-      .status-stats {
-        display: grid;
-        grid-template-columns: repeat(4, minmax(0, 1fr));
-        gap: 10px;
-      }
-      .stat-tile {
-        border: 1px solid var(--line);
-        border-radius: var(--radius-md);
-        background: var(--surface-soft);
-        padding: 12px;
-      }
-      .stat-tile span {
-        color: var(--muted);
-        font-size: 12px;
-      }
-      .stat-tile strong {
-        display: block;
-        margin-top: 6px;
-        font-size: 22px;
-        letter-spacing: -0.02em;
-      }
-      .overview-grid,
-      .legal-layout,
-      .scan-layout,
-      .account-layout,
-      .admin-layout {
-        display: grid;
-        gap: 14px;
-        margin-top: 14px;
-      }
-      .overview-grid {
-        grid-template-columns: minmax(0, 1.15fr) 380px;
-        align-items: start;
-      }
-      .legal-layout {
-        grid-template-columns: minmax(320px, 0.7fr) minmax(0, 1.3fr);
-      }
-      .scan-layout {
-        grid-template-columns: minmax(0, 1.15fr) 320px;
-      }
-      .account-layout {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-      }
-      .admin-layout {
-        grid-template-columns: repeat(3, minmax(0, 1fr));
-      }
-      .gate-box {
-        margin-top: 8px;
-        border: 1px dashed rgba(37, 99, 235, 0.24);
-        border-radius: var(--radius-md);
-        background: linear-gradient(180deg, rgba(255,255,255,0.95), rgba(248,251,255,0.95));
         padding: 14px;
+        border-radius: 16px;
+        border: 1px dashed rgba(22,163,163,0.28);
+        background: linear-gradient(180deg, rgba(255,255,255,0.95), rgba(245,252,252,0.95));
       }
       .gate-title {
         font-size: 18px;
         font-weight: 800;
         letter-spacing: -0.02em;
       }
-      .recent-panel {
-        display: grid;
-        gap: 10px;
-      }
       .recent-list {
         display: grid;
-        gap: 8px;
+        gap: 10px;
+        margin-top: 10px;
       }
       .recent-row {
+        min-height: 40px;
         display: grid;
-        grid-template-columns: minmax(0, 1fr) auto auto;
+        grid-template-columns: minmax(0, 1fr) 74px 62px;
         gap: 8px;
         align-items: center;
-        min-height: 36px;
-        padding: 0 8px;
-        border-radius: 8px;
+        padding: 0 10px;
+        border-radius: 10px;
         background: var(--surface-soft);
         border: 1px solid var(--line);
-        transition: border-color 120ms ease, background 120ms ease, box-shadow 120ms ease;
       }
       .recent-title {
-        min-width: 0;
         overflow: hidden;
-        white-space: nowrap;
         text-overflow: ellipsis;
+        white-space: nowrap;
+        font-size: 13px;
         font-weight: 600;
       }
       .recent-time {
         color: var(--muted);
-        font-size: 11px;
-        white-space: nowrap;
+        font-size: 12px;
+        text-align: right;
       }
-      .legal-action-panel, .legal-doc-panel, .scan-focus-panel, .scan-side-panel {
-        min-height: 100%;
+      .legal-layout,
+      .scan-grid {
+        display: grid;
+        grid-template-columns: minmax(320px, 0.72fr) minmax(0, 1.28fr);
+        gap: 16px;
+        margin-top: 16px;
       }
       .checkbox-row {
         display: flex;
@@ -952,10 +1060,38 @@ export function renderApp(_appOrigin: string, page: AppPage): string {
         height: 18px;
         margin-top: 3px;
       }
+      .notice {
+        margin-top: 14px;
+        padding: 12px 14px;
+        border-radius: 14px;
+        line-height: 1.6;
+        border: 1px solid transparent;
+        font-size: 13px;
+      }
+      .notice.ok {
+        background: rgba(16,185,129,0.08);
+        color: var(--green);
+        border-color: rgba(16,185,129,0.16);
+      }
+      .notice.warn {
+        background: rgba(245,158,11,0.08);
+        color: var(--warn);
+        border-color: rgba(245,158,11,0.16);
+      }
+      .notice.error {
+        background: rgba(239,68,68,0.08);
+        color: var(--red);
+        border-color: rgba(239,68,68,0.16);
+      }
+      .meta-line, .muted {
+        color: var(--muted);
+        line-height: 1.6;
+        font-size: 12px;
+      }
       .legal-text {
         display: grid;
         gap: 10px;
-        line-height: 1.65;
+        line-height: 1.68;
       }
       .legal-text h3 {
         margin: 0;
@@ -965,14 +1101,14 @@ export function renderApp(_appOrigin: string, page: AppPage): string {
         margin: 0;
       }
       .scan-box {
-        margin-top: 18px;
-        border-radius: var(--radius-md);
-        border: 1px solid rgba(37, 99, 235, 0.18);
-        background: linear-gradient(180deg, rgba(255,255,255,0.98), rgba(245,248,255,0.95));
-        padding: 14px;
+        margin-top: 16px;
+        border-radius: 18px;
+        border: 1px solid rgba(22,163,163,0.18);
+        background: linear-gradient(180deg, rgba(255,255,255,0.98), rgba(245,252,252,0.95));
+        padding: 16px;
       }
       .scan-title {
-        font-size: 18px;
+        font-size: 20px;
         font-weight: 800;
         letter-spacing: -0.02em;
       }
@@ -980,50 +1116,55 @@ export function renderApp(_appOrigin: string, page: AppPage): string {
         display: flex;
         align-items: center;
         justify-content: center;
-        min-height: 280px;
-        margin-top: 12px;
-        border-radius: 12px;
+        min-height: 300px;
+        margin-top: 14px;
+        border-radius: 18px;
         background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
-        border: 1px dashed rgba(37, 99, 235, 0.22);
+        border: 1px dashed rgba(22,163,163,0.24);
       }
       .qr-image {
         display: block;
-        width: 240px;
+        width: 260px;
         max-width: 100%;
-        border-radius: var(--radius-md);
+        border-radius: 16px;
         border: 1px solid var(--line);
         background: #fff;
       }
       .scan-steps {
         display: grid;
-        gap: 10px;
+        gap: 12px;
       }
       .scan-step {
         display: grid;
         grid-template-columns: 34px minmax(0, 1fr);
-        gap: 10px;
+        gap: 12px;
         align-items: start;
       }
       .scan-step strong {
-        width: 28px;
-        height: 28px;
+        width: 34px;
+        height: 34px;
         border-radius: 999px;
         display: inline-flex;
         align-items: center;
         justify-content: center;
         background: var(--accent-soft);
         color: var(--accent);
-        font-size: 11px;
+        font-size: 12px;
       }
-      .records-panel {
-        margin-top: 14px;
+      .records-card {
+        margin-top: 16px;
+        background: var(--surface);
+        border: 1px solid var(--line);
+        border-radius: 24px;
+        box-shadow: var(--shadow);
+        padding: 18px;
       }
       .records-toolbar,
       .records-footer {
         display: flex;
         align-items: center;
         justify-content: space-between;
-        gap: 10px;
+        gap: 14px;
         flex-wrap: wrap;
       }
       .records-size-group {
@@ -1037,43 +1178,35 @@ export function renderApp(_appOrigin: string, page: AppPage): string {
         gap: 8px;
       }
       .size-chip {
-        min-height: 32px;
-        padding: 0 12px;
-        border-radius: 999px;
-        border: 1px solid var(--line);
-        background: #ffffff;
-        color: var(--muted);
-        font-weight: 700;
-        font-size: 12px;
+        min-height: 36px;
       }
       .size-chip.active {
-        border-color: rgba(37, 99, 235, 0.22);
-        background: rgba(37, 99, 235, 0.08);
+        border-color: rgba(22,163,163,0.24);
+        background: rgba(22,163,163,0.08);
         color: var(--accent);
       }
       .records-list {
         display: grid;
         gap: 10px;
-        margin-top: 12px;
+        margin-top: 16px;
       }
       .job-row {
         border: 1px solid var(--line);
-        border-radius: var(--radius-md);
+        border-radius: 14px;
         background: var(--surface-soft);
         overflow: hidden;
-        transition: border-color 120ms ease, box-shadow 120ms ease;
       }
       .job-row-main {
         display: grid;
-        grid-template-columns: minmax(0, 1fr) 100px 110px 70px auto;
-        gap: 8px;
+        grid-template-columns: minmax(0, 1fr) 96px 120px 72px auto;
+        gap: 10px;
         align-items: center;
-        min-height: 42px;
-        padding: 0 10px;
+        min-height: 48px;
+        padding: 0 12px;
         cursor: pointer;
       }
       .job-row-main:hover {
-        background: #f3f6fb;
+        background: #f3faf9;
       }
       .job-row-title {
         min-width: 0;
@@ -1084,12 +1217,12 @@ export function renderApp(_appOrigin: string, page: AppPage): string {
       }
       .job-row-meta {
         color: var(--muted);
-        font-size: 11px;
+        font-size: 12px;
         white-space: nowrap;
       }
       .job-row-detail {
         border-top: 1px solid var(--line);
-        padding: 12px;
+        padding: 14px;
         background: #ffffff;
       }
       .job-row-detail-grid {
@@ -1106,26 +1239,37 @@ export function renderApp(_appOrigin: string, page: AppPage): string {
         justify-content: space-between;
         gap: 12px;
         border: 1px solid var(--line);
-        border-radius: 8px;
+        border-radius: 10px;
         background: var(--surface-soft);
         padding: 8px 10px;
       }
       .job-inline-errors {
-        color: var(--danger);
+        color: var(--red);
         line-height: 1.7;
+      }
+      .dual-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 16px;
+        margin-top: 16px;
+      }
+      .admin-grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 16px;
+        margin-top: 16px;
       }
       .admin-users,
       .storage-list {
         display: grid;
-        gap: 12px;
+        gap: 10px;
       }
       .admin-user,
       .storage-item {
         border: 1px solid var(--line);
-        border-radius: var(--radius-md);
+        border-radius: 14px;
         background: var(--surface-soft);
-        padding: 12px;
-        transition: border-color 120ms ease, box-shadow 120ms ease;
+        padding: 14px;
       }
       .admin-user-name,
       .storage-name {
@@ -1135,17 +1279,17 @@ export function renderApp(_appOrigin: string, page: AppPage): string {
       .storage-toolbar {
         display: flex;
         align-items: end;
-        gap: 10px;
+        gap: 12px;
         flex-wrap: wrap;
       }
       .storage-search {
-        flex: 1 1 260px;
+        flex: 1 1 220px;
       }
       .storage-head {
         display: flex;
         align-items: start;
         justify-content: space-between;
-        gap: 10px;
+        gap: 12px;
       }
       .storage-key {
         color: var(--muted);
@@ -1173,71 +1317,100 @@ export function renderApp(_appOrigin: string, page: AppPage): string {
         align-items: center;
         padding: 0 8px;
         border-radius: 999px;
-        background: rgba(37, 99, 235, 0.08);
+        background: rgba(22,163,163,0.08);
         color: var(--accent);
         font-size: 11px;
         font-weight: 700;
       }
       .empty {
-        padding: 20px 12px;
+        padding: 24px 12px;
         text-align: center;
         color: var(--muted);
         font-size: 13px;
       }
-      @media (max-width: 980px) {
+      @media (max-width: 1280px) {
+        .metric-grid,
+        .analytics-grid,
         .overview-grid,
-        .legal-layout,
-        .scan-layout,
-        .account-layout,
-        .admin-layout,
-        .login-shell {
-          grid-template-columns: 1fr;
-        }
-        .status-stats {
+        .scan-grid,
+        .dual-grid,
+        .admin-grid {
           grid-template-columns: 1fr 1fr;
         }
-        .job-row-main {
-          grid-template-columns: minmax(0, 1fr);
-          padding-top: 12px;
-          padding-bottom: 12px;
+        .metric-grid {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
         }
-      }
-      @media (max-width: 640px) {
-        .app-shell {
-          padding: 18px 14px 40px;
-        }
-        .page-intro h1,
-        .login-brand-panel h1 {
-          font-size: 32px;
-        }
-        .status-stats {
+        .overview-grid,
+        .scan-grid,
+        .dual-grid,
+        .admin-grid {
           grid-template-columns: 1fr;
         }
-        .recent-row {
-          grid-template-columns: minmax(0, 1fr);
-          gap: 6px;
-          padding-top: 10px;
-          padding-bottom: 10px;
+        .donut-layout {
+          grid-template-columns: 1fr;
         }
-        .storage-head,
+      }
+      @media (max-width: 980px) {
+        .app {
+          grid-template-columns: 1fr;
+        }
+        .sidebar {
+          grid-template-rows: auto;
+        }
+        .sidebar-nav {
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+        }
+        body.sidebar-collapsed .shell {
+          grid-template-columns: 1fr;
+        }
+        body.sidebar-collapsed .nav-label,
+        body.sidebar-collapsed .brand-copy,
+        body.sidebar-collapsed .sidebar-toggle-label {
+          display: unset;
+        }
+      }
+      @media (max-width: 720px) {
+        .metric-grid,
+        .sidebar-nav {
+          grid-template-columns: 1fr;
+        }
+        .main,
+        .sidebar {
+          padding-left: 14px;
+          padding-right: 14px;
+        }
+        .topbar,
+        .toolbar-card,
         .records-toolbar,
         .records-footer,
-        .panel-head {
+        .section-head,
+        .panel-head,
+        .storage-head {
           flex-direction: column;
           align-items: start;
+        }
+        .job-row-main,
+        .recent-row {
+          grid-template-columns: 1fr;
+          min-height: auto;
+          padding-top: 10px;
+          padding-bottom: 10px;
         }
       }
     </style>
   </head>
   <body data-page="${page}">
-    <div class="app-shell">
-      ${renderHeader(page)}
-      <div id="notice" class="notice ok hidden"></div>
-      ${renderPageBody(page)}
+    <div class="shell">
+      ${page === "login" ? "" : renderSidebar()}
+      <main class="main">
+        <div id="notice" class="notice ok hidden"></div>
+        ${renderPageBody(page)}
+      </main>
     </div>
 
     <script>
       const PAGE = ${JSON.stringify(page)};
+      const SIDEBAR_KEY = "godingtalk_sidebar_collapsed";
       const state = {
         authenticated: false,
         registrationOpen: false,
@@ -1253,6 +1426,7 @@ export function renderApp(_appOrigin: string, page: AppPage): string {
         loginSessionId: "",
         loginSessionStatus: "",
         recentJobs: [],
+        overviewJobs: [],
         jobsPageItems: [],
         jobsPage: 1,
         jobsPageSize: 10,
@@ -1268,15 +1442,22 @@ export function renderApp(_appOrigin: string, page: AppPage): string {
 
       const el = {
         notice: document.getElementById("notice"),
+        shell: document.querySelector(".shell"),
+        sidebar: document.getElementById("sidebar"),
+        sidebarToggleBtn: document.getElementById("sidebar-toggle-btn"),
+        navOverview: document.getElementById("nav-overview"),
+        navLegal: document.getElementById("nav-legal"),
+        navScan: document.getElementById("nav-scan"),
+        navJobs: document.getElementById("nav-jobs"),
+        navAccount: document.getElementById("nav-account"),
+        navAdmin: document.getElementById("nav-admin"),
+        topStatusChip: document.getElementById("top-status-chip"),
         userMenuWrap: document.getElementById("user-menu-wrap"),
         userMenuTrigger: document.getElementById("user-menu-trigger"),
         userMenu: document.getElementById("user-menu"),
         userMenuName: document.getElementById("user-menu-name"),
         userMenuRole: document.getElementById("user-menu-role"),
         userMenuAdminLink: document.getElementById("user-menu-admin-link"),
-        userMenuAccountLink: document.getElementById("user-menu-account-link"),
-        userMenuScanLink: document.getElementById("user-menu-scan-link"),
-        userMenuJobsLink: document.getElementById("user-menu-jobs-link"),
         avatarFallback: document.getElementById("avatar-fallback"),
         topbarLogoutBtn: document.getElementById("topbar-logout-btn"),
         topbarLogoutBtnInline: document.getElementById("topbar-logout-btn-inline"),
@@ -1303,6 +1484,9 @@ export function renderApp(_appOrigin: string, page: AppPage): string {
         overviewGateCopy: document.getElementById("overview-gate-copy"),
         overviewGateLink: document.getElementById("overview-gate-link"),
         overviewDownloadForm: document.getElementById("overview-download-form"),
+        overviewDonut: document.getElementById("overview-donut"),
+        overviewDonutTable: document.getElementById("overview-donut-table"),
+        overviewTrend: document.getElementById("overview-trend"),
         urls: document.getElementById("urls"),
         createJobBtn: document.getElementById("create-job-btn"),
         refreshBtn: document.getElementById("refresh-btn"),
@@ -1427,9 +1611,9 @@ export function renderApp(_appOrigin: string, page: AppPage): string {
       function formatStatus(status) {
         switch (String(status || "").toLowerCase()) {
           case "queued": return "等待开始";
-          case "running": return "正在下载";
-          case "succeeded": return "下载完成";
-          case "failed": return "下载失败";
+          case "running": return "进行中";
+          case "succeeded": return "已完成";
+          case "failed": return "失败";
           default: return status || "-";
         }
       }
@@ -1462,6 +1646,23 @@ export function renderApp(_appOrigin: string, page: AppPage): string {
         element.textContent = text;
       }
 
+      function setSidebarCollapsed(collapsed) {
+        document.body.classList.toggle("sidebar-collapsed", collapsed);
+        if (el.sidebarToggleBtn) {
+          el.sidebarToggleBtn.textContent = collapsed ? "展开" : "收起";
+        }
+        localStorage.setItem(SIDEBAR_KEY, collapsed ? "1" : "0");
+      }
+
+      function setupSidebar() {
+        if (!el.sidebarToggleBtn) return;
+        const initial = localStorage.getItem(SIDEBAR_KEY) === "1";
+        setSidebarCollapsed(initial);
+        el.sidebarToggleBtn.addEventListener("click", () => {
+          setSidebarCollapsed(!document.body.classList.contains("sidebar-collapsed"));
+        });
+      }
+
       function setUserMenuOpen(nextOpen) {
         userMenuOpen = Boolean(nextOpen);
         if (!el.userMenu || !el.userMenuTrigger) return;
@@ -1476,18 +1677,15 @@ export function renderApp(_appOrigin: string, page: AppPage): string {
 
       function setupUserMenu() {
         if (!el.userMenuWrap || !el.userMenuTrigger || !el.userMenu) return;
-
         const prefersHover = window.matchMedia("(hover: hover) and (pointer: fine)").matches;
         if (prefersHover) {
           el.userMenuWrap.addEventListener("mouseenter", () => setUserMenuOpen(true));
           el.userMenuWrap.addEventListener("mouseleave", () => setUserMenuOpen(false));
         }
-
         el.userMenuTrigger.addEventListener("click", (event) => {
           event.stopPropagation();
           setUserMenuOpen(!userMenuOpen);
         });
-
         document.addEventListener("click", (event) => {
           if (!el.userMenuWrap.contains(event.target)) {
             setUserMenuOpen(false);
@@ -1499,7 +1697,6 @@ export function renderApp(_appOrigin: string, page: AppPage): string {
         requestAnimationFrame(() => {
           document.body.classList.add("page-ready");
         });
-
         document.querySelectorAll("[data-page-link]").forEach((link) => {
           const anchor = link;
           if (anchor.dataset.transitionBound === "1") return;
@@ -1514,7 +1711,7 @@ export function renderApp(_appOrigin: string, page: AppPage): string {
             document.body.classList.add("page-leaving");
             window.setTimeout(() => {
               window.location.href = href;
-            }, 140);
+            }, 120);
           });
         });
       }
@@ -1542,36 +1739,42 @@ export function renderApp(_appOrigin: string, page: AppPage): string {
         if (el.userMenuAdminLink) {
           if (state.user.is_sudo) el.userMenuAdminLink.classList.remove("hidden"); else el.userMenuAdminLink.classList.add("hidden");
         }
+        if (el.navAdmin) {
+          if (state.user.is_sudo) el.navAdmin.classList.remove("hidden"); else el.navAdmin.classList.add("hidden");
+        }
+        if (el.navLegal) {
+          if (state.legalAccepted) el.navLegal.classList.add("hidden"); else el.navLegal.classList.remove("hidden");
+        }
+        if (el.topStatusChip) {
+          if (!state.legalAccepted) {
+            el.topStatusChip.textContent = "待同意条款";
+          } else if (!state.cookiesReady) {
+            el.topStatusChip.textContent = "待钉钉验证";
+          } else {
+            el.topStatusChip.textContent = "钉钉验证已就绪";
+          }
+        }
+        [
+          [el.navOverview, PAGE === "overview"],
+          [el.navLegal, PAGE === "legal"],
+          [el.navScan, PAGE === "scan"],
+          [el.navJobs, PAGE === "jobs"],
+          [el.navAccount, PAGE === "account"],
+          [el.navAdmin, PAGE === "admin"],
+        ].forEach(([element, active]) => {
+          if (element) element.classList.toggle("active", active);
+        });
       }
 
-      function renderStatusStrip(payload) {
-        if (!el.userStatusLine || !el.statusHelper) return;
-        let title = "请先同意使用条款";
-        let helper = "完成条款确认后，再进行钉钉验证与下载。";
-
-        if (!state.legalAccepted) {
-          title = "请先同意使用条款";
-          helper = "条款确认完成后才会继续下一步。";
-        } else if (!state.cookiesReady) {
-          title = "请先完成钉钉验证";
-          helper = "当前仅支持二维码登录获取钉钉验证。";
-        } else {
-          title = "可以开始下载";
-          helper = "现在可以直接粘贴回放链接并提交下载。";
-        }
-
-        el.userStatusLine.textContent = title;
-        el.statusHelper.textContent = helper;
-
+      function renderMetricStrip(payload) {
         if (el.statCookies) el.statCookies.textContent = state.cookiesReady ? "已就绪" : "未验证";
         if (el.statTotal) el.statTotal.textContent = String(payload.total_jobs || 0);
         if (el.statRunning) el.statRunning.textContent = String((payload.running_jobs || 0) + (payload.queued_jobs || 0));
         if (el.statSuccess) el.statSuccess.textContent = String(payload.succeeded_jobs || 0);
       }
 
-      function renderOverviewState() {
+      function renderOverviewGate() {
         if (!el.overviewGate || !el.overviewGateTitle || !el.overviewGateCopy || !el.overviewGateLink || !el.overviewDownloadForm) return;
-
         if (!state.legalAccepted) {
           el.overviewGate.classList.remove("hidden");
           el.overviewDownloadForm.classList.add("hidden");
@@ -1581,7 +1784,6 @@ export function renderApp(_appOrigin: string, page: AppPage): string {
           el.overviewGateLink.setAttribute("href", "/legal");
           return;
         }
-
         if (!state.cookiesReady) {
           el.overviewGate.classList.remove("hidden");
           el.overviewDownloadForm.classList.add("hidden");
@@ -1591,9 +1793,75 @@ export function renderApp(_appOrigin: string, page: AppPage): string {
           el.overviewGateLink.setAttribute("href", "/scan");
           return;
         }
-
         el.overviewGate.classList.add("hidden");
         el.overviewDownloadForm.classList.remove("hidden");
+      }
+
+      function renderOverviewCharts(jobs) {
+        if (!el.overviewDonut || !el.overviewDonutTable || !el.overviewTrend) return;
+        const records = Array.isArray(jobs) ? jobs : [];
+        const counts = {
+          succeeded: records.filter((job) => String(job.status).toLowerCase() === "succeeded").length,
+          running: records.filter((job) => ["running", "queued"].includes(String(job.status).toLowerCase())).length,
+          failed: records.filter((job) => String(job.status).toLowerCase() === "failed").length,
+        };
+        const total = Math.max(1, counts.succeeded + counts.running + counts.failed);
+        const succeededPct = (counts.succeeded / total) * 100;
+        const runningPct = (counts.running / total) * 100;
+        el.overviewDonut.style.background = "conic-gradient(var(--blue) 0 " + succeededPct + "%, var(--green) " + succeededPct + "% " + (succeededPct + runningPct) + "%, var(--red) " + (succeededPct + runningPct) + "% 100%)";
+        el.overviewDonutTable.innerHTML = [
+          '<div class="mini-table-head"><div>状态</div><div>数量</div><div>占比</div><div>说明</div></div>',
+          '<div class="mini-table-row"><div>已完成</div><div>' + counts.succeeded + '</div><div>' + Math.round((counts.succeeded / total) * 100) + '%</div><div style="color:var(--green);">可下载</div></div>',
+          '<div class="mini-table-row"><div>进行中</div><div>' + counts.running + '</div><div>' + Math.round((counts.running / total) * 100) + '%</div><div style="color:var(--blue);">处理中</div></div>',
+          '<div class="mini-table-row"><div>失败</div><div>' + counts.failed + '</div><div>' + Math.round((counts.failed / total) * 100) + '%</div><div style="color:var(--red);">需重试</div></div>',
+        ].join("");
+
+        const last7 = [];
+        for (let offset = 6; offset >= 0; offset -= 1) {
+          const date = new Date();
+          date.setHours(0, 0, 0, 0);
+          date.setDate(date.getDate() - offset);
+          const key = date.toISOString().slice(0, 10);
+          last7.push({
+            key,
+            created: 0,
+            done: 0,
+            failed: 0,
+          });
+        }
+        records.forEach((job) => {
+          const key = String(job.updated_at || job.created_at || "").slice(0, 10);
+          const target = last7.find((entry) => entry.key === key);
+          if (!target) return;
+          target.created += 1;
+          if (String(job.status).toLowerCase() === "succeeded") target.done += 1;
+          if (String(job.status).toLowerCase() === "failed") target.failed += 1;
+        });
+        const maxValue = Math.max(1, ...last7.flatMap((item) => [item.created, item.done, item.failed]));
+        const width = 640;
+        const height = 220;
+        const paddingX = 36;
+        const paddingY = 24;
+        const step = (width - paddingX * 2) / Math.max(1, last7.length - 1);
+        const pathFor = (key) => last7
+          .map((item, index) => {
+            const x = paddingX + step * index;
+            const y = height - paddingY - ((item[key] / maxValue) * (height - paddingY * 2));
+            return (index === 0 ? "M" : "L") + x + " " + y;
+          })
+          .join(" ");
+        const labels = last7.map((item, index) => {
+          const x = paddingX + step * index;
+          return '<text x="' + x + '" y="' + (height - 4) + '" text-anchor="middle" fill="#94a3b8" font-size="11">' + item.key.slice(5) + '</text>';
+        }).join("");
+        el.overviewTrend.innerHTML = [
+          '<svg viewBox="0 0 ' + width + ' ' + height + '" preserveAspectRatio="none">',
+          '<path d="' + pathFor("created") + '" fill="none" stroke="var(--blue)" stroke-width="3" stroke-linecap="round"></path>',
+          '<path d="' + pathFor("done") + '" fill="none" stroke="var(--green)" stroke-width="3" stroke-linecap="round"></path>',
+          '<path d="' + pathFor("failed") + '" fill="none" stroke="var(--red)" stroke-width="3" stroke-linecap="round"></path>',
+          labels,
+          '</svg>',
+        ].join("");
       }
 
       function renderRecentJobs(jobs) {
@@ -1603,8 +1871,7 @@ export function renderApp(_appOrigin: string, page: AppPage): string {
           el.recentRecords.innerHTML = '<div class="empty">暂无记录</div>';
           return;
         }
-
-        el.recentRecords.innerHTML = records.map((job) => {
+        el.recentRecords.innerHTML = records.slice(0, 10).map((job) => {
           const title = job.current_title || (Array.isArray(job.titles) && job.titles[0]) || "下载任务";
           const badgeClass = job.status === "succeeded" ? "ok" : (job.status === "failed" ? "warn" : "active");
           return [
@@ -1692,11 +1959,9 @@ export function renderApp(_appOrigin: string, page: AppPage): string {
           el.loginQRImage.classList.add("hidden");
           return;
         }
-
         state.loginSessionId = session.id || "";
         state.loginSessionStatus = session.status || "";
         el.loginBox.classList.remove("hidden");
-
         if (session.status === "pending") {
           el.loginStatus.textContent = "正在生成二维码";
           el.loginHint.textContent = "通常约 1 分钟内出现二维码，请保持页面开启。";
@@ -1901,7 +2166,6 @@ export function renderApp(_appOrigin: string, page: AppPage): string {
           }
 
           renderHeaderState();
-          renderAccountState();
           return payload;
         });
       }
@@ -1909,17 +2173,18 @@ export function renderApp(_appOrigin: string, page: AppPage): string {
       function refreshStatus() {
         if (!state.authenticated) return Promise.resolve(null);
         return request("/api/status").then((payload) => {
-          renderStatusStrip(payload);
-          renderOverviewState();
+          renderMetricStrip(payload);
+          renderOverviewGate();
           return payload;
         });
       }
 
-      function refreshRecentJobs() {
-        if (!state.authenticated || !el.recentRecords) return Promise.resolve(null);
-        return request("/api/jobs?page=1&page_size=10").then((payload) => {
-          state.recentJobs = Array.isArray(payload.jobs) ? payload.jobs : [];
-          renderRecentJobs(state.recentJobs);
+      function refreshOverviewData() {
+        if (!state.authenticated || (!el.recentRecords && !el.overviewDonut)) return Promise.resolve(null);
+        return request("/api/jobs?page=1&page_size=50").then((payload) => {
+          state.overviewJobs = Array.isArray(payload.jobs) ? payload.jobs : [];
+          renderRecentJobs(state.overviewJobs.slice(0, 10));
+          renderOverviewCharts(state.overviewJobs);
           return payload;
         });
       }
@@ -2010,7 +2275,6 @@ export function renderApp(_appOrigin: string, page: AppPage): string {
         if (password !== confirmPassword) {
           return Promise.reject(new Error("两次输入的密码不一致"));
         }
-
         return request("/api/auth/register", {
           method: "POST",
           body: JSON.stringify({ username, password }),
@@ -2049,7 +2313,6 @@ export function renderApp(_appOrigin: string, page: AppPage): string {
         if (urls.length === 0) {
           return Promise.reject(new Error("请先填入回放链接"));
         }
-
         return urls.reduce((chain, url) => {
           return chain.then((jobIDs) => {
             return request("/api/jobs", {
@@ -2062,7 +2325,7 @@ export function renderApp(_appOrigin: string, page: AppPage): string {
           });
         }, Promise.resolve([])).then((jobIDs) => {
           setNotice(jobIDs.length === 1 ? ("任务已创建：" + jobIDs[0]) : ("已创建 " + jobIDs.length + " 个任务。"), "ok");
-          return refreshRecentJobs();
+          return refreshOverviewData();
         });
       }
 
@@ -2100,12 +2363,10 @@ export function renderApp(_appOrigin: string, page: AppPage): string {
       }
 
       function bindEvents() {
+        setupSidebar();
         setupUserMenu();
         setupPageTransitions();
         switchAuthTab("login");
-
-        if (el.authTabLogin) el.authTabLogin.addEventListener("click", () => switchAuthTab("login"));
-        if (el.authTabRegister) el.authTabRegister.addEventListener("click", () => switchAuthTab("register"));
 
         if (el.loginBtn) el.loginBtn.addEventListener("click", () => {
           setBusy(el.loginBtn, true);
@@ -2115,6 +2376,8 @@ export function renderApp(_appOrigin: string, page: AppPage): string {
           setBusy(el.registerBtn, true);
           registerUser().catch((error) => setNotice(normalizeErrorMessage(error.message), "error")).finally(() => setBusy(el.registerBtn, false));
         });
+        if (el.authTabLogin) el.authTabLogin.addEventListener("click", () => switchAuthTab("login"));
+        if (el.authTabRegister) el.authTabRegister.addEventListener("click", () => switchAuthTab("register"));
         if (el.topbarLogoutBtn) el.topbarLogoutBtn.addEventListener("click", () => {
           setBusy(el.topbarLogoutBtn, true);
           logout().catch((error) => setNotice(normalizeErrorMessage(error.message), "error")).finally(() => setBusy(el.topbarLogoutBtn, false));
@@ -2188,21 +2451,9 @@ export function renderApp(_appOrigin: string, page: AppPage): string {
       }
 
       function applyRouteGuards() {
-        if (!state.authenticated) return;
-        if (!state.legalAccepted && PAGE !== "legal" && PAGE !== "account" && PAGE !== "admin" && PAGE !== "jobs") {
-          redirectTo("/legal");
-          return true;
-        }
-        if (state.legalAccepted && !state.cookiesReady && PAGE === "overview") {
-          redirectTo("/scan");
-          return true;
-        }
+        if (!state.authenticated) return false;
         if (PAGE === "legal" && state.legalAccepted) {
           redirectTo(state.cookiesReady ? "/overview" : "/scan");
-          return true;
-        }
-        if (PAGE === "scan" && !state.legalAccepted) {
-          redirectTo("/legal");
           return true;
         }
         if (PAGE === "admin" && state.user && !state.user.is_sudo) {
@@ -2214,14 +2465,17 @@ export function renderApp(_appOrigin: string, page: AppPage): string {
 
       function refreshAll() {
         return refreshAuth().then(() => {
+          if (PAGE !== "login" && !state.authenticated) return;
           if (applyRouteGuards()) return;
 
           const tasks = [];
-          if (PAGE === "overview" || PAGE === "jobs") {
-            tasks.push(refreshStatus());
-          }
           if (PAGE === "overview") {
-            tasks.push(refreshRecentJobs());
+            tasks.push(refreshStatus());
+            tasks.push(refreshOverviewData());
+          }
+          if (PAGE === "jobs") {
+            tasks.push(refreshStatus());
+            tasks.push(refreshJobsPage());
           }
           if (PAGE === "legal") {
             tasks.push(refreshLegalConfig());
@@ -2229,9 +2483,6 @@ export function renderApp(_appOrigin: string, page: AppPage): string {
           if (PAGE === "scan") {
             tasks.push(refreshStatus());
             tasks.push(refreshLoginSession());
-          }
-          if (PAGE === "jobs") {
-            tasks.push(refreshJobsPage());
           }
           if (PAGE === "account") {
             tasks.push(refreshStatus());

@@ -2380,33 +2380,20 @@ export default {
           }
         } else if (url.pathname === "/jobs") {
           response = htmlResponse(renderApp(url.origin, "jobs"));
-        } else {
+        } else if (url.pathname === "/legal") {
           const [legalState, cookieState] = await Promise.all([
             getUserLegalState(env, authUser.id),
             getUserCookieState(env, authUser.id),
           ]);
-
-          if (url.pathname === "/legal") {
-            response = legalState.accepted
-              ? redirectResponse(`${url.origin}${cookieState.cookiesReady ? "/overview" : "/scan"}`)
-              : htmlResponse(renderApp(url.origin, "legal"));
-          } else if (url.pathname === "/scan" || url.pathname === "/settings") {
-            if (!legalState.accepted) {
-              response = redirectResponse(`${url.origin}/legal`);
-            } else {
-              response = htmlResponse(renderApp(url.origin, "scan"));
-            }
-          } else if (url.pathname === "/download" || url.pathname === "/overview") {
-            if (!legalState.accepted) {
-              response = redirectResponse(`${url.origin}/legal`);
-            } else if (!cookieState.cookiesReady) {
-              response = redirectResponse(`${url.origin}/scan`);
-            } else {
-              response = htmlResponse(renderApp(url.origin, "overview"));
-            }
-          } else {
-            response = jsonResponse({ error: "not found" }, { status: 404 });
-          }
+          response = legalState.accepted
+            ? redirectResponse(`${url.origin}${cookieState.cookiesReady ? "/overview" : "/scan"}`)
+            : htmlResponse(renderApp(url.origin, "legal"));
+        } else if (url.pathname === "/scan" || url.pathname === "/settings") {
+          response = htmlResponse(renderApp(url.origin, "scan"));
+        } else if (url.pathname === "/download" || url.pathname === "/overview") {
+          response = htmlResponse(renderApp(url.origin, "overview"));
+        } else {
+          response = jsonResponse({ error: "not found" }, { status: 404 });
         }
       } else if (url.pathname === "/api/auth/me" && request.method === "GET") {
         response = await handleAuthMe(request, env);
