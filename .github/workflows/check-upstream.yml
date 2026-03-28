@@ -1,4 +1,4 @@
-name: Check Upstream Updates
+name: 检查上游更新
 
 on:
   workflow_dispatch:
@@ -13,12 +13,12 @@ jobs:
   check-upstream:
     runs-on: ubuntu-latest
     steps:
-      - name: Compare upstream and current repository
+      - name: 比较上游仓库与当前仓库
         env:
           GH_TOKEN: ${{ github.token }}
           CURRENT_REPO: ${{ github.repository }}
           CURRENT_BRANCH: main
-          ISSUE_TITLE: Upstream sync available
+          ISSUE_TITLE: 上游仓库有新更新
           UPSTREAM_REPO: NAXG/GoDingtalk
         run: |
           set -euo pipefail
@@ -29,25 +29,25 @@ jobs:
           ISSUE_NUMBER=$(gh issue list --repo "${CURRENT_REPO}" --state open --search "${ISSUE_TITLE} in:title" --json number --jq '.[0].number // empty')
 
           if [ "${UPSTREAM_SHA}" = "${CURRENT_SHA}" ]; then
-            echo "No upstream update needed."
+            echo "当前无需同步上游更新。"
             if [ -n "${ISSUE_NUMBER}" ]; then
-              gh issue comment "${ISSUE_NUMBER}" --repo "${CURRENT_REPO}" --body "Upstream and current repository are aligned again. Closing this reminder."
+              gh issue comment "${ISSUE_NUMBER}" --repo "${CURRENT_REPO}" --body "当前仓库已经重新和上游保持一致，关闭这条提醒。"
               gh issue close "${ISSUE_NUMBER}" --repo "${CURRENT_REPO}"
             fi
             exit 0
           fi
 
-          cat > /tmp/upstream-update-body.txt <<MSG
-Detected a newer upstream commit.
-
-- Upstream repo: https://github.com/${UPSTREAM_REPO}
-- Upstream branch: ${UPSTREAM_BRANCH}
-- Upstream latest commit: https://github.com/${UPSTREAM_REPO}/commit/${UPSTREAM_SHA}
-- Current repo branch: ${CURRENT_BRANCH}
-- Current repo latest commit: https://github.com/${CURRENT_REPO}/commit/${CURRENT_SHA}
-
-Please review whether to sync upstream changes.
-MSG
+          {
+            printf '%s\n' '检测到上游仓库有新的提交。'
+            printf '\n'
+            printf '%s\n' "- 上游仓库: https://github.com/${UPSTREAM_REPO}"
+            printf '%s\n' "- 上游分支: ${UPSTREAM_BRANCH}"
+            printf '%s\n' "- 上游最新提交: https://github.com/${UPSTREAM_REPO}/commit/${UPSTREAM_SHA}"
+            printf '%s\n' "- 当前仓库分支: ${CURRENT_BRANCH}"
+            printf '%s\n' "- 当前仓库最新提交: https://github.com/${CURRENT_REPO}/commit/${CURRENT_SHA}"
+            printf '\n'
+            printf '%s\n' '请检查是否需要同步这些上游更新。'
+          } > /tmp/upstream-update-body.txt
 
           if [ -n "${ISSUE_NUMBER}" ]; then
             gh issue comment "${ISSUE_NUMBER}" --repo "${CURRENT_REPO}" --body-file /tmp/upstream-update-body.txt

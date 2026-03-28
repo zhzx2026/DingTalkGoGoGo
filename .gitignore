@@ -48,6 +48,9 @@ build/
 android/.gradle/
 worker/node_modules/
 .gocache/
+.playwright-cli/
+.wrangler/
+worker/.wrangler/
 
 # Cloudflare Tunnel 凭据
 deploy/cloudflared/credentials.json

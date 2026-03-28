@@ -1,337 +1,244 @@
-# GoDingtalk
+# DingTalkGoGoGo
 
-钉钉直播回放下载工具，现在支持三种运行方式：
+一个以公益使用场景为主的钉钉直播回放下载控制台。
 
-- `CLI`：本地直接下载单个或批量回放
-- `Remote Private Mode`：Cloudflare Worker + D1 + R2 + GitHub Actions，多用户登录隔离，远程 runner 下载，不占你的电脑
-- `Server Mode`：保留原来的 Go HTTP 服务模式，适合你自己有 VPS 的场景
+当前仓库保留三层能力：
+
+- Go 下载器：负责真正下载和转码
+- Cloudflare Worker 控制台：负责登录、条款、任务面板、文件下载
+- GitHub Actions 远程执行：负责远程跑任务、扫码登录、自动部署、自动审查
+
+## UI 说明
+
+当前 Worker 前端 UI 参考了 [Wei-Shaw/sub2api](https://github.com/Wei-Shaw/sub2api) 的控制台视觉风格，主要参考了它的：
+
+- `AuthLayout`
+- `AppLayout`
+- `AppHeader`
+- `AppSidebar`
+- `LocaleSwitcher`
+- 用户 Dashboard 统计卡视觉层
+
+这里采用的是“参考视觉并重写到单文件 Worker HTML”的方式，没有把 Sub2API 的 Vue/Tailwind 运行时直接搬进来。
+
+Sub2API 仓库使用 MIT License，源码见其仓库根目录 `LICENSE`。
+
+## 当前页面
+
+Worker 控制台保留这些页面和流程：
+
+- `/login`
+- `/overview`
+- `/legal`
+- `/scan`
+- `/jobs`
+- `/account`
+- `/admin`
+
+当前 UI 已支持真实中英文切换，语言会保存在浏览器本地 `godingtalk_locale`。
 
 ## 推荐架构
 
-这次默认推荐的是远程私有版，不再依赖 Quick Tunnel，也不要求终端用户提供 token。
-
 ```text
-Browser / Tampermonkey
-        |
-        v
-Cloudflare Worker (UI + API + 登录鉴权)
-        |
-        +--> D1 保存用户 / 会话 / cookies 元数据 / 任务状态
-        +--> GitHub Actions workflow_dispatch
-        |
-        v
-GitHub Actions Runner
-        |
-        +--> GoDingtalk 下载 m3u8 / ffmpeg 转 mp4
-        +--> 回写进度到 Worker
-        +--> 上传成品到私有 R2
-        |
-        v
-R2 私有对象
-        |
-        v
-登录后网页内下载
+Browser
+  -> Cloudflare Worker (UI + API + auth)
+  -> D1 (用户 / 会话 / 条款 / 任务状态)
+  -> GitHub Actions workflow_dispatch
+  -> GitHub Runner
+  -> GoDingtalk 下载与转码
+  -> R2 私有对象存储
+  -> Worker 登录态下载
 ```
 
-这套链路的特点：
+这套结构的重点：
 
-- 用户登录后才能操作，Cookie 与视频按用户隔离
-- 视频存储在私有 R2，对外不暴露公共直链
-- 任务和状态保存在数据库里，不再是进程内存
-- 下载执行在 GitHub runner 上，不依赖你的电脑常驻
-- 每个任务会触发独立的 Actions 运行，天然可以并行
+- 用户登录后才能操作
+- 条款确认和钉钉扫码状态按账号隔离
+- 下载任务交给 GitHub Actions runner，不依赖本地电脑常驻
+- 文件保存到私有 R2，通过 Worker 登录态下载
 
-## 远程私有版部署
+## 部署
 
 ### 1. Cloudflare 资源
 
-先准备：
+需要准备：
 
 - 一个 Worker
 - 一个 D1 数据库
-- 一个 R2 Bucket（用于保存下载后的视频文件）
+- 一个 R2 Bucket
 
-`worker/wrangler.toml` 里要填真实值：
+当前配置文件在 [`worker/wrangler.toml`](/Users/zhong/repo/DingTalkGoGoGo/worker/wrangler.toml)。
+
+至少需要确认这些字段：
 
 - `name`
 - `d1_databases[].database_id`
 - `r2_buckets[].bucket_name`
 - `r2_buckets[].preview_bucket_name`
 
-### 2. Worker secrets
+### 2. Worker 依赖与部署
 
 在 `worker/` 目录执行：
 
 ```bash
 npm install
-printf '%s' 'change-this-internal-token' | npx wrangler secret put INTERNAL_API_TOKEN
-printf '%s' 'ghp_xxx' | npx wrangler secret put GITHUB_ACTIONS_TOKEN
-printf '%s' 'change-this-auth-salt' | npx wrangler secret put AUTH_SALT
 npx wrangler d1 migrations apply DB --remote
 npx wrangler deploy
 ```
 
-说明：
+### 3. Worker secrets
 
-- `INTERNAL_API_TOKEN`：只给 Worker 和 GitHub runner 之间使用
-- `GITHUB_ACTIONS_TOKEN`：Worker 用它去触发仓库里的 `remote-runner.yml`
-- `AUTH_SALT`：登录密码和会话哈希的盐值，建议自定义
-- `BOOTSTRAP_USERNAME` / `BOOTSTRAP_PASSWORD`（可选）：预置一个初始账号
+建议在 `worker/` 目录配置这些 secret：
 
-### 3. GitHub secrets / variables
+```bash
+printf '%s' 'change-this-internal-token' | npx wrangler secret put INTERNAL_API_TOKEN
+printf '%s' 'ghp_xxx' | npx wrangler secret put GITHUB_ACTIONS_TOKEN
+printf '%s' 'change-this-auth-salt' | npx wrangler secret put AUTH_SALT
+```
 
-在仓库里配置这些 `Secrets`：
+可选：
+
+- `BOOTSTRAP_USERNAME`
+- `BOOTSTRAP_PASSWORD`
+
+### 4. GitHub Secrets
+
+至少配置这些 GitHub Secrets：
 
 - `CLOUDFLARE_API_TOKEN`
 - `CLOUDFLARE_ACCOUNT_ID`
 - `GODINGTALK_CONTROL_URL`
 - `GODINGTALK_INTERNAL_TOKEN`
 - `GODINGTALK_GITHUB_ACTIONS_TOKEN`
-- `GODINGTALK_S3_ENDPOINT`
-- `GODINGTALK_S3_ACCESS_KEY_ID`
-- `GODINGTALK_S3_SECRET_ACCESS_KEY`
-- `GODINGTALK_S3_BUCKET`（可选，不填默认 `godingtalk-files`）
-- `GODINGTALK_S3_REGION`（可选，Cloudflare R2 与 `hi168` S3 兼容端点默认 `auto`，其它 S3 默认 `us-east-1`）
-- `AWS_BENCHMARK_ACCESS_KEY_ID`（可选）
-- `AWS_BENCHMARK_SECRET_ACCESS_KEY`（可选）
-- `AWS_BENCHMARK_SESSION_TOKEN`（可选）
+- `GODINGTALK_R2_BUCKET`
+- `GODINGTALK_R2_ACCESS_KEY_ID`
+- `GODINGTALK_R2_SECRET_ACCESS_KEY`
+- `OPENAI_API_KEY`
 
-建议它们的含义如下：
+可选：
 
-- `GODINGTALK_CONTROL_URL`：你部署好的 Worker 地址，例如 `https://godingtalk-worker.example.workers.dev`
-- `GODINGTALK_INTERNAL_TOKEN`：和 Worker secret `INTERNAL_API_TOKEN` 保持一致
-- `GODINGTALK_GITHUB_ACTIONS_TOKEN`：给 `deploy-worker.yml` 用，用来同步 Worker secret
-- `GODINGTALK_S3_ENDPOINT`：S3 兼容 endpoint；如果你用的是 Cloudflare R2，也可以不填，让 workflow 根据 `CLOUDFLARE_ACCOUNT_ID` 自动推导成 `https://<account-id>.r2.cloudflarestorage.com`
-- `GODINGTALK_S3_ACCESS_KEY_ID` / `GODINGTALK_S3_SECRET_ACCESS_KEY`：给远程 runner 上传对象存储，也会同步到 Worker 供登录态下载使用
-- `GODINGTALK_S3_BUCKET`：真实的 bucket 名称
-- `GODINGTALK_S3_REGION`：对象存储签名 region；Cloudflare R2 与 `hi168` S3 兼容端点推荐 `auto`
-- `AWS_BENCHMARK_ACCESS_KEY_ID` / `AWS_BENCHMARK_SECRET_ACCESS_KEY`（可选）：给 `s3-region-benchmark.yml` 做真实 AWS S3 跨区域测速；如果不配，会回退复用 `GODINGTALK_S3_ACCESS_KEY_ID` / `GODINGTALK_S3_SECRET_ACCESS_KEY`
-- `AWS_BENCHMARK_SESSION_TOKEN`（可选）：如果你用的是临时 STS 凭证，就一并配置
+- `CODEX_RESPONSES_API_ENDPOINT`
+- `GODINGTALK_AUTH_SALT`
+- `GODINGTALK_BOOTSTRAP_USERNAME`
+- `GODINGTALK_BOOTSTRAP_PASSWORD`
+- `GODINGTALK_CONTROL_URL` 也可同时用于 Android 首次预填
 
-兼容说明：
+说明：
 
-- 旧的 `GODINGTALK_R2_ACCESS_KEY_ID` / `GODINGTALK_R2_SECRET_ACCESS_KEY` / `GODINGTALK_R2_BUCKET` 仍然兼容 Cloudflare R2
-- 但如果你接的是第三方 S3，还是应该优先配置 `GODINGTALK_S3_*`
+- `OPENAI_API_KEY`：给 `Codex 处理 Issue` 和 `Codex 审核 PR` workflow 使用
+- `CODEX_RESPONSES_API_ENDPOINT`：如果你有兼容 Responses API 的自定义端点，可以填；不填则走默认 OpenAI Responses API
 
-`worker/wrangler.toml` 里的 GitHub 变量建议保持：
+## 保留的 Workflow
 
-- `GITHUB_WORKFLOW_FILE = "remote-runner.yml"`
-- `GITHUB_LOGIN_WORKFLOW_FILE = "windows-login.yml"`
-- `GITHUB_REF = "main"`
+当前仓库保留并中文化了这些 workflow：
 
-### 4. 自动工作流
+- `ci.yml`：持续集成检查
+- `deploy-worker.yml`：部署 Worker
+- `remote-runner.yml`：远程任务执行
+- `windows-login.yml`：Windows 二维码登录
+- `check-upstream.yml`：检查上游更新
+- `release.yml`：发布软件
+- `codex-issue.yml`：Codex 处理 Issue
+- `codex-pr-review.yml`：Codex 审核 PR
 
-仓库现在有这几条工作流：
+已删除：
 
-- `.github/workflows/ci.yml`
-  - `go test ./...`
-  - `npm run typecheck`
-- `.github/workflows/deploy-worker.yml`
-  - 同步 Worker secrets
-  - 执行 D1 migrations
-  - 部署 Worker
-- `.github/workflows/remote-runner.yml`
-  - 被 Worker 远程触发
-  - 领取任务
-  - 用 GoDingtalk 下载
-  - 上传 mp4 到私有 R2
-  - 回写最终状态
-- `.github/workflows/release.yml`
-  - 打 tag 时构建多平台二进制、Android APK 和 Docker 镜像
-- `.github/workflows/s3-region-benchmark.yml`
-  - 默认使用 GitHub-hosted `ubuntu-latest` runner，按“美国出口近似”去测真实 AWS S3 区域上传
-  - 每个 region 临时建 bucket，上传 `20 MiB` 测试文件，随后自动清理
-  - 汇总最快 region；默认覆盖当前 AWS commercial regions（不含 China / GovCloud）
-  - 兼容保留旧的 `signing-region` 模式，用来对单一 S3 endpoint 测签名 region
+- `purge-r2.yml`
+- `s3-region-benchmark.yml`
 
-`s3-region-benchmark.yml` 的注意点：
+## Codex 自动化
 
-- 真实跨区域测速需要 IAM 凭证至少具备这些权限：`s3:CreateBucket`、`s3:DeleteBucket`、`s3:PutObject`、`s3:DeleteObject`
-- 对于 `af-south-1`、`ap-east-1`、`ap-east-2`、`ap-south-2`、`ap-southeast-3/4/5/6/7`、`ca-west-1`、`eu-central-2`、`eu-south-1/2`、`il-central-1`、`me-south-1`、`me-central-1`、`mx-central-1` 这类 opt-in region，如果账号没启用，workflow 会把它们记成失败并保留原因
-- GitHub-hosted runner 的具体机房不能手动指定，但 `ubuntu-latest` 通常位于美国数据中心，所以这个结果更接近“从美国 Action 发起上传”的表现
+### 1. Issue 自动改代码
 
-### 5. 使用方式
+`codex-issue.yml` 在 `issues.opened` 时触发。
 
-部署完成后，直接打开 Worker 根地址即可：
+行为：
 
-- 注册/登录账号（默认开放注册）
-- 未登录时只显示登录/注册
-- 登录后按页面引导完成“同意条款 → 设置 Cookie → 提交下载”
-- Cookie 仅支持二维码登录导入
-- 粘贴一个或多个回放链接
-- 提交任务
-- 网页轮询看进度
-- 成功后在登录态内直接点下载链接
+- 跳过 bot issue，避免上游更新提醒类 issue 误触发
+- 使用 `openai/codex-action@v1` 在仓库里直接改代码
+- 如果有改动：
+  - 新建 `codex/issue-<编号>-<slug>` 分支
+  - 提交并推送
+  - 自动创建 PR
+  - 自动 dispatch 独立的 PR 审核 workflow
+  - 回帖通知 issue
+- 如果没有改动：
+  - 直接回帖说明
 
-如果你希望 release 自动生成的 Android APK 首次打开就直连你的 Worker，可以在仓库里额外设置一个 Actions Variable：
+### 2. PR 自动审核
 
-- `GODINGTALK_CONTROL_URL`
-  - 值填你的 Worker 根地址，例如 `https://godingtalk-worker.example.workers.dev`
-  - 不填也可以，APK 首次启动时会让用户手动输入地址
+`codex-pr-review.yml` 负责 AI 审核，不负责改代码。
 
-如果要关闭公开注册，把 `worker/wrangler.toml` 里的 `ALLOW_PUBLIC_REGISTRATION` 改成 `"false"`，再重新部署。
+触发方式：
 
-## Remote API
+- 普通人工 PR：`pull_request` 自动触发
+- Issue workflow 自动创建的 PR：由 `codex-issue.yml` 手动 `workflow_dispatch`
 
-登录态 API：
+这样做的原因是：
 
-- `GET /api/auth/me`
-- `POST /api/auth/register`
-- `POST /api/auth/login`
-- `POST /api/auth/logout`
-- `GET /api/status`
-- `GET /api/jobs`
-- `POST /api/jobs`
-- `GET /api/jobs/{jobId}`
-- `GET /api/files?job_id=...&path=...`
+- 你要求 issue 改代码 和 PR 审核 必须分成两个独立 Codex workflow
+- 当前方案只使用 `GITHUB_TOKEN`，所以 issue workflow 自动创建的 PR 不依赖自然的下游触发，而是显式 dispatch 审核 workflow
 
-内部 API：
+## 本地开发
 
-- `GET /internal/jobs/{jobId}/claim`
-- `POST /internal/jobs/{jobId}/progress`
-- `POST /internal/jobs/{jobId}/complete`
-
-## CLI 模式
-
-### 前提条件
-
-- `ffmpeg`
-- `Google Chrome` 或 `Chromium`（只在 `-login` 时需要）
-
-### 从源码构建
+### Go
 
 ```bash
-git clone https://github.com/NAXG/GoDingtalk.git
-cd GoDingtalk
-go build -o GoDingtalk .
+go test ./...
 ```
 
-### 下载单个视频
+### Worker
 
 ```bash
-./GoDingtalk -url="https://n.dingtalk.com/dingding/live-room/index.html?roomId=XXXX&liveUuid=XXXX"
+cd worker
+npm install
+npm run typecheck
 ```
 
-### 批量下载
+## 远程任务与扫码登录
 
-```bash
-./GoDingtalk -urlFile="urls.txt"
-```
+### 远程下载
 
-### 只登录并生成 cookies
+Worker 会通过 `workflow_dispatch` 触发 `remote-runner.yml`。
 
-```bash
-./GoDingtalk -login
-```
+这条 workflow 负责：
 
-### 无头二维码登录（适合 GitHub Actions / 远程 Windows）
+- 构建 GoDingtalk
+- 领取任务
+- 下载回放
+- 上传结果到 R2
+- 回写任务状态
 
-```bash
-./GoDingtalk -loginQR -loginQRFile login-qr.png
-```
+### Windows 二维码登录
 
-它会：
+网页里的 `/scan` 页面依赖 `windows-login.yml`。
 
-1. 打开钉钉登录页并自动识别页面里的登录二维码
-2. 解出登录 URL 后重新生成一张本地二维码图片
-3. 在终端打印可扫码的 ASCII 二维码
-4. 等待你用钉钉扫码确认后自动保存 `cookies.json`
+这条 workflow 不要删。它负责：
 
-如果你使用 GitHub Actions，可以直接手动触发 `.github/workflows/windows-login.yml`：
+- 在 Windows runner 上启动二维码登录
+- 把二维码 URL 回传给 Worker
+- 扫码成功后把 cookies 回传给 Worker
 
-1. 进入仓库 Actions 页面
-2. 运行 `Windows Login`
-3. 在日志里查看二维码链接 / 终端二维码，或下载 `windows-login-qr` artifact
-4. 扫码完成后下载 `windows-login-cookies` artifact
+## 仓库整理
 
-注意：
+本次整理后，以下本地缓存会被忽略：
 
-- `windows-latest` 位于美国网络，打开的通常是国际版 DingTalk 登录页
-- 如果你希望复用中国网络下的登录链路，可以再切回中国网络环境的 `self-hosted Windows runner`
+- `.playwright-cli/`
+- `.wrangler/`
+- `worker/.wrangler/`
 
-现在网页工作台第 2 步也支持这个流程：
+## 兼容说明
 
-1. 登录后点击“启动 Windows 二维码登录”
-2. 页面出现二维码后直接扫码
-3. 登录成功后 Cookie 会自动回传到 Worker
+- 当前前端仍然集中在 [`worker/src/ui.ts`](/Users/zhong/repo/DingTalkGoGoGo/worker/src/ui.ts)
+- 现有后端 API 没有改成新协议，前端只是重做 UI 外壳和中英切换
+- `windows-login.yml` 与 `remote-runner.yml` 文件名保持不变，避免 Worker 里的 dispatch 配置失效
 
-## GitHub Runner 远程执行
+## 建议的后续检查
 
-`remote-runner.yml` 实际调用的是新的 runner 模式：
+部署前建议手动确认：
 
-```bash
-./GoDingtalk \
-  -runRemoteJob \
-  -controlURL "https://your-worker.example.workers.dev" \
-  -internalToken "change-this-internal-token" \
-  -jobID "job-123"
-```
-
-它会：
-
-1. 从 Worker 领取任务和 cookies
-2. 本地执行真实下载
-3. 持续回写进度
-4. 生成结果清单给工作流后续上传 R2
-
-## Server Mode
-
-老的 Go HTTP 服务模式还保留着，适合你自己有 VPS 或 Docker 主机的时候用。
-
-启动示例：
-
-```bash
-GODINGTALK_SERVER_AUTH_TOKEN=change-this-origin-token \
-GODINGTALK_PUBLIC_BASE_URL=https://api.example.com \
-./GoDingtalk -serve -listen :8080 -saveDir /data/video
-```
-
-可用接口：
-
-- `GET /healthz`
-- `GET /api/status`
-- `POST /api/cookies`
-- `POST /api/downloads`
-- `GET /api/downloads`
-- `GET /api/downloads/{jobId}`
-- `GET /files/{path}`
-
-这套模式现在属于兼容层，不是推荐的私有登录隔离部署方式。
-
-## 配置项
-
-示例见 `config.example.json`。
-
-新增字段：
-
-- `server_listen`
-- `server_auth_token`
-- `server_max_concurrent_jobs`
-- `public_base_url`
-- `server_enable_cors`
-- `control_base_url`
-- `internal_api_token`
-
-可用环境变量：
-
-- `GODINGTALK_CONFIG_DIR`
-- `GODINGTALK_SAVE_DIR`
-- `GODINGTALK_COOKIES_FILE`
-- `GODINGTALK_SERVER_LISTEN`
-- `GODINGTALK_SERVER_AUTH_TOKEN`
-- `GODINGTALK_SERVER_MAX_CONCURRENT_JOBS`
-- `GODINGTALK_PUBLIC_BASE_URL`
-- `GODINGTALK_CONTROL_URL`
-- `GODINGTALK_INTERNAL_API_TOKEN`
-
-## 注意事项
-
-- Worker 不负责下载视频，它只负责 UI、状态、触发远程任务和分发成品
-- 真正下载依赖 `ffmpeg`，所以执行节点仍然是 GitHub runner 或你自己的服务器
-- Tampermonkey 只能辅助导入浏览器可见 cookie，不能替代完整登录态
-- GitHub Actions 并发能力受你的 GitHub 计划额度限制
-- 视频文件现在走私有 R2，不再依赖 GitHub Release 公共直链
-
-## 许可证
-
-MIT License
+- `go test ./...`
+- `cd worker && npm run typecheck`
+- Worker secrets 是否配置完整
+- GitHub secrets 是否包含 `OPENAI_API_KEY`
+- `Codex 处理 Issue` 创建 PR 后，`Codex 审核 PR` 是否能正常收到 dispatch

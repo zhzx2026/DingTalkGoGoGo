@@ -1,70 +1,90 @@
 type AppPage = "overview" | "jobs" | "scan" | "login" | "account" | "legal" | "admin";
 
+function renderLocaleSwitcher(): string {
+  return `
+      <div id="locale-switcher" class="locale-switcher">
+        <button id="locale-trigger" class="locale-trigger" type="button" aria-haspopup="menu" aria-expanded="false">
+          <span id="locale-current-flag" class="locale-flag">🇨🇳</span>
+          <span id="locale-current-label" class="locale-label">ZH</span>
+          <span class="locale-caret">⌄</span>
+        </button>
+        <div id="locale-menu" class="locale-menu hidden">
+          <button class="locale-option active" type="button" data-locale-option="zh">
+            <span class="locale-flag">🇨🇳</span>
+            <span data-i18n="locale.zh">中文</span>
+            <span class="locale-check">✓</span>
+          </button>
+          <button class="locale-option" type="button" data-locale-option="en">
+            <span class="locale-flag">🇺🇸</span>
+            <span data-i18n="locale.en">English</span>
+            <span class="locale-check">✓</span>
+          </button>
+        </div>
+      </div>`;
+}
+
 function renderSidebar(): string {
   return `
       <aside class="sidebar" id="sidebar">
         <div class="sidebar-head">
           <a class="sidebar-brand" data-page-link href="/overview">
-            <span class="brand-mark">S</span>
+            <span class="brand-mark">G</span>
             <span class="brand-copy">
-              <strong>GoDingtalk</strong>
-              <span>Control Console</span>
+              <strong data-i18n="brand.name">GoDingtalk</strong>
+              <span data-i18n="brand.subtitle">Public Control Console</span>
             </span>
           </a>
         </div>
 
         <nav class="sidebar-nav">
-          <a id="nav-overview" class="nav-item" data-page-link href="/overview"><span class="nav-icon"><svg viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="7.5" height="7.5" rx="2"/><rect x="13.5" y="3" width="7.5" height="7.5" rx="2"/><rect x="3" y="13.5" width="7.5" height="7.5" rx="2"/><rect x="13.5" y="13.5" width="7.5" height="7.5" rx="2"/></svg></span><span class="nav-label">仪表盘</span></a>
-          <a id="nav-legal" class="nav-item" data-page-link href="/legal"><span class="nav-icon"><svg viewBox="0 0 24 24" fill="none"><path d="M6 4h12v16H6z"/><path d="M9 8h6M9 12h6M9 16h4"/></svg></span><span class="nav-label">条款确认</span></a>
-          <a id="nav-scan" class="nav-item" data-page-link href="/scan"><span class="nav-icon"><svg viewBox="0 0 24 24" fill="none"><path d="M4 8V4h4M20 8V4h-4M4 16v4h4M20 16v4h-4"/><path d="M9 12h6M12 9v6"/></svg></span><span class="nav-label">钉钉验证</span></a>
-          <a id="nav-jobs" class="nav-item" data-page-link href="/jobs"><span class="nav-icon"><svg viewBox="0 0 24 24" fill="none"><path d="M6 4h12M6 10h12M6 16h12"/><circle cx="4" cy="4" r="1.5"/><circle cx="4" cy="10" r="1.5"/><circle cx="4" cy="16" r="1.5"/></svg></span><span class="nav-label">详细记录</span></a>
-          <a id="nav-account" class="nav-item" data-page-link href="/account"><span class="nav-icon"><svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="8" r="4"/><path d="M4 20c1.8-3.4 5-5 8-5s6.2 1.6 8 5"/></svg></span><span class="nav-label">账号设置</span></a>
-          <a id="nav-admin" class="nav-item hidden" data-page-link href="/admin"><span class="nav-icon"><svg viewBox="0 0 24 24" fill="none"><path d="M12 3l8 4v5c0 5-3.4 8.2-8 9-4.6-.8-8-4-8-9V7z"/><path d="M9.5 12l2 2 3-3"/></svg></span><span class="nav-label">Admin</span></a>
+          <a id="nav-overview" class="nav-item" data-page-link href="/overview"><span class="nav-icon"><svg viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="7.5" height="7.5" rx="2"/><rect x="13.5" y="3" width="7.5" height="7.5" rx="2"/><rect x="3" y="13.5" width="7.5" height="7.5" rx="2"/><rect x="13.5" y="13.5" width="7.5" height="7.5" rx="2"/></svg></span><span class="nav-label" data-i18n="nav.overview">仪表盘</span></a>
+          <a id="nav-legal" class="nav-item" data-page-link href="/legal"><span class="nav-icon"><svg viewBox="0 0 24 24" fill="none"><path d="M6 4h12v16H6z"/><path d="M9 8h6M9 12h6M9 16h4"/></svg></span><span class="nav-label" data-i18n="nav.legal">条款确认</span></a>
+          <a id="nav-scan" class="nav-item" data-page-link href="/scan"><span class="nav-icon"><svg viewBox="0 0 24 24" fill="none"><path d="M4 8V4h4M20 8V4h-4M4 16v4h4M20 16v4h-4"/><path d="M9 12h6M12 9v6"/></svg></span><span class="nav-label" data-i18n="nav.scan">钉钉验证</span></a>
+          <a id="nav-jobs" class="nav-item" data-page-link href="/jobs"><span class="nav-icon"><svg viewBox="0 0 24 24" fill="none"><path d="M6 4h12M6 10h12M6 16h12"/><circle cx="4" cy="4" r="1.5"/><circle cx="4" cy="10" r="1.5"/><circle cx="4" cy="16" r="1.5"/></svg></span><span class="nav-label" data-i18n="nav.jobs">详细记录</span></a>
+          <a id="nav-account" class="nav-item" data-page-link href="/account"><span class="nav-icon"><svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="8" r="4"/><path d="M4 20c1.8-3.4 5-5 8-5s6.2 1.6 8 5"/></svg></span><span class="nav-label" data-i18n="nav.account">账号设置</span></a>
+          <a id="nav-admin" class="nav-item hidden" data-page-link href="/admin"><span class="nav-icon"><svg viewBox="0 0 24 24" fill="none"><path d="M12 3l8 4v5c0 5-3.4 8.2-8 9-4.6-.8-8-4-8-9V7z"/><path d="M9.5 12l2 2 3-3"/></svg></span><span class="nav-label" data-i18n="nav.admin">管理页</span></a>
         </nav>
 
         <div class="sidebar-foot">
-          <div class="sidebar-ghost">企业模式</div>
-          <button id="sidebar-toggle-btn" type="button" class="sidebar-toggle"><span class="sidebar-toggle-icon">〈〈</span><span class="sidebar-toggle-label">收起</span></button>
+          <div class="sidebar-ghost" data-i18n="sidebar.publicMode">公益模式</div>
+          <button id="sidebar-toggle-btn" type="button" class="sidebar-toggle"><span class="sidebar-toggle-icon">〈〈</span><span class="sidebar-toggle-label" data-i18n="sidebar.collapse">收起</span></button>
         </div>
       </aside>`;
 }
 
-function renderTopbar(title: string, subtitle: string): string {
+function renderTopbar(titleKey: string, subtitleKey: string): string {
   return `
       <header class="topbar">
         <div class="topbar-copy">
-          <div class="eyebrow">Dashboard</div>
-          <h1>${title}</h1>
-          <p>${subtitle}</p>
+          <div class="eyebrow" data-i18n="topbar.consoleEyebrow">Public Console</div>
+          <h1 data-i18n="${titleKey}">-</h1>
+          <p data-i18n="${subtitleKey}">-</p>
         </div>
 
         <div class="topbar-actions">
-          <span class="icon-chip" aria-hidden="true">
-            <svg viewBox="0 0 24 24" fill="none"><path d="M6 10a6 6 0 1 1 12 0v4l2 2H4l2-2zM10 18a2 2 0 0 0 4 0" /></svg>
-          </span>
-          <div class="top-chip top-chip-light">🇨🇳 ZH</div>
-          <div id="top-jobs-chip" class="top-chip top-chip-light">🗂 0</div>
-          <div id="top-balance-chip" class="top-chip top-chip-money">💵 $0.00</div>
+          <div id="top-status-chip" class="top-chip top-chip-status" data-i18n="topbar.status.waitLegal">待同意条款</div>
+          <div id="top-public-chip" class="top-chip top-chip-public" data-i18n="topbar.publicMode">公益模式</div>
+          ${renderLocaleSwitcher()}
           <div id="user-menu-wrap" class="user-menu-wrap hidden">
             <button id="user-menu-trigger" class="profile-trigger" type="button" aria-haspopup="menu" aria-expanded="false">
               <span id="avatar-fallback" class="avatar-fallback">U</span>
               <span class="profile-copy">
                 <strong id="profile-name">未登录</strong>
-                <span id="profile-role">User</span>
+                <span id="profile-role" data-i18n="role.user">用户</span>
               </span>
               <span class="profile-caret">⌄</span>
             </button>
             <div id="user-menu" class="user-menu hidden">
               <div class="user-menu-head">
                 <div id="user-menu-name" class="user-menu-name">未登录</div>
-                <div id="user-menu-role" class="user-menu-role">user</div>
+                <div id="user-menu-role" class="user-menu-role" data-i18n="role.user">user</div>
               </div>
               <div class="user-menu-list">
-                <a id="user-menu-account-link" data-page-link href="/account" class="user-menu-link">账号设置</a>
-                <a id="user-menu-scan-link" data-page-link href="/scan" class="user-menu-link">钉钉验证</a>
-                <a id="user-menu-jobs-link" data-page-link href="/jobs" class="user-menu-link">详细记录</a>
-                <a id="user-menu-admin-link" data-page-link href="/admin" class="user-menu-link hidden">Admin</a>
-                <button id="topbar-logout-btn" class="user-menu-link user-menu-action" type="button">退出登录</button>
+                <a id="user-menu-account-link" data-page-link href="/account" class="user-menu-link" data-i18n="nav.account">账号设置</a>
+                <a id="user-menu-scan-link" data-page-link href="/scan" class="user-menu-link" data-i18n="nav.scan">钉钉验证</a>
+                <a id="user-menu-jobs-link" data-page-link href="/jobs" class="user-menu-link" data-i18n="nav.jobs">详细记录</a>
+                <a id="user-menu-admin-link" data-page-link href="/admin" class="user-menu-link hidden" data-i18n="nav.admin">管理页</a>
+                <button id="topbar-logout-btn" class="user-menu-link user-menu-action" type="button" data-i18n="auth.logout">退出登录</button>
               </div>
             </div>
           </div>
@@ -78,65 +98,65 @@ function renderMetricCards(): string {
         <article class="metric-card">
           <div class="metric-icon mint">✓</div>
           <div class="metric-copy">
-            <span>钉钉验证</span>
+            <span data-i18n="metric.cookies.label">钉钉验证</span>
             <strong id="stat-cookies">-</strong>
-            <small>当前状态</small>
+            <small data-i18n="metric.cookies.help">当前状态</small>
           </div>
         </article>
         <article class="metric-card">
           <div class="metric-icon blue">⌁</div>
           <div class="metric-copy">
-            <span>总任务</span>
+            <span data-i18n="metric.total.label">总任务</span>
             <strong id="stat-total">0</strong>
-            <small>全部下载任务</small>
+            <small data-i18n="metric.total.help">全部下载任务</small>
           </div>
         </article>
         <article class="metric-card">
           <div class="metric-icon green">↗</div>
           <div class="metric-copy">
-            <span>进行中</span>
+            <span data-i18n="metric.running.label">进行中</span>
             <strong id="stat-running">0</strong>
-            <small>队列 + 运行中</small>
+            <small data-i18n="metric.running.help">队列 + 运行中</small>
           </div>
         </article>
         <article class="metric-card">
           <div class="metric-icon purple">◆</div>
           <div class="metric-copy">
-            <span>已完成</span>
+            <span data-i18n="metric.success.label">已完成</span>
             <strong id="stat-success">0</strong>
-            <small>已完成下载</small>
+            <small data-i18n="metric.success.help">已完成下载</small>
           </div>
         </article>
         <article class="metric-card">
           <div class="metric-icon red">!</div>
           <div class="metric-copy">
-            <span>失败任务</span>
+            <span data-i18n="metric.failed.label">失败任务</span>
             <strong id="stat-failed">0</strong>
-            <small>需要处理</small>
+            <small data-i18n="metric.failed.help">需要处理</small>
           </div>
         </article>
         <article class="metric-card">
           <div class="metric-icon yellow">7</div>
           <div class="metric-copy">
-            <span>近 7 天创建</span>
+            <span data-i18n="metric.week.label">近 7 天创建</span>
             <strong id="stat-created-week">0</strong>
-            <small>滚动统计</small>
+            <small data-i18n="metric.week.help">滚动统计</small>
           </div>
         </article>
         <article class="metric-card">
           <div class="metric-icon blue">%</div>
           <div class="metric-copy">
-            <span>完成率</span>
+            <span data-i18n="metric.rate.label">完成率</span>
             <strong id="stat-completion-rate">0%</strong>
-            <small>最近任务</small>
+            <small data-i18n="metric.rate.help">最近任务</small>
           </div>
         </article>
         <article class="metric-card">
           <div class="metric-icon mint">⏱</div>
           <div class="metric-copy">
-            <span>最近验证</span>
+            <span data-i18n="metric.cookieTime.label">最近验证</span>
             <strong id="stat-cookie-time">-</strong>
-            <small>更新时间</small>
+            <small data-i18n="metric.cookieTime.help">更新时间</small>
           </div>
         </article>
       </section>`;
@@ -145,54 +165,65 @@ function renderMetricCards(): string {
 function renderLoginPage(): string {
   return `
       <section class="login-shell">
+        <div class="auth-toolbar">
+          ${renderLocaleSwitcher()}
+        </div>
+
         <section class="panel login-brand-panel">
-          <div class="eyebrow">Private Console</div>
-          <h1>钉钉回放下载控制台</h1>
-          <p>沿用当前业务结构，但视觉语言切到更接近 Sub2API 的后台风格。登录后按顺序完成条款确认、钉钉验证与下载提交。</p>
+          <div class="auth-brand-mark">G</div>
+          <div class="eyebrow" data-i18n="auth.eyebrow">Public Control Console</div>
+          <h1 data-i18n="auth.heroTitle">钉钉回放下载控制台</h1>
+          <p data-i18n="auth.heroSubtitle">沿用当前业务结构，但视觉语言切到更接近 Sub2API 的后台风格。登录后按顺序完成条款确认、钉钉验证与下载提交。</p>
           <div class="login-points">
-            <div class="login-point"><strong>1</strong><span>同意当前条款</span></div>
-            <div class="login-point"><strong>2</strong><span>二维码登录获取钉钉验证</span></div>
-            <div class="login-point"><strong>3</strong><span>提交回放链接开始下载</span></div>
+            <div class="login-point"><strong>1</strong><span data-i18n="auth.pointLegal">同意当前条款</span></div>
+            <div class="login-point"><strong>2</strong><span data-i18n="auth.pointScan">二维码登录获取钉钉验证</span></div>
+            <div class="login-point"><strong>3</strong><span data-i18n="auth.pointDownload">提交回放链接开始下载</span></div>
           </div>
         </section>
 
         <section class="panel login-form-panel">
+          <div class="panel-head">
+            <div>
+              <div class="eyebrow" data-i18n="auth.formEyebrow">Secure Access</div>
+              <h2 class="panel-title" data-i18n="auth.panelTitle">进入控制台</h2>
+            </div>
+          </div>
           <div class="auth-tabs" role="tablist" aria-label="登录注册切换">
-            <button id="auth-tab-login" class="auth-tab active" type="button">登录</button>
-            <button id="auth-tab-register" class="auth-tab" type="button">注册</button>
+            <button id="auth-tab-login" class="auth-tab active" type="button" data-i18n="auth.loginTab">登录</button>
+            <button id="auth-tab-register" class="auth-tab" type="button" data-i18n="auth.registerTab">注册</button>
           </div>
 
           <section id="login-form-panel" class="auth-form-panel">
             <div class="field">
-              <label for="login-username">用户名</label>
-              <input id="login-username" placeholder="输入用户名" autocomplete="username" />
+              <label for="login-username" data-i18n="auth.usernameLabel">用户名</label>
+              <input id="login-username" data-i18n-placeholder="auth.usernamePlaceholder" placeholder="输入用户名" autocomplete="username" />
             </div>
             <div class="field">
-              <label for="login-password">密码</label>
-              <input id="login-password" type="password" placeholder="输入密码" autocomplete="current-password" />
+              <label for="login-password" data-i18n="auth.passwordLabel">密码</label>
+              <input id="login-password" type="password" data-i18n-placeholder="auth.passwordPlaceholder" placeholder="输入密码" autocomplete="current-password" />
             </div>
-            <div class="muted form-note">登录后需完成条款确认与扫码验证</div>
+            <div class="muted form-note" data-i18n="auth.loginHint">登录后需完成条款确认与扫码验证</div>
             <div class="actions">
-              <button id="login-btn" class="button-link primary" type="button">登录</button>
+              <button id="login-btn" class="button-link primary" type="button" data-i18n="auth.loginAction">登录</button>
             </div>
           </section>
 
           <section id="register-form-panel" class="auth-form-panel hidden">
             <div class="field">
-              <label for="register-username">用户名</label>
-              <input id="register-username" placeholder="至少 3 位" autocomplete="username" />
+              <label for="register-username" data-i18n="auth.usernameLabel">用户名</label>
+              <input id="register-username" data-i18n-placeholder="auth.registerUsernamePlaceholder" placeholder="至少 3 位" autocomplete="username" />
             </div>
             <div class="field">
-              <label for="register-password">密码</label>
-              <input id="register-password" type="password" placeholder="至少 6 位" autocomplete="new-password" />
+              <label for="register-password" data-i18n="auth.passwordLabel">密码</label>
+              <input id="register-password" type="password" data-i18n-placeholder="auth.registerPasswordPlaceholder" placeholder="至少 6 位" autocomplete="new-password" />
             </div>
             <div class="field">
-              <label for="register-password-confirm">确认密码</label>
-              <input id="register-password-confirm" type="password" placeholder="再次输入密码" autocomplete="new-password" />
+              <label for="register-password-confirm" data-i18n="auth.passwordConfirmLabel">确认密码</label>
+              <input id="register-password-confirm" type="password" data-i18n-placeholder="auth.passwordConfirmPlaceholder" placeholder="再次输入密码" autocomplete="new-password" />
             </div>
-            <p id="register-card-hint" class="muted form-note">注册成功后将直接进入条款确认</p>
+            <p id="register-card-hint" class="muted form-note" data-i18n="auth.registerHintOpen">注册成功后将直接进入条款确认</p>
             <div class="actions">
-              <button id="register-btn" class="button-link" type="button">注册</button>
+              <button id="register-btn" class="button-link" type="button" data-i18n="auth.registerAction">注册</button>
             </div>
           </section>
         </section>
@@ -201,43 +232,43 @@ function renderLoginPage(): string {
 
 function renderOverviewPage(): string {
   return `
-      ${renderTopbar("仪表盘", "欢迎回来！这是当前账号的概览。")}
+      ${renderTopbar("page.overview.title", "page.overview.subtitle")}
 
       ${renderMetricCards()}
 
       <section class="toolbar-card">
         <div class="toolbar-group">
-          <strong>时间范围:</strong>
-          <button id="overview-range-btn" type="button" class="select-chip">近 7 天</button>
+          <strong data-i18n="overview.rangeLabel">时间范围</strong>
+          <button id="overview-range-btn" type="button" class="select-chip" data-i18n="overview.range7">近 7 天</button>
         </div>
         <div class="toolbar-group">
-          <strong>粒度:</strong>
-          <button id="overview-granularity-btn" type="button" class="select-chip">按天</button>
+          <strong data-i18n="overview.granularityLabel">粒度</strong>
+          <button id="overview-granularity-btn" type="button" class="select-chip" data-i18n="overview.granularityDay">按天</button>
         </div>
       </section>
 
       <section class="analytics-grid">
         <section class="chart-card">
           <div class="section-head">
-            <h2>任务状态分布</h2>
+            <h2 data-i18n="overview.statusDistribution">任务状态分布</h2>
           </div>
-          <div class="donut-layout">
+          <div class="chart-shell donut-layout">
             <div id="overview-donut" class="donut"></div>
-            <div id="overview-donut-table" class="mini-table"><div class="empty">正在加载...</div></div>
+            <div id="overview-donut-table" class="mini-table"><div class="empty" data-i18n="common.loading">正在加载...</div></div>
           </div>
         </section>
 
         <section class="chart-card">
           <div class="section-head">
-            <h2 id="overview-trend-title">近 7 天任务趋势</h2>
+            <h2 id="overview-trend-title" data-i18n="overview.trend7">近 7 天任务趋势</h2>
           </div>
-          <div class="trend-layout">
+          <div class="chart-shell trend-layout">
             <div class="trend-legend">
-              <span><i class="legend-dot blue"></i>创建</span>
-              <span><i class="legend-dot green"></i>完成</span>
-              <span><i class="legend-dot red"></i>失败</span>
+              <span><i class="legend-dot blue"></i><span data-i18n="overview.legend.created">创建</span></span>
+              <span><i class="legend-dot green"></i><span data-i18n="overview.legend.done">完成</span></span>
+              <span><i class="legend-dot red"></i><span data-i18n="overview.legend.failed">失败</span></span>
             </div>
-            <div id="overview-trend" class="trend-chart"><div class="empty">正在加载...</div></div>
+            <div id="overview-trend" class="trend-chart"><div class="empty" data-i18n="common.loading">正在加载...</div></div>
           </div>
         </section>
       </section>
@@ -246,27 +277,27 @@ function renderOverviewPage(): string {
         <section class="work-card">
           <div class="section-head">
             <div>
-              <div class="eyebrow">Submit</div>
-              <h2>提交下载</h2>
+              <div class="eyebrow" data-i18n="overview.submitEyebrow">Submit</div>
+              <h2 data-i18n="overview.submitTitle">提交下载</h2>
             </div>
           </div>
 
           <div id="overview-gate" class="gate-card">
-            <div id="overview-gate-title" class="gate-title">请先同意条款</div>
-            <p id="overview-gate-copy" class="muted">完成条款确认后，才可以继续完成钉钉验证。</p>
+            <div id="overview-gate-title" class="gate-title" data-i18n="overview.gate.needLegalTitle">请先同意条款</div>
+            <p id="overview-gate-copy" class="muted" data-i18n="overview.gate.needLegalCopy">完成条款确认后，才可以继续完成钉钉验证。</p>
             <div class="actions">
-              <a id="overview-gate-link" data-page-link href="/legal" class="button-link primary">去同意条款</a>
+              <a id="overview-gate-link" data-page-link href="/legal" class="button-link primary" data-i18n="overview.gate.needLegalAction">去同意条款</a>
             </div>
           </div>
 
           <div id="overview-download-form" class="hidden">
             <div class="field">
-              <label for="urls">回放链接</label>
-              <textarea id="urls" placeholder="粘贴回放链接，每行一个"></textarea>
+              <label for="urls" data-i18n="overview.urlsLabel">回放链接</label>
+              <textarea id="urls" data-i18n-placeholder="overview.urlsPlaceholder" placeholder="粘贴回放链接，每行一个"></textarea>
             </div>
             <div class="actions">
-              <button id="create-job-btn" class="button-link primary" type="button">开始下载</button>
-              <button id="refresh-btn" class="button-link" type="button">刷新状态</button>
+              <button id="create-job-btn" class="button-link primary" type="button" data-i18n="overview.createJob">开始下载</button>
+              <button id="refresh-btn" class="button-link" type="button" data-i18n="common.refresh">刷新状态</button>
             </div>
           </div>
         </section>
@@ -275,43 +306,43 @@ function renderOverviewPage(): string {
           <section class="card">
             <div class="section-head">
               <div>
-                <div class="eyebrow">Recent</div>
-                <h2>近 10 条记录</h2>
+                <div class="eyebrow" data-i18n="overview.recentEyebrow">Recent</div>
+                <h2 data-i18n="overview.recentTitle">近 10 条记录</h2>
               </div>
-              <a data-page-link href="/jobs" class="mini-link">详细记录</a>
+              <a data-page-link href="/jobs" class="mini-link" data-i18n="nav.jobs">详细记录</a>
             </div>
-            <div id="recent-records" class="recent-list"><div class="empty">暂无记录</div></div>
+            <div id="recent-records" class="recent-list"><div class="empty" data-i18n="common.noRecords">暂无记录</div></div>
           </section>
 
           <section class="card quick-actions-card">
             <div class="section-head">
               <div>
-                <div class="eyebrow">Quick Actions</div>
-                <h2>快捷操作</h2>
+                <div class="eyebrow" data-i18n="overview.quickEyebrow">Quick Actions</div>
+                <h2 data-i18n="overview.quickTitle">快捷操作</h2>
               </div>
             </div>
             <div class="quick-actions-list">
               <a data-page-link href="/scan" class="quick-action-item">
                 <span class="quick-action-icon">⌁</span>
                 <span class="quick-action-copy">
-                  <strong>钉钉验证</strong>
-                  <small>重新扫码刷新验证状态</small>
+                  <strong data-i18n="nav.scan">钉钉验证</strong>
+                  <small data-i18n="overview.quickScanHint">重新扫码刷新验证状态</small>
                 </span>
                 <span class="quick-action-arrow">›</span>
               </a>
               <a data-page-link href="/jobs" class="quick-action-item">
                 <span class="quick-action-icon">☷</span>
                 <span class="quick-action-copy">
-                  <strong>查看记录</strong>
-                  <small>进入详细任务列表</small>
+                  <strong data-i18n="overview.quickJobsTitle">查看记录</strong>
+                  <small data-i18n="overview.quickJobsHint">进入详细任务列表</small>
                 </span>
                 <span class="quick-action-arrow">›</span>
               </a>
               <a data-page-link href="/account" class="quick-action-item">
                 <span class="quick-action-icon">◌</span>
                 <span class="quick-action-copy">
-                  <strong>账号设置</strong>
-                  <small>修改密码与退出登录</small>
+                  <strong data-i18n="nav.account">账号设置</strong>
+                  <small data-i18n="overview.quickAccountHint">修改密码与退出登录</small>
                 </span>
                 <span class="quick-action-arrow">›</span>
               </a>
@@ -323,43 +354,43 @@ function renderOverviewPage(): string {
 
 function renderLegalPage(): string {
   return `
-      ${renderTopbar("条款确认", "新注册用户先在这里完成当前版本条款确认，一经同意，在条款变更前不会再次显示。")}
+      ${renderTopbar("page.legal.title", "page.legal.subtitle")}
 
       <section class="dual-grid">
         <section id="legal-step" class="card">
           <div class="section-head">
             <div>
-              <div class="eyebrow">Step 1</div>
-              <h2>同意当前条款</h2>
+              <div class="eyebrow" data-i18n="legal.stepEyebrow">Step 1</div>
+              <h2 data-i18n="legal.title">同意当前条款</h2>
             </div>
-            <span id="legal-badge" class="badge warn">未完成</span>
+            <span id="legal-badge" class="badge warn" data-i18n="status.notDone">未完成</span>
           </div>
           <div id="legal-state" class="notice hidden"></div>
           <div id="legal-version-meta" class="meta-line"></div>
           <label id="legal-checkbox-row" class="checkbox-row">
             <input id="legal-confirm-check" type="checkbox" />
-            <span>我已阅读并同意条款</span>
+            <span data-i18n="legal.checkbox">我已阅读并同意条款</span>
           </label>
           <div class="actions">
-            <button id="accept-legal-btn" class="button-link primary" type="button" disabled>同意条款</button>
+            <button id="accept-legal-btn" class="button-link primary" type="button" disabled data-i18n="legal.acceptAction">同意条款</button>
           </div>
         </section>
 
         <section class="card">
           <div class="section-head">
             <div>
-              <div class="eyebrow">Document</div>
-              <h2>条款全文</h2>
+              <div class="eyebrow" data-i18n="legal.documentEyebrow">Document</div>
+              <h2 data-i18n="legal.documentTitle">条款全文</h2>
             </div>
           </div>
-          <div id="legal-text" class="legal-text"><div class="empty">正在加载条款...</div></div>
+          <div id="legal-text" class="legal-text"><div class="empty" data-i18n="legal.loading">正在加载条款...</div></div>
         </section>
       </section>`;
 }
 
 function renderScanPage(): string {
   return `
-      ${renderTopbar("钉钉验证", "这里仅支持二维码登录。即使当前已有验证态，也可以重新扫码，因为钉钉验证会过期。")}
+      ${renderTopbar("page.scan.title", "page.scan.subtitle")}
 
       ${renderMetricCards()}
 
@@ -367,21 +398,21 @@ function renderScanPage(): string {
         <section class="scan-main-card">
           <div class="section-head">
             <div>
-              <div class="eyebrow">Step 2</div>
-              <h2>二维码登录</h2>
+              <div class="eyebrow" data-i18n="scan.stepEyebrow">Step 2</div>
+              <h2 data-i18n="scan.title">二维码登录</h2>
             </div>
-            <span id="cookie-badge" class="badge warn">未完成</span>
+            <span id="cookie-badge" class="badge warn" data-i18n="status.notDone">未完成</span>
           </div>
           <div id="cookie-state" class="notice hidden"></div>
           <div id="cookie-meta" class="meta-line"></div>
           <div class="actions">
-            <button id="start-login-workflow-btn" class="button-link primary" type="button">启动二维码登录</button>
+            <button id="start-login-workflow-btn" class="button-link primary" type="button" data-i18n="scan.startAction">启动二维码登录</button>
           </div>
           <div id="login-box" class="scan-box hidden">
-            <div id="login-status" class="scan-title">正在生成二维码</div>
-            <div id="login-hint" class="muted">二维码出现后，请使用钉钉扫码登录。</div>
+            <div id="login-status" class="scan-title" data-i18n="scan.generating">正在生成二维码</div>
+            <div id="login-hint" class="muted" data-i18n="scan.defaultHint">二维码出现后，请使用钉钉扫码登录。</div>
             <div class="scan-qr-frame">
-              <img id="login-qr-image" class="qr-image hidden" alt="登录二维码" />
+              <img id="login-qr-image" class="qr-image hidden" alt="登录二维码" data-i18n-alt="scan.qrAlt" />
             </div>
           </div>
         </section>
@@ -389,14 +420,14 @@ function renderScanPage(): string {
         <aside class="scan-side-card">
           <div class="section-head">
             <div>
-              <div class="eyebrow">Flow</div>
-              <h2>下一步</h2>
+              <div class="eyebrow" data-i18n="scan.flowEyebrow">Flow</div>
+              <h2 data-i18n="scan.nextTitle">下一步</h2>
             </div>
           </div>
           <div class="scan-steps">
-            <div class="scan-step"><strong>1</strong><span>等待二维码出现</span></div>
-            <div class="scan-step"><strong>2</strong><span>使用钉钉扫码登录</span></div>
-            <div class="scan-step"><strong>3</strong><span>验证成功后可以继续下载，也可随时重新扫码</span></div>
+            <div class="scan-step"><strong>1</strong><span data-i18n="scan.step1">等待二维码出现</span></div>
+            <div class="scan-step"><strong>2</strong><span data-i18n="scan.step2">使用钉钉扫码登录</span></div>
+            <div class="scan-step"><strong>3</strong><span data-i18n="scan.step3">验证成功后可以继续下载，也可随时重新扫码</span></div>
           </div>
         </aside>
       </section>`;
@@ -404,70 +435,70 @@ function renderScanPage(): string {
 
 function renderJobsPage(): string {
   return `
-      ${renderTopbar("详细记录", "记录采用单行列表展示，点击某一行后在下方展开详情。")}
+      ${renderTopbar("page.jobs.title", "page.jobs.subtitle")}
 
       ${renderMetricCards()}
 
       <section class="records-card">
         <div class="records-toolbar">
           <div class="records-size-group">
-            <span class="muted">每页显示</span>
+            <span class="muted" data-i18n="jobs.pageSizeLabel">每页显示</span>
             <div class="records-size-buttons">
               <button class="size-chip active" data-page-size="10" type="button">10</button>
               <button class="size-chip" data-page-size="20" type="button">20</button>
               <button class="size-chip" data-page-size="50" type="button">50</button>
             </div>
           </div>
-          <div id="jobs-pagination-summary" class="muted">第 1 页</div>
+          <div id="jobs-pagination-summary" class="muted" data-i18n="jobs.pageOne">第 1 页</div>
         </div>
-        <div id="jobs-detail-list" class="records-list"><div class="empty">正在加载记录...</div></div>
+        <div id="jobs-detail-list" class="records-list"><div class="empty" data-i18n="jobs.loading">正在加载记录...</div></div>
         <div class="records-footer">
-          <button id="jobs-prev-btn" class="button-link" type="button">上一页</button>
+          <button id="jobs-prev-btn" class="button-link" type="button" data-i18n="jobs.prev">上一页</button>
           <div id="jobs-page-indicator" class="muted">1 / 1</div>
-          <button id="jobs-next-btn" class="button-link" type="button">下一页</button>
+          <button id="jobs-next-btn" class="button-link" type="button" data-i18n="jobs.next">下一页</button>
         </div>
       </section>`;
 }
 
 function renderAccountPage(): string {
   return `
-      ${renderTopbar("账号设置", "这里只保留当前账号信息、修改密码和退出登录。")}
+      ${renderTopbar("page.account.title", "page.account.subtitle")}
 
       <section class="dual-grid">
         <section class="card">
           <div class="section-head">
             <div>
-              <div class="eyebrow">Profile</div>
-              <h2>当前账号</h2>
+              <div class="eyebrow" data-i18n="account.profileEyebrow">Profile</div>
+              <h2 data-i18n="account.profileTitle">当前账号</h2>
             </div>
           </div>
-          <p id="account-summary" class="muted">正在加载...</p>
+          <p id="account-summary" class="muted" data-i18n="common.loading">正在加载...</p>
           <div class="actions">
-            <button id="topbar-logout-btn-inline" class="button-link" type="button">退出登录</button>
+            <button id="topbar-logout-btn-inline" class="button-link" type="button" data-i18n="auth.logout">退出登录</button>
           </div>
         </section>
 
         <section class="card">
           <div class="section-head">
             <div>
-              <div class="eyebrow">Security</div>
-              <h2>修改密码</h2>
+              <div class="eyebrow" data-i18n="account.securityEyebrow">Security</div>
+              <h2 data-i18n="account.securityTitle">修改密码</h2>
             </div>
           </div>
           <div class="field">
-            <label for="current-password">当前密码</label>
-            <input id="current-password" type="password" placeholder="当前密码" autocomplete="current-password" />
+            <label for="current-password" data-i18n="account.currentPassword">当前密码</label>
+            <input id="current-password" type="password" data-i18n-placeholder="account.currentPasswordPlaceholder" placeholder="当前密码" autocomplete="current-password" />
           </div>
           <div class="field">
-            <label for="new-password">新密码</label>
-            <input id="new-password" type="password" placeholder="至少 6 位" autocomplete="new-password" />
+            <label for="new-password" data-i18n="account.newPassword">新密码</label>
+            <input id="new-password" type="password" data-i18n-placeholder="account.newPasswordPlaceholder" placeholder="至少 6 位" autocomplete="new-password" />
           </div>
           <div class="field">
-            <label for="confirm-new-password">确认新密码</label>
-            <input id="confirm-new-password" type="password" placeholder="再次输入新密码" autocomplete="new-password" />
+            <label for="confirm-new-password" data-i18n="account.confirmPassword">确认新密码</label>
+            <input id="confirm-new-password" type="password" data-i18n-placeholder="account.confirmPasswordPlaceholder" placeholder="再次输入新密码" autocomplete="new-password" />
           </div>
           <div class="actions">
-            <button id="change-password-btn" class="button-link primary" type="button">保存新密码</button>
+            <button id="change-password-btn" class="button-link primary" type="button" data-i18n="account.savePassword">保存新密码</button>
           </div>
         </section>
       </section>`;
@@ -475,56 +506,56 @@ function renderAccountPage(): string {
 
 function renderAdminPage(): string {
   return `
-      ${renderTopbar("管理页", "这里只展示 sudo 需要处理的内容：R2 文件、异常用户和条款管理。")}
+      ${renderTopbar("page.admin.title", "page.admin.subtitle")}
 
       <section class="admin-grid">
         <section class="card">
           <div class="section-head">
             <div>
-              <div class="eyebrow">R2 Storage</div>
-              <h2>R2 文件</h2>
+              <div class="eyebrow" data-i18n="admin.storageEyebrow">R2 Storage</div>
+              <h2 data-i18n="admin.storageTitle">R2 文件</h2>
             </div>
           </div>
           <div class="storage-toolbar">
             <div class="field storage-search">
-              <label for="admin-storage-prefix">对象前缀</label>
-              <input id="admin-storage-prefix" placeholder="例如 dedup/" />
+              <label for="admin-storage-prefix" data-i18n="admin.storagePrefix">对象前缀</label>
+              <input id="admin-storage-prefix" data-i18n-placeholder="admin.storagePrefixPlaceholder" placeholder="例如 dedup/" />
             </div>
             <div class="actions">
-              <button id="admin-storage-refresh-btn" class="button-link primary" type="button">刷新文件</button>
+              <button id="admin-storage-refresh-btn" class="button-link primary" type="button" data-i18n="admin.refreshStorage">刷新文件</button>
             </div>
           </div>
           <div id="admin-storage-meta" class="meta-line"></div>
-          <div id="admin-storage-list" class="storage-list"><div class="empty">正在加载 R2 文件...</div></div>
+          <div id="admin-storage-list" class="storage-list"><div class="empty" data-i18n="admin.storageLoading">正在加载 R2 文件...</div></div>
           <div class="actions">
-            <button id="admin-storage-more-btn" class="button-link hidden" type="button">加载更多</button>
+            <button id="admin-storage-more-btn" class="button-link hidden" type="button" data-i18n="admin.loadMore">加载更多</button>
           </div>
         </section>
 
         <section class="card">
           <div class="section-head">
             <div>
-              <div class="eyebrow">Users</div>
-              <h2>需要处理的用户</h2>
+              <div class="eyebrow" data-i18n="admin.usersEyebrow">Users</div>
+              <h2 data-i18n="admin.usersTitle">需要处理的用户</h2>
             </div>
           </div>
           <div id="admin-user-meta" class="meta-line"></div>
-          <div id="admin-users" class="admin-users"><div class="empty">正在加载用户数据...</div></div>
+          <div id="admin-users" class="admin-users"><div class="empty" data-i18n="admin.usersLoading">正在加载用户数据...</div></div>
         </section>
 
         <section class="card">
           <div class="section-head">
             <div>
-              <div class="eyebrow">Legal</div>
-              <h2>条款管理</h2>
+              <div class="eyebrow" data-i18n="admin.legalEyebrow">Legal</div>
+              <h2 data-i18n="admin.legalTitle">条款管理</h2>
             </div>
           </div>
           <div class="field">
-            <label for="admin-legal-text">条款内容</label>
-            <textarea id="admin-legal-text" class="large-textarea" placeholder="输入新的条款正文"></textarea>
+            <label for="admin-legal-text" data-i18n="admin.legalField">条款内容</label>
+            <textarea id="admin-legal-text" class="large-textarea" data-i18n-placeholder="admin.legalPlaceholder" placeholder="输入新的条款正文"></textarea>
           </div>
           <div class="actions">
-            <button id="save-legal-btn" class="button-link primary" type="button">保存条款</button>
+            <button id="save-legal-btn" class="button-link primary" type="button" data-i18n="admin.saveLegal">保存条款</button>
           </div>
           <div id="admin-legal-meta" class="meta-line"></div>
         </section>
@@ -1692,6 +1723,619 @@ export function renderApp(_appOrigin: string, page: AppPage): string {
           padding-bottom: 10px;
         }
       }
+      body {
+        position: relative;
+        background: linear-gradient(135deg, #f5f7fb 0%, #eef8f5 48%, #f4f6fb 100%);
+      }
+      body::before,
+      body::after {
+        content: "";
+        position: fixed;
+        inset: auto;
+        pointer-events: none;
+        z-index: 0;
+        border-radius: 999px;
+        filter: blur(70px);
+      }
+      body::before {
+        width: 360px;
+        height: 360px;
+        top: -90px;
+        right: -100px;
+        background: rgba(16, 185, 129, 0.15);
+      }
+      body::after {
+        width: 420px;
+        height: 420px;
+        left: -120px;
+        bottom: -140px;
+        background: rgba(59, 130, 246, 0.12);
+      }
+      body[data-page="login"]::before {
+        width: 420px;
+        height: 420px;
+        top: -80px;
+        right: -60px;
+      }
+      body[data-page="login"]::after {
+        width: 520px;
+        height: 520px;
+        left: -160px;
+        bottom: -160px;
+      }
+      .shell,
+      .main,
+      .sidebar,
+      .topbar,
+      .panel,
+      .card,
+      .records-card,
+      .chart-card,
+      .work-card,
+      .scan-main-card,
+      .scan-side-card {
+        position: relative;
+        z-index: 1;
+      }
+      .shell {
+        grid-template-columns: minmax(0, 272px) minmax(0, 1fr);
+        gap: 20px;
+        padding: 18px;
+      }
+      body.sidebar-collapsed .shell {
+        grid-template-columns: 88px minmax(0, 1fr);
+      }
+      .main {
+        padding: 0 0 32px;
+        background: transparent;
+      }
+      .sidebar {
+        height: calc(100vh - 36px);
+        position: sticky;
+        top: 18px;
+        border: 1px solid rgba(255, 255, 255, 0.7);
+        border-radius: 28px;
+        background: rgba(255, 255, 255, 0.72);
+        backdrop-filter: blur(22px);
+        box-shadow: 0 24px 70px rgba(15, 23, 42, 0.09);
+        overflow: hidden;
+      }
+      .sidebar-head {
+        min-height: 76px;
+        padding: 0 22px;
+        border-bottom: 1px solid rgba(226, 232, 240, 0.86);
+      }
+      .brand-mark {
+        width: 40px;
+        height: 40px;
+        border: 0;
+        background: linear-gradient(135deg, #14b8a6, #2563eb);
+        box-shadow: 0 16px 28px rgba(20, 184, 166, 0.26);
+      }
+      .brand-copy strong {
+        font-size: 19px;
+      }
+      .brand-copy span {
+        margin-top: 5px;
+        font-size: 10px;
+        letter-spacing: 0.12em;
+      }
+      .sidebar-nav {
+        padding: 18px 14px;
+        gap: 8px;
+      }
+      .nav-item {
+        min-height: 48px;
+        border-radius: 16px;
+        border: 1px solid transparent;
+        color: #4b5563;
+      }
+      .nav-item.active {
+        background: linear-gradient(180deg, rgba(20, 184, 166, 0.16), rgba(37, 99, 235, 0.07));
+        border-color: rgba(20, 184, 166, 0.2);
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35);
+      }
+      .nav-item:hover {
+        background: rgba(255, 255, 255, 0.8);
+      }
+      .sidebar-foot {
+        padding: 14px;
+        border-top: 1px solid rgba(226, 232, 240, 0.86);
+      }
+      .sidebar-ghost,
+      .sidebar-toggle {
+        min-height: 42px;
+        border-radius: 14px;
+        background: rgba(248, 250, 252, 0.85);
+      }
+      .sidebar-ghost {
+        color: #0f766e;
+        border-color: rgba(20, 184, 166, 0.16);
+        background: rgba(236, 253, 245, 0.95);
+      }
+      .sidebar-toggle {
+        color: #475569;
+      }
+      .topbar {
+        position: sticky;
+        top: 18px;
+        margin: 0 0 18px;
+        padding: 16px 18px;
+        min-height: 76px;
+        border: 1px solid rgba(255, 255, 255, 0.68);
+        border-radius: 24px;
+        background: rgba(255, 255, 255, 0.68);
+        backdrop-filter: blur(22px);
+        box-shadow: 0 18px 54px rgba(15, 23, 42, 0.08);
+      }
+      .topbar-copy .eyebrow {
+        display: block;
+        margin-bottom: 4px;
+        color: #14b8a6;
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+      }
+      .topbar-copy h1 {
+        font-size: 24px;
+        font-weight: 700;
+      }
+      .topbar-copy p {
+        margin-top: 6px;
+        font-size: 13px;
+        max-width: 620px;
+      }
+      .topbar-actions {
+        gap: 10px;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+      }
+      .top-chip {
+        min-height: 38px;
+        padding: 0 14px;
+        border-radius: 14px;
+        border-color: rgba(203, 213, 225, 0.8);
+        background: rgba(248, 250, 252, 0.92);
+      }
+      .top-chip-status {
+        color: #0f766e;
+        background: rgba(236, 253, 245, 0.95);
+        border-color: rgba(20, 184, 166, 0.16);
+      }
+      .top-chip-public {
+        color: #6d28d9;
+        background: rgba(245, 243, 255, 0.96);
+        border-color: rgba(167, 139, 250, 0.24);
+      }
+      .locale-switcher {
+        position: relative;
+      }
+      .locale-trigger {
+        min-height: 38px;
+        padding: 0 12px;
+        border-radius: 14px;
+        border: 1px solid rgba(203, 213, 225, 0.8);
+        background: rgba(248, 250, 252, 0.92);
+        color: #475569;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 13px;
+        font-weight: 700;
+        cursor: pointer;
+      }
+      .locale-trigger:hover {
+        background: #ffffff;
+      }
+      .locale-flag {
+        font-size: 15px;
+        line-height: 1;
+      }
+      .locale-label {
+        letter-spacing: 0.04em;
+      }
+      .locale-menu {
+        position: absolute;
+        top: calc(100% + 10px);
+        right: 0;
+        min-width: 150px;
+        border-radius: 18px;
+        border: 1px solid rgba(226, 232, 240, 0.95);
+        background: rgba(255, 255, 255, 0.96);
+        backdrop-filter: blur(20px);
+        box-shadow: 0 20px 48px rgba(15, 23, 42, 0.12);
+        padding: 8px;
+      }
+      .locale-option {
+        width: 100%;
+        min-height: 42px;
+        padding: 0 12px;
+        border: 0;
+        border-radius: 12px;
+        background: transparent;
+        color: #334155;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+      }
+      .locale-option:hover {
+        background: rgba(248, 250, 252, 0.9);
+      }
+      .locale-option.active {
+        color: #0f766e;
+        background: rgba(236, 253, 245, 0.92);
+      }
+      .locale-check {
+        margin-left: auto;
+        opacity: 0;
+      }
+      .locale-option.active .locale-check {
+        opacity: 1;
+      }
+      .profile-trigger {
+        min-height: 44px;
+        padding: 4px 12px 4px 4px;
+        border-radius: 18px;
+        background: rgba(248, 250, 252, 0.92);
+        border: 1px solid rgba(203, 213, 225, 0.72);
+      }
+      .profile-trigger:hover {
+        background: #ffffff;
+      }
+      .user-menu {
+        top: calc(100% + 12px);
+        width: 260px;
+        border-radius: 22px;
+        border-color: rgba(226, 232, 240, 0.95);
+        background: rgba(255, 255, 255, 0.98);
+        backdrop-filter: blur(20px);
+      }
+      .badge {
+        min-height: 30px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0 12px;
+        border-radius: 999px;
+        border: 1px solid transparent;
+        font-size: 12px;
+        font-weight: 700;
+        white-space: nowrap;
+      }
+      .badge.ok {
+        color: #047857;
+        background: rgba(236, 253, 245, 0.94);
+        border-color: rgba(16, 185, 129, 0.18);
+      }
+      .badge.warn {
+        color: #b45309;
+        background: rgba(255, 247, 237, 0.96);
+        border-color: rgba(245, 158, 11, 0.22);
+      }
+      .badge.active {
+        color: #1d4ed8;
+        background: rgba(239, 246, 255, 0.95);
+        border-color: rgba(59, 130, 246, 0.2);
+      }
+      .card,
+      .records-card,
+      .chart-card,
+      .work-card,
+      .scan-main-card,
+      .scan-side-card {
+        border: 1px solid rgba(255, 255, 255, 0.75);
+        border-radius: 26px;
+        background: rgba(255, 255, 255, 0.74);
+        backdrop-filter: blur(22px);
+        box-shadow: 0 22px 64px rgba(15, 23, 42, 0.07);
+      }
+      .metric-grid {
+        gap: 16px;
+      }
+      .metric-card {
+        min-height: 110px;
+        border-radius: 22px;
+        border: 1px solid rgba(255, 255, 255, 0.7);
+        background: rgba(255, 255, 255, 0.74);
+        backdrop-filter: blur(18px);
+        box-shadow: 0 18px 46px rgba(15, 23, 42, 0.05);
+        transition: transform 180ms ease, box-shadow 180ms ease;
+      }
+      .metric-card:hover,
+      .recent-row:hover,
+      .quick-action-item:hover,
+      .job-row:hover,
+      .admin-user:hover,
+      .storage-item:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 18px 44px rgba(15, 23, 42, 0.09);
+      }
+      .metric-copy span {
+        font-size: 11px;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+      }
+      .metric-copy strong {
+        font-size: 30px;
+      }
+      .toolbar-card,
+      .scan-box,
+      .gate-card {
+        border: 1px solid rgba(255, 255, 255, 0.78);
+        border-radius: 22px;
+        background: rgba(248, 250, 252, 0.72);
+        backdrop-filter: blur(18px);
+        box-shadow: 0 16px 38px rgba(15, 23, 42, 0.05);
+      }
+      .button-link,
+      .select-chip,
+      .mini-link,
+      .size-chip {
+        min-height: 40px;
+        padding: 0 14px;
+        border-radius: 14px;
+      }
+      .button-link.primary {
+        background: linear-gradient(135deg, #14b8a6 0%, #0f766e 100%);
+        box-shadow: 0 14px 28px rgba(20, 184, 166, 0.2);
+      }
+      .button-link.primary:hover {
+        background: linear-gradient(135deg, #14b8a6 0%, #0f766e 100%);
+        border-color: transparent;
+        filter: brightness(0.98);
+      }
+      .section-head {
+        margin-bottom: 4px;
+      }
+      .section-head h2 {
+        margin-top: 8px;
+        font-size: 22px;
+        letter-spacing: -0.03em;
+      }
+      .eyebrow {
+        color: #14b8a6;
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+      }
+      .chart-shell {
+        padding: 6px 2px 0;
+      }
+      .donut {
+        width: 184px;
+        height: 184px;
+        box-shadow: inset 0 0 0 12px rgba(255, 255, 255, 0.3);
+      }
+      .donut::after {
+        width: 88px;
+        height: 88px;
+        background: rgba(255, 255, 255, 0.92);
+        box-shadow: inset 0 0 0 1px rgba(203, 213, 225, 0.5);
+      }
+      .trend-chart {
+        border-radius: 18px;
+        background: linear-gradient(180deg, rgba(255, 255, 255, 0.92), rgba(248, 250, 252, 0.72));
+      }
+      .field {
+        gap: 10px;
+      }
+      .field > label {
+        font-size: 12px;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+      }
+      input,
+      textarea {
+        border-radius: 16px;
+        border-color: rgba(203, 213, 225, 0.9);
+        background: rgba(255, 255, 255, 0.92);
+      }
+      .actions {
+        display: flex;
+        gap: 12px;
+        flex-wrap: wrap;
+        margin-top: 18px;
+      }
+      .recent-row,
+      .quick-action-item,
+      .job-row,
+      .admin-user,
+      .storage-item {
+        border-radius: 18px;
+        border-color: rgba(226, 232, 240, 0.92);
+        background: rgba(248, 250, 252, 0.74);
+      }
+      .job-row-detail,
+      .job-inline-file {
+        background: rgba(255, 255, 255, 0.92);
+      }
+      .login-shell {
+        position: relative;
+        display: grid;
+        grid-template-columns: minmax(0, 1.08fr) minmax(360px, 0.92fr);
+        gap: 24px;
+        min-height: calc(100vh - 64px);
+        align-items: stretch;
+      }
+      .auth-toolbar {
+        position: absolute;
+        top: 0;
+        right: 0;
+        z-index: 4;
+      }
+      body[data-page="login"] .shell {
+        display: block;
+        padding: 32px 24px 40px;
+        max-width: 1220px;
+        margin: 0 auto;
+      }
+      body[data-page="login"] .main {
+        padding: 0;
+      }
+      .panel {
+        border: 1px solid rgba(255, 255, 255, 0.76);
+        border-radius: 32px;
+        background: rgba(255, 255, 255, 0.72);
+        backdrop-filter: blur(22px);
+        box-shadow: 0 24px 72px rgba(15, 23, 42, 0.09);
+        padding: 34px;
+      }
+      .login-brand-panel {
+        overflow: hidden;
+        background:
+          linear-gradient(145deg, rgba(255, 255, 255, 0.8), rgba(239, 246, 255, 0.62)),
+          linear-gradient(180deg, rgba(20, 184, 166, 0.06), rgba(37, 99, 235, 0.04));
+      }
+      .auth-brand-mark {
+        width: 58px;
+        height: 58px;
+        border-radius: 20px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        background: linear-gradient(135deg, #14b8a6 0%, #2563eb 100%);
+        color: #ffffff;
+        font-size: 26px;
+        font-weight: 900;
+        box-shadow: 0 18px 36px rgba(20, 184, 166, 0.24);
+      }
+      .login-brand-panel h1 {
+        margin: 16px 0 12px;
+        font-size: clamp(34px, 5vw, 56px);
+        line-height: 1.04;
+        letter-spacing: -0.05em;
+      }
+      .login-brand-panel p {
+        max-width: 560px;
+        margin: 0;
+        color: #64748b;
+        font-size: 16px;
+        line-height: 1.8;
+      }
+      .login-points {
+        margin-top: 28px;
+        display: grid;
+        gap: 14px;
+      }
+      .login-point {
+        display: grid;
+        grid-template-columns: 42px minmax(0, 1fr);
+        gap: 14px;
+        align-items: center;
+        padding: 14px 16px;
+        border-radius: 20px;
+        border: 1px solid rgba(255, 255, 255, 0.82);
+        background: rgba(255, 255, 255, 0.72);
+      }
+      .login-point strong {
+        width: 42px;
+        height: 42px;
+        border-radius: 14px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        color: #0f766e;
+        background: rgba(236, 253, 245, 0.92);
+      }
+      .login-form-panel {
+        justify-content: center;
+      }
+      .panel-head {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 12px;
+        margin-bottom: 18px;
+      }
+      .panel-title {
+        margin: 8px 0 0;
+        font-size: 30px;
+        letter-spacing: -0.04em;
+      }
+      .auth-tabs {
+        display: inline-grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 6px;
+        padding: 6px;
+        border-radius: 18px;
+        background: rgba(241, 245, 249, 0.9);
+      }
+      .auth-tab {
+        min-height: 42px;
+        padding: 0 18px;
+        border: 0;
+        border-radius: 14px;
+        background: transparent;
+        color: #64748b;
+        font-weight: 700;
+      }
+      .auth-tab.active {
+        color: #0f172a;
+        background: #ffffff;
+        box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
+      }
+      .auth-form-panel {
+        margin-top: 18px;
+      }
+      .form-note {
+        margin-top: 16px;
+      }
+      .notice {
+        border-radius: 18px;
+      }
+      @media (max-width: 1120px) {
+        .login-shell {
+          grid-template-columns: 1fr;
+          padding-top: 56px;
+        }
+      }
+      @media (max-width: 980px) {
+        .shell {
+          grid-template-columns: 1fr;
+          padding: 14px;
+        }
+        .sidebar {
+          position: relative;
+          top: auto;
+          height: auto;
+          margin-bottom: 8px;
+        }
+        body.sidebar-collapsed .shell {
+          grid-template-columns: 1fr;
+        }
+      }
+      @media (max-width: 720px) {
+        body[data-page="login"] .shell {
+          padding: 18px 14px 24px;
+        }
+        .topbar {
+          top: 14px;
+        }
+        .topbar-copy h1 {
+          font-size: 20px;
+        }
+        .login-brand-panel h1 {
+          font-size: 34px;
+        }
+        .panel {
+          padding: 22px;
+          border-radius: 24px;
+        }
+        .metric-card,
+        .card,
+        .records-card,
+        .chart-card,
+        .work-card,
+        .scan-main-card,
+        .scan-side-card {
+          border-radius: 22px;
+        }
+      }
     </style>
   </head>
   <body data-page="${page}">
@@ -1706,7 +2350,563 @@ export function renderApp(_appOrigin: string, page: AppPage): string {
     <script>
       const PAGE = ${JSON.stringify(page)};
       const SIDEBAR_KEY = "godingtalk_sidebar_collapsed";
+      const LOCALE_KEY = "godingtalk_locale";
+      const LOCALE_META = {
+        zh: { flag: "🇨🇳", label: "ZH", lang: "zh-CN" },
+        en: { flag: "🇺🇸", label: "EN", lang: "en" },
+      };
+      const I18N = {
+        zh: {
+          "locale.zh": "中文",
+          "locale.en": "English",
+          "brand.name": "GoDingtalk",
+          "brand.subtitle": "公益回放控制台",
+          "sidebar.publicMode": "公益模式",
+          "sidebar.collapse": "收起",
+          "sidebar.expand": "展开",
+          "nav.overview": "仪表盘",
+          "nav.legal": "条款确认",
+          "nav.scan": "钉钉验证",
+          "nav.jobs": "详细记录",
+          "nav.account": "账号设置",
+          "nav.admin": "管理页",
+          "topbar.consoleEyebrow": "Public Console",
+          "topbar.publicMode": "公益模式",
+          "topbar.status.waitLegal": "待同意条款",
+          "topbar.status.waitCookie": "待钉钉验证",
+          "topbar.status.ready": "验证已就绪",
+          "role.user": "用户",
+          "role.sudo": "管理员",
+          "auth.eyebrow": "Public Control Console",
+          "auth.heroTitle": "钉钉回放下载控制台",
+          "auth.heroSubtitle": "沿用当前业务结构，但视觉语言切到更接近 Sub2API 的后台风格。登录后按顺序完成条款确认、钉钉验证与下载提交。",
+          "auth.pointLegal": "同意当前条款",
+          "auth.pointScan": "二维码登录获取钉钉验证",
+          "auth.pointDownload": "提交回放链接开始下载",
+          "auth.formEyebrow": "Secure Access",
+          "auth.panelTitle": "进入控制台",
+          "auth.loginTab": "登录",
+          "auth.registerTab": "注册",
+          "auth.usernameLabel": "用户名",
+          "auth.usernamePlaceholder": "输入用户名",
+          "auth.registerUsernamePlaceholder": "至少 3 位",
+          "auth.passwordLabel": "密码",
+          "auth.passwordPlaceholder": "输入密码",
+          "auth.registerPasswordPlaceholder": "至少 6 位",
+          "auth.passwordConfirmLabel": "确认密码",
+          "auth.passwordConfirmPlaceholder": "再次输入密码",
+          "auth.loginHint": "登录后需完成条款确认与扫码验证",
+          "auth.registerHintOpen": "注册成功后将直接进入条款确认",
+          "auth.registerHintClosed": "当前未开放注册",
+          "auth.loginAction": "登录",
+          "auth.registerAction": "注册",
+          "auth.logout": "退出登录",
+          "page.login.title": "登录",
+          "page.overview.title": "仪表盘",
+          "page.overview.subtitle": "欢迎回来，这里展示当前账号的任务、验证和整体状态。",
+          "page.legal.title": "条款确认",
+          "page.legal.subtitle": "新注册用户需要先完成当前版本条款确认，条款更新后会再次要求确认。",
+          "page.scan.title": "钉钉验证",
+          "page.scan.subtitle": "当前仅支持二维码登录导入钉钉验证态。验证会过期，可随时重新扫码。",
+          "page.jobs.title": "详细记录",
+          "page.jobs.subtitle": "按页查看所有任务，点击单条记录可以展开文件和错误详情。",
+          "page.account.title": "账号设置",
+          "page.account.subtitle": "保留当前账号信息、密码修改和退出登录等基础操作。",
+          "page.admin.title": "管理页",
+          "page.admin.subtitle": "这里只保留 sudo 需要处理的内容：存储对象、异常用户与条款管理。",
+          "metric.cookies.label": "钉钉验证",
+          "metric.cookies.help": "当前状态",
+          "metric.cookies.ready": "已就绪",
+          "metric.cookies.pending": "未验证",
+          "metric.total.label": "总任务",
+          "metric.total.help": "全部下载任务",
+          "metric.running.label": "进行中",
+          "metric.running.help": "队列 + 运行中",
+          "metric.success.label": "已完成",
+          "metric.success.help": "已完成下载",
+          "metric.failed.label": "失败任务",
+          "metric.failed.help": "需要处理",
+          "metric.week.label": "近 7 天创建",
+          "metric.week.help": "滚动统计",
+          "metric.rate.label": "完成率",
+          "metric.rate.help": "最近任务",
+          "metric.cookieTime.label": "最近验证",
+          "metric.cookieTime.help": "更新时间",
+          "overview.rangeLabel": "时间范围",
+          "overview.range7": "近 7 天",
+          "overview.range30": "近 30 天",
+          "overview.granularityLabel": "粒度",
+          "overview.granularityDay": "按天",
+          "overview.granularityHour": "按小时",
+          "overview.statusDistribution": "任务状态分布",
+          "overview.trend7": "近 7 天任务趋势",
+          "overview.trend30": "近 30 天任务趋势",
+          "overview.trend24h": "近 24 小时任务趋势",
+          "overview.legend.created": "创建",
+          "overview.legend.done": "完成",
+          "overview.legend.failed": "失败",
+          "overview.submitEyebrow": "Submit",
+          "overview.submitTitle": "提交下载",
+          "overview.urlsLabel": "回放链接",
+          "overview.urlsPlaceholder": "粘贴回放链接，每行一个",
+          "overview.createJob": "开始下载",
+          "overview.recentEyebrow": "Recent",
+          "overview.recentTitle": "近 10 条记录",
+          "overview.quickEyebrow": "Quick Actions",
+          "overview.quickTitle": "快捷操作",
+          "overview.quickScanHint": "重新扫码刷新验证状态",
+          "overview.quickJobsTitle": "查看记录",
+          "overview.quickJobsHint": "进入详细任务列表",
+          "overview.quickAccountHint": "修改密码与退出登录",
+          "overview.gate.needLegalTitle": "请先同意条款",
+          "overview.gate.needLegalCopy": "完成条款确认后，才可以继续完成钉钉验证。",
+          "overview.gate.needLegalAction": "去同意条款",
+          "overview.gate.needScanTitle": "请先完成钉钉验证",
+          "overview.gate.needScanCopy": "当前仅支持二维码登录获取钉钉验证。",
+          "overview.gate.needScanAction": "去钉钉验证",
+          "overview.table.status": "状态",
+          "overview.table.count": "数量",
+          "overview.table.percent": "占比",
+          "overview.table.note": "说明",
+          "overview.table.success": "已完成",
+          "overview.table.running": "进行中",
+          "overview.table.failed": "失败",
+          "overview.table.readyNote": "可下载",
+          "overview.table.runningNote": "处理中",
+          "overview.table.failedNote": "需重试",
+          "legal.stepEyebrow": "Step 1",
+          "legal.title": "同意当前条款",
+          "legal.checkbox": "我已阅读并同意条款",
+          "legal.acceptAction": "同意条款",
+          "legal.documentEyebrow": "Document",
+          "legal.documentTitle": "条款全文",
+          "legal.loading": "正在加载条款...",
+          "legal.empty": "暂无条款内容",
+          "legal.versionCurrent": "当前版本：{version}",
+          "legal.stateAccepted": "当前版本已同意",
+          "legal.statePending": "同意当前版本后，将自动进入钉钉验证",
+          "scan.stepEyebrow": "Step 2",
+          "scan.title": "二维码登录",
+          "scan.startAction": "启动二维码登录",
+          "scan.restartAction": "重新二维码登录",
+          "scan.generating": "正在生成二维码",
+          "scan.defaultHint": "二维码出现后，请使用钉钉扫码登录。",
+          "scan.qrAlt": "登录二维码",
+          "scan.flowEyebrow": "Flow",
+          "scan.nextTitle": "下一步",
+          "scan.step1": "等待二维码出现",
+          "scan.step2": "使用钉钉扫码登录",
+          "scan.step3": "验证成功后可以继续下载，也可随时重新扫码",
+          "scan.ready": "钉钉验证已就绪",
+          "scan.pending": "钉钉验证尚未就绪",
+          "scan.metaUpdated": "最近更新时间：{time}",
+          "scan.metaQrOnly": "仅支持通过二维码登录获取钉钉验证",
+          "scan.generatingHint": "通常约 1 分钟内出现二维码，请保持页面开启。",
+          "scan.readyTitle": "请使用钉钉扫码登录",
+          "scan.readyHint": "扫码成功后，钉钉验证会自动绑定到当前账号。",
+          "scan.completedTitle": "钉钉验证完成",
+          "scan.completedHint": "二维码登录成功，你现在可以返回下载页面，或随时重新扫码刷新验证态。",
+          "scan.failedTitle": "登录失败",
+          "scan.failedFallback": "登录失败，请重试。",
+          "jobs.pageSizeLabel": "每页显示",
+          "jobs.pageOne": "第 1 页",
+          "jobs.loading": "正在加载记录...",
+          "jobs.prev": "上一页",
+          "jobs.next": "下一页",
+          "jobs.pageSummary": "共 {total} 条 · 每页 {pageSize} 条",
+          "jobs.empty": "暂无记录",
+          "jobs.defaultTitle": "下载任务",
+          "jobs.downloadFile": "下载文件",
+          "jobs.processing": "处理中",
+          "jobs.jobId": "任务 ID：{id}",
+          "jobs.createdAt": "创建时间：{time}",
+          "jobs.noName": "未命名文件",
+          "jobs.status.finished": "已完成",
+          "jobs.status.failed": "失败",
+          "jobs.status.running": "进行中",
+          "account.profileEyebrow": "Profile",
+          "account.profileTitle": "当前账号",
+          "account.securityEyebrow": "Security",
+          "account.securityTitle": "修改密码",
+          "account.currentPassword": "当前密码",
+          "account.currentPasswordPlaceholder": "当前密码",
+          "account.newPassword": "新密码",
+          "account.newPasswordPlaceholder": "至少 6 位",
+          "account.confirmPassword": "确认新密码",
+          "account.confirmPasswordPlaceholder": "再次输入新密码",
+          "account.savePassword": "保存新密码",
+          "account.pleaseLogin": "请先登录。",
+          "account.currentUser": "当前用户：{username} · {status}",
+          "account.statusNormal": "状态正常",
+          "account.statusNeedLegal": "待同意条款",
+          "account.statusNeedScan": "待钉钉验证",
+          "admin.storageEyebrow": "R2 Storage",
+          "admin.storageTitle": "R2 文件",
+          "admin.storagePrefix": "对象前缀",
+          "admin.storagePrefixPlaceholder": "例如 dedup/",
+          "admin.refreshStorage": "刷新文件",
+          "admin.storageLoading": "正在加载 R2 文件...",
+          "admin.loadMore": "加载更多",
+          "admin.usersEyebrow": "Users",
+          "admin.usersTitle": "需要处理的用户",
+          "admin.usersLoading": "正在加载用户数据...",
+          "admin.legalEyebrow": "Legal",
+          "admin.legalTitle": "条款管理",
+          "admin.legalField": "条款内容",
+          "admin.legalPlaceholder": "输入新的条款正文",
+          "admin.saveLegal": "保存条款",
+          "admin.userSummary": "需要处理 {attention} 人 · 状态正常 {normal} 人",
+          "admin.userEmpty": "当前没有需要处理的用户",
+          "admin.userRegistered": "注册时间：{time}",
+          "admin.userNeedLegal": "待同意条款",
+          "admin.userNeedScan": "待钉钉验证",
+          "admin.userTasks": "任务数：{count}",
+          "admin.userSudoSuffix": " (sudo)",
+          "admin.legalVersion": "当前版本：{version}。保存后所有用户需要重新同意。",
+          "admin.storageMeta": "{prefix}当前已加载 {count} 个对象",
+          "admin.storagePrefixMeta": "前缀：{prefix} · ",
+          "admin.storageEmpty": "当前没有匹配的 R2 文件",
+          "admin.storageSize": "大小",
+          "admin.storageUploadedAt": "上传时间",
+          "admin.storageRefs": "引用",
+          "admin.storageAliases": "别名：{names}",
+          "admin.downloadFile": "下载文件",
+          "status.notDone": "未完成",
+          "status.done": "已完成",
+          "status.inProgress": "进行中",
+          "status.normal": "状态正常",
+          "common.loading": "正在加载...",
+          "common.noRecords": "暂无记录",
+          "common.refresh": "刷新状态",
+          "common.total": "总计",
+          "common.active": "活跃",
+          "common.download": "下载文件",
+          "common.processing": "处理中",
+          "common.unnamed": "未命名文件",
+          "common.none": "-",
+          "error.invalidCredentials": "账号或密码错误",
+          "error.usernamePasswordRequirements": "用户名至少 3 位，密码至少 6 位",
+          "error.usernameExists": "用户名已存在",
+          "error.registrationClosed": "当前未开放注册",
+          "error.currentPasswordIncorrect": "当前密码错误",
+          "error.newPasswordShort": "新密码至少 6 位",
+          "error.currentAndNewRequired": "请完整填写密码信息",
+          "error.credentialsRequired": "请填写用户名和密码",
+          "error.loginRequired": "请登录后继续",
+          "error.needLegalBeforeQR": "请先同意条款",
+          "error.needLegalBeforeJobs": "请先同意条款",
+          "error.cookiesMissing": "请先完成扫码登录",
+          "error.qrOnly": "钉钉验证仅支持二维码登录获取",
+          "error.sudoRequired": "需要 sudo 权限",
+          "error.passwordMismatch": "两次输入的密码不一致",
+          "error.legalEmpty": "条款内容不能为空",
+          "error.needUrls": "请先填入回放链接",
+          "error.generic": "操作失败，请重试",
+          "notice.loginWorkflowStarted": "二维码登录已启动。",
+          "notice.passwordUpdated": "密码已更新。",
+          "notice.legalUpdated": "条款已更新，所有用户需要重新同意。",
+          "notice.jobCreatedOne": "任务已创建：{id}",
+          "notice.jobCreatedMany": "已创建 {count} 个任务。",
+          "stage.waiting_runner": "等待 runner",
+          "stage.preparing": "准备中",
+          "stage.queued": "排队中",
+          "stage.resolving": "解析中",
+          "stage.downloading": "下载中",
+          "stage.converting": "转码中",
+          "stage.uploading_r2": "上传中",
+          "stage.completed": "已完成",
+          "stage.failed": "失败",
+          "job.status.queued": "等待开始",
+          "job.status.running": "进行中",
+          "job.status.succeeded": "已完成",
+          "job.status.failed": "失败",
+        },
+        en: {
+          "locale.zh": "Chinese",
+          "locale.en": "English",
+          "brand.name": "GoDingtalk",
+          "brand.subtitle": "Public Replay Console",
+          "sidebar.publicMode": "Public Mode",
+          "sidebar.collapse": "Collapse",
+          "sidebar.expand": "Expand",
+          "nav.overview": "Dashboard",
+          "nav.legal": "Terms",
+          "nav.scan": "DingTalk Login",
+          "nav.jobs": "Records",
+          "nav.account": "Account",
+          "nav.admin": "Admin",
+          "topbar.consoleEyebrow": "Public Console",
+          "topbar.publicMode": "Public Mode",
+          "topbar.status.waitLegal": "Terms Pending",
+          "topbar.status.waitCookie": "Login Pending",
+          "topbar.status.ready": "Ready",
+          "role.user": "User",
+          "role.sudo": "Admin",
+          "auth.eyebrow": "Public Control Console",
+          "auth.heroTitle": "DingTalk Replay Console",
+          "auth.heroSubtitle": "The business flow stays the same, but the interface is rebuilt in a Sub2API-like console style. Sign in, accept the terms, scan for DingTalk, then submit replay links.",
+          "auth.pointLegal": "Accept the current terms",
+          "auth.pointScan": "Scan a QR code to bind DingTalk login",
+          "auth.pointDownload": "Submit replay links to start downloading",
+          "auth.formEyebrow": "Secure Access",
+          "auth.panelTitle": "Enter Console",
+          "auth.loginTab": "Sign In",
+          "auth.registerTab": "Register",
+          "auth.usernameLabel": "Username",
+          "auth.usernamePlaceholder": "Enter your username",
+          "auth.registerUsernamePlaceholder": "At least 3 characters",
+          "auth.passwordLabel": "Password",
+          "auth.passwordPlaceholder": "Enter your password",
+          "auth.registerPasswordPlaceholder": "At least 6 characters",
+          "auth.passwordConfirmLabel": "Confirm Password",
+          "auth.passwordConfirmPlaceholder": "Enter it again",
+          "auth.loginHint": "After signing in, you still need to accept the terms and complete DingTalk login.",
+          "auth.registerHintOpen": "Successful registration will take you straight to terms confirmation.",
+          "auth.registerHintClosed": "Registration is currently closed.",
+          "auth.loginAction": "Sign In",
+          "auth.registerAction": "Register",
+          "auth.logout": "Sign Out",
+          "page.login.title": "Sign In",
+          "page.overview.title": "Dashboard",
+          "page.overview.subtitle": "A quick view of tasks, DingTalk login state, and overall health for this account.",
+          "page.legal.title": "Terms Confirmation",
+          "page.legal.subtitle": "New users must accept the current terms first. If the terms change, acceptance is required again.",
+          "page.scan.title": "DingTalk Login",
+          "page.scan.subtitle": "Only QR login is supported for importing DingTalk cookies. The session expires, so rescanning is allowed.",
+          "page.jobs.title": "Job Records",
+          "page.jobs.subtitle": "Browse all tasks page by page. Click any row to expand files and errors.",
+          "page.account.title": "Account Settings",
+          "page.account.subtitle": "Keep only the essentials here: account info, password changes, and sign out.",
+          "page.admin.title": "Admin",
+          "page.admin.subtitle": "This page keeps only what sudo users need: storage objects, users needing attention, and terms management.",
+          "metric.cookies.label": "DingTalk Login",
+          "metric.cookies.help": "Current state",
+          "metric.cookies.ready": "Ready",
+          "metric.cookies.pending": "Missing",
+          "metric.total.label": "Total Jobs",
+          "metric.total.help": "All download jobs",
+          "metric.running.label": "Running",
+          "metric.running.help": "Queued + running",
+          "metric.success.label": "Completed",
+          "metric.success.help": "Finished downloads",
+          "metric.failed.label": "Failed",
+          "metric.failed.help": "Need attention",
+          "metric.week.label": "Created in 7 Days",
+          "metric.week.help": "Rolling count",
+          "metric.rate.label": "Completion Rate",
+          "metric.rate.help": "Recent jobs",
+          "metric.cookieTime.label": "Last Login",
+          "metric.cookieTime.help": "Last update",
+          "overview.rangeLabel": "Range",
+          "overview.range7": "Last 7 Days",
+          "overview.range30": "Last 30 Days",
+          "overview.granularityLabel": "Granularity",
+          "overview.granularityDay": "By Day",
+          "overview.granularityHour": "By Hour",
+          "overview.statusDistribution": "Job Status Distribution",
+          "overview.trend7": "7-Day Job Trend",
+          "overview.trend30": "30-Day Job Trend",
+          "overview.trend24h": "24-Hour Job Trend",
+          "overview.legend.created": "Created",
+          "overview.legend.done": "Done",
+          "overview.legend.failed": "Failed",
+          "overview.submitEyebrow": "Submit",
+          "overview.submitTitle": "Submit Download",
+          "overview.urlsLabel": "Replay Links",
+          "overview.urlsPlaceholder": "Paste replay links, one per line",
+          "overview.createJob": "Start Download",
+          "overview.recentEyebrow": "Recent",
+          "overview.recentTitle": "Latest 10 Jobs",
+          "overview.quickEyebrow": "Quick Actions",
+          "overview.quickTitle": "Quick Actions",
+          "overview.quickScanHint": "Rescan to refresh DingTalk login",
+          "overview.quickJobsTitle": "View Records",
+          "overview.quickJobsHint": "Open the detailed job list",
+          "overview.quickAccountHint": "Change password or sign out",
+          "overview.gate.needLegalTitle": "Accept the Terms First",
+          "overview.gate.needLegalCopy": "You need to accept the current terms before proceeding to DingTalk login.",
+          "overview.gate.needLegalAction": "Review Terms",
+          "overview.gate.needScanTitle": "Complete DingTalk Login First",
+          "overview.gate.needScanCopy": "Only QR login is supported for obtaining DingTalk cookies.",
+          "overview.gate.needScanAction": "Open DingTalk Login",
+          "overview.table.status": "Status",
+          "overview.table.count": "Count",
+          "overview.table.percent": "Share",
+          "overview.table.note": "Note",
+          "overview.table.success": "Completed",
+          "overview.table.running": "Running",
+          "overview.table.failed": "Failed",
+          "overview.table.readyNote": "Ready to download",
+          "overview.table.runningNote": "In progress",
+          "overview.table.failedNote": "Retry needed",
+          "legal.stepEyebrow": "Step 1",
+          "legal.title": "Accept Current Terms",
+          "legal.checkbox": "I have read and agree to the terms",
+          "legal.acceptAction": "Accept Terms",
+          "legal.documentEyebrow": "Document",
+          "legal.documentTitle": "Full Terms",
+          "legal.loading": "Loading terms...",
+          "legal.empty": "No terms content available.",
+          "legal.versionCurrent": "Current version: {version}",
+          "legal.stateAccepted": "The current version is already accepted.",
+          "legal.statePending": "After you accept the current version, the flow will continue to DingTalk login.",
+          "scan.stepEyebrow": "Step 2",
+          "scan.title": "QR Login",
+          "scan.startAction": "Start QR Login",
+          "scan.restartAction": "Restart QR Login",
+          "scan.generating": "Generating QR Code",
+          "scan.defaultHint": "When the QR code appears, use DingTalk to scan it.",
+          "scan.qrAlt": "Login QR code",
+          "scan.flowEyebrow": "Flow",
+          "scan.nextTitle": "What Happens Next",
+          "scan.step1": "Wait for the QR code to appear",
+          "scan.step2": "Scan it with DingTalk",
+          "scan.step3": "After success, return to downloading or rescan anytime",
+          "scan.ready": "DingTalk login is ready",
+          "scan.pending": "DingTalk login is not ready yet",
+          "scan.metaUpdated": "Last updated: {time}",
+          "scan.metaQrOnly": "DingTalk login can only be obtained through QR login",
+          "scan.generatingHint": "The QR code usually appears within about one minute. Keep this page open.",
+          "scan.readyTitle": "Scan with DingTalk",
+          "scan.readyHint": "After a successful scan, DingTalk cookies will be bound to the current account automatically.",
+          "scan.completedTitle": "DingTalk Login Complete",
+          "scan.completedHint": "QR login succeeded. You can go back to downloads now, or rescan later to refresh the session.",
+          "scan.failedTitle": "Login Failed",
+          "scan.failedFallback": "Login failed. Please try again.",
+          "jobs.pageSizeLabel": "Page Size",
+          "jobs.pageOne": "Page 1",
+          "jobs.loading": "Loading records...",
+          "jobs.prev": "Previous",
+          "jobs.next": "Next",
+          "jobs.pageSummary": "{total} records · {pageSize} per page",
+          "jobs.empty": "No records yet",
+          "jobs.defaultTitle": "Download Job",
+          "jobs.downloadFile": "Download",
+          "jobs.processing": "Processing",
+          "jobs.jobId": "Job ID: {id}",
+          "jobs.createdAt": "Created: {time}",
+          "jobs.noName": "Unnamed file",
+          "jobs.status.finished": "Completed",
+          "jobs.status.failed": "Failed",
+          "jobs.status.running": "Running",
+          "account.profileEyebrow": "Profile",
+          "account.profileTitle": "Current Account",
+          "account.securityEyebrow": "Security",
+          "account.securityTitle": "Change Password",
+          "account.currentPassword": "Current Password",
+          "account.currentPasswordPlaceholder": "Current password",
+          "account.newPassword": "New Password",
+          "account.newPasswordPlaceholder": "At least 6 characters",
+          "account.confirmPassword": "Confirm Password",
+          "account.confirmPasswordPlaceholder": "Enter the new password again",
+          "account.savePassword": "Save New Password",
+          "account.pleaseLogin": "Please sign in first.",
+          "account.currentUser": "Current user: {username} · {status}",
+          "account.statusNormal": "All good",
+          "account.statusNeedLegal": "Terms pending",
+          "account.statusNeedScan": "DingTalk login pending",
+          "admin.storageEyebrow": "R2 Storage",
+          "admin.storageTitle": "R2 Files",
+          "admin.storagePrefix": "Object Prefix",
+          "admin.storagePrefixPlaceholder": "For example: dedup/",
+          "admin.refreshStorage": "Refresh Files",
+          "admin.storageLoading": "Loading R2 files...",
+          "admin.loadMore": "Load More",
+          "admin.usersEyebrow": "Users",
+          "admin.usersTitle": "Users Needing Attention",
+          "admin.usersLoading": "Loading user data...",
+          "admin.legalEyebrow": "Legal",
+          "admin.legalTitle": "Terms Management",
+          "admin.legalField": "Terms Content",
+          "admin.legalPlaceholder": "Enter the new terms text",
+          "admin.saveLegal": "Save Terms",
+          "admin.userSummary": "{attention} users need attention · {normal} normal",
+          "admin.userEmpty": "No users currently need attention",
+          "admin.userRegistered": "Registered: {time}",
+          "admin.userNeedLegal": "Terms pending",
+          "admin.userNeedScan": "DingTalk login pending",
+          "admin.userTasks": "Jobs: {count}",
+          "admin.userSudoSuffix": " (sudo)",
+          "admin.legalVersion": "Current version: {version}. Saving will require all users to accept again.",
+          "admin.storageMeta": "{prefix}{count} objects loaded",
+          "admin.storagePrefixMeta": "Prefix: {prefix} · ",
+          "admin.storageEmpty": "No matching R2 files found",
+          "admin.storageSize": "Size",
+          "admin.storageUploadedAt": "Uploaded",
+          "admin.storageRefs": "Refs",
+          "admin.storageAliases": "Aliases: {names}",
+          "admin.downloadFile": "Download",
+          "status.notDone": "Pending",
+          "status.done": "Done",
+          "status.inProgress": "Running",
+          "status.normal": "Normal",
+          "common.loading": "Loading...",
+          "common.noRecords": "No records yet",
+          "common.refresh": "Refresh",
+          "common.total": "Total",
+          "common.active": "active",
+          "common.download": "Download",
+          "common.processing": "Processing",
+          "common.unnamed": "Unnamed file",
+          "common.none": "-",
+          "error.invalidCredentials": "Invalid username or password",
+          "error.usernamePasswordRequirements": "Username must be at least 3 characters and password at least 6",
+          "error.usernameExists": "Username already exists",
+          "error.registrationClosed": "Registration is closed",
+          "error.currentPasswordIncorrect": "Current password is incorrect",
+          "error.newPasswordShort": "New password must be at least 6 characters",
+          "error.currentAndNewRequired": "Please fill out the password fields",
+          "error.credentialsRequired": "Please enter your username and password",
+          "error.loginRequired": "Please sign in first",
+          "error.needLegalBeforeQR": "Please accept the terms first",
+          "error.needLegalBeforeJobs": "Please accept the terms first",
+          "error.cookiesMissing": "Please complete QR login first",
+          "error.qrOnly": "DingTalk login can only be obtained via QR login",
+          "error.sudoRequired": "Sudo privileges are required",
+          "error.passwordMismatch": "The two passwords do not match",
+          "error.legalEmpty": "Terms content cannot be empty",
+          "error.needUrls": "Please enter at least one replay URL",
+          "error.generic": "The action failed. Please try again.",
+          "notice.loginWorkflowStarted": "QR login has been started.",
+          "notice.passwordUpdated": "Password updated.",
+          "notice.legalUpdated": "Terms updated. All users need to accept them again.",
+          "notice.jobCreatedOne": "Created job: {id}",
+          "notice.jobCreatedMany": "Created {count} jobs.",
+          "stage.waiting_runner": "Waiting for runner",
+          "stage.preparing": "Preparing",
+          "stage.queued": "Queued",
+          "stage.resolving": "Resolving",
+          "stage.downloading": "Downloading",
+          "stage.converting": "Converting",
+          "stage.uploading_r2": "Uploading",
+          "stage.completed": "Completed",
+          "stage.failed": "Failed",
+          "job.status.queued": "Queued",
+          "job.status.running": "Running",
+          "job.status.succeeded": "Completed",
+          "job.status.failed": "Failed",
+        },
+      };
+
+      function detectLocale() {
+        const stored = String(localStorage.getItem(LOCALE_KEY) || "").trim().toLowerCase();
+        if (stored === "zh" || stored === "en") return stored;
+        const browser = String(navigator.language || "").toLowerCase();
+        return browser.startsWith("zh") ? "zh" : "en";
+      }
+
+      function t(key, vars) {
+        const locale = state && state.locale ? state.locale : detectLocale();
+        const dict = I18N[locale] || I18N.zh;
+        const source = dict[key] || I18N.zh[key] || key;
+        if (!vars) return source;
+        return source.replace(/\{([a-zA-Z0-9_]+)\}/g, function (_, name) {
+          return Object.prototype.hasOwnProperty.call(vars, name) ? String(vars[name]) : "";
+        });
+      }
+
       const state = {
+        locale: detectLocale(),
         authenticated: false,
         registrationOpen: false,
         authTab: "login",
@@ -1720,6 +2920,7 @@ export function renderApp(_appOrigin: string, page: AppPage): string {
         user: null,
         loginSessionId: "",
         loginSessionStatus: "",
+        lastLoginSession: null,
         recentJobs: [],
         overviewJobs: [],
         overviewRangeDays: 7,
@@ -1749,8 +2950,13 @@ export function renderApp(_appOrigin: string, page: AppPage): string {
         navAccount: document.getElementById("nav-account"),
         navAdmin: document.getElementById("nav-admin"),
         topStatusChip: document.getElementById("top-status-chip"),
-        topJobsChip: document.getElementById("top-jobs-chip"),
-        topBalanceChip: document.getElementById("top-balance-chip"),
+        topPublicChip: document.getElementById("top-public-chip"),
+        localeSwitcher: document.getElementById("locale-switcher"),
+        localeTrigger: document.getElementById("locale-trigger"),
+        localeMenu: document.getElementById("locale-menu"),
+        localeCurrentFlag: document.getElementById("locale-current-flag"),
+        localeCurrentLabel: document.getElementById("locale-current-label"),
+        localeOptions: Array.from(document.querySelectorAll("[data-locale-option]")),
         userMenuWrap: document.getElementById("user-menu-wrap"),
         userMenuTrigger: document.getElementById("user-menu-trigger"),
         userMenu: document.getElementById("user-menu"),
@@ -1839,6 +3045,68 @@ export function renderApp(_appOrigin: string, page: AppPage): string {
 
       let pollingHandle = null;
       let userMenuOpen = false;
+      let localeMenuOpen = false;
+
+      function localeTag() {
+        return state.locale === "en" ? "en-US" : "zh-CN";
+      }
+
+      function applyTranslations() {
+        const meta = LOCALE_META[state.locale] || LOCALE_META.zh;
+        document.documentElement.lang = meta.lang;
+        document.querySelectorAll("[data-i18n]").forEach((node) => {
+          const key = node.getAttribute("data-i18n") || "";
+          node.textContent = t(key);
+        });
+        document.querySelectorAll("[data-i18n-placeholder]").forEach((node) => {
+          const key = node.getAttribute("data-i18n-placeholder") || "";
+          node.setAttribute("placeholder", t(key));
+        });
+        document.querySelectorAll("[data-i18n-alt]").forEach((node) => {
+          const key = node.getAttribute("data-i18n-alt") || "";
+          node.setAttribute("alt", t(key));
+        });
+        if (el.localeCurrentFlag) el.localeCurrentFlag.textContent = meta.flag;
+        if (el.localeCurrentLabel) el.localeCurrentLabel.textContent = meta.label;
+        el.localeOptions.forEach((item) => {
+          const option = item;
+          const code = option.getAttribute("data-locale-option") || "";
+          option.classList.toggle("active", code === state.locale);
+        });
+        document.title = t("brand.name") + " · " + t("page." + PAGE + ".title");
+        if (el.topPublicChip) el.topPublicChip.textContent = t("topbar.publicMode");
+        if (el.sidebarToggleBtn) {
+          setSidebarCollapsed(document.body.classList.contains("sidebar-collapsed"));
+        }
+      }
+
+      function setLocale(nextLocale) {
+        if (nextLocale !== "zh" && nextLocale !== "en") return;
+        state.locale = nextLocale;
+        localStorage.setItem(LOCALE_KEY, nextLocale);
+        applyTranslations();
+        renderHeaderState();
+        renderAccountState();
+        renderLegalState();
+        renderScanState();
+        if (state.lastLoginSession) {
+          renderLoginSession({ login_session: state.lastLoginSession });
+        }
+        if (state.overviewJobs && state.overviewJobs.length) {
+          renderOverviewCharts(state.overviewJobs);
+          renderRecentJobs(state.overviewJobs.slice(0, 10));
+        }
+        if (state.jobsPageItems && state.jobsPageItems.length) {
+          renderJobsPageList({
+            jobs: state.jobsPageItems,
+            page: state.jobsPage,
+            page_size: state.jobsPageSize,
+            total: state.jobsTotal,
+            total_pages: state.jobsTotalPages,
+          });
+        }
+        renderAdminStorage();
+      }
 
       function setNotice(message, type) {
         if (!el.notice) return;
@@ -1855,22 +3123,24 @@ export function renderApp(_appOrigin: string, page: AppPage): string {
       function normalizeErrorMessage(message) {
         const source = String(message || "").trim();
         const mapping = {
-          "invalid username or password": "账号或密码错误",
-          "username >= 3 and password >= 6 are required": "用户名至少 3 位，密码至少 6 位",
-          "username already exists": "用户名已存在",
-          "registration is closed": "当前未开放注册",
-          "current password is incorrect": "当前密码错误",
-          "new password must be at least 6 characters": "新密码至少 6 位",
-          "current_password and new_password are required": "请完整填写密码信息",
-          "username and password are required": "请填写用户名和密码",
-          "login required": "请登录后继续",
-          "legal disclaimer must be accepted before starting QR login": "请先同意条款",
-          "legal disclaimer must be accepted before creating jobs": "请先同意条款",
-          "cookies are missing or invalid": "请先完成扫码登录",
-          "manual cookie upload disabled; use QR login": "钉钉验证仅支持二维码登录获取",
-          "sudo required": "需要 sudo 权限",
+          "invalid username or password": "error.invalidCredentials",
+          "username >= 3 and password >= 6 are required": "error.usernamePasswordRequirements",
+          "username already exists": "error.usernameExists",
+          "registration is closed": "error.registrationClosed",
+          "current password is incorrect": "error.currentPasswordIncorrect",
+          "new password must be at least 6 characters": "error.newPasswordShort",
+          "current_password and new_password are required": "error.currentAndNewRequired",
+          "username and password are required": "error.credentialsRequired",
+          "login required": "error.loginRequired",
+          "legal disclaimer must be accepted before starting QR login": "error.needLegalBeforeQR",
+          "legal disclaimer must be accepted before creating jobs": "error.needLegalBeforeJobs",
+          "cookies are missing or invalid": "error.cookiesMissing",
+          "manual cookie upload disabled; use QR login": "error.qrOnly",
+          "sudo required": "error.sudoRequired",
+          "两次输入的密码不一致": "error.passwordMismatch",
+          "请先填入回放链接": "error.needUrls",
         };
-        return mapping[source] || source || "操作失败，请重试";
+        return mapping[source] ? t(mapping[source]) : (source || t("error.generic"));
       }
 
       function escapeHTML(value) {
@@ -1884,7 +3154,7 @@ export function renderApp(_appOrigin: string, page: AppPage): string {
       function formatTime(value) {
         if (!value) return "-";
         const date = new Date(value);
-        return Number.isNaN(date.getTime()) ? value : date.toLocaleString();
+        return Number.isNaN(date.getTime()) ? value : date.toLocaleString(localeTag());
       }
 
       function formatBytes(value) {
@@ -1903,25 +3173,25 @@ export function renderApp(_appOrigin: string, page: AppPage): string {
 
       function formatStage(stage) {
         switch (stage) {
-          case "waiting_runner": return "等待 runner";
-          case "preparing": return "准备中";
-          case "queued": return "排队中";
-          case "resolving": return "解析中";
-          case "downloading": return "下载中";
-          case "converting": return "转码中";
-          case "uploading_r2": return "上传中";
-          case "completed": return "已完成";
-          case "failed": return "失败";
+          case "waiting_runner": return t("stage.waiting_runner");
+          case "preparing": return t("stage.preparing");
+          case "queued": return t("stage.queued");
+          case "resolving": return t("stage.resolving");
+          case "downloading": return t("stage.downloading");
+          case "converting": return t("stage.converting");
+          case "uploading_r2": return t("stage.uploading_r2");
+          case "completed": return t("stage.completed");
+          case "failed": return t("stage.failed");
           default: return stage || "-";
         }
       }
 
       function formatStatus(status) {
         switch (String(status || "").toLowerCase()) {
-          case "queued": return "等待开始";
-          case "running": return "进行中";
-          case "succeeded": return "已完成";
-          case "failed": return "失败";
+          case "queued": return t("job.status.queued");
+          case "running": return t("job.status.running");
+          case "succeeded": return t("job.status.succeeded");
+          case "failed": return t("job.status.failed");
           default: return status || "-";
         }
       }
@@ -1958,8 +3228,8 @@ export function renderApp(_appOrigin: string, page: AppPage): string {
         document.body.classList.toggle("sidebar-collapsed", collapsed);
         if (el.sidebarToggleBtn) {
           el.sidebarToggleBtn.innerHTML = collapsed
-            ? '<span class="sidebar-toggle-icon">〉〉</span><span class="sidebar-toggle-label">展开</span>'
-            : '<span class="sidebar-toggle-icon">〈〈</span><span class="sidebar-toggle-label">收起</span>';
+            ? '<span class="sidebar-toggle-icon">〉〉</span><span class="sidebar-toggle-label">' + escapeHTML(t("sidebar.expand")) + '</span>'
+            : '<span class="sidebar-toggle-icon">〈〈</span><span class="sidebar-toggle-label">' + escapeHTML(t("sidebar.collapse")) + '</span>';
         }
         localStorage.setItem(SIDEBAR_KEY, collapsed ? "1" : "0");
       }
@@ -2003,6 +3273,34 @@ export function renderApp(_appOrigin: string, page: AppPage): string {
         });
       }
 
+      function setLocaleMenuOpen(nextOpen) {
+        localeMenuOpen = Boolean(nextOpen);
+        if (!el.localeMenu || !el.localeTrigger) return;
+        el.localeMenu.classList.toggle("hidden", !localeMenuOpen);
+        el.localeTrigger.setAttribute("aria-expanded", localeMenuOpen ? "true" : "false");
+      }
+
+      function setupLocaleMenu() {
+        if (!el.localeTrigger || !el.localeMenu || !el.localeSwitcher) return;
+        el.localeTrigger.addEventListener("click", (event) => {
+          event.stopPropagation();
+          setLocaleMenuOpen(!localeMenuOpen);
+        });
+        el.localeOptions.forEach((item) => {
+          const option = item;
+          option.addEventListener("click", (event) => {
+            event.stopPropagation();
+            setLocale(option.getAttribute("data-locale-option") || "zh");
+            setLocaleMenuOpen(false);
+          });
+        });
+        document.addEventListener("click", (event) => {
+          if (!el.localeSwitcher.contains(event.target)) {
+            setLocaleMenuOpen(false);
+          }
+        });
+      }
+
       function setupPageTransitions() {
         requestAnimationFrame(() => {
           document.body.classList.add("page-ready");
@@ -2038,6 +3336,7 @@ export function renderApp(_appOrigin: string, page: AppPage): string {
         if (!el.userMenuWrap) return;
         if (!state.authenticated || !state.user) {
           el.userMenuWrap.classList.add("hidden");
+          if (el.topStatusChip) el.topStatusChip.textContent = t("topbar.status.waitLegal");
           return;
         }
         el.userMenuWrap.classList.remove("hidden");
@@ -2045,9 +3344,9 @@ export function renderApp(_appOrigin: string, page: AppPage): string {
         const initials = username.slice(0, 2).toUpperCase() || "U";
         if (el.avatarFallback) el.avatarFallback.textContent = initials;
         if (el.profileName) el.profileName.textContent = username;
-        if (el.profileRole) el.profileRole.textContent = state.user.is_sudo ? "Sudo" : "User";
+        if (el.profileRole) el.profileRole.textContent = state.user.is_sudo ? t("role.sudo") : t("role.user");
         if (el.userMenuName) el.userMenuName.textContent = username;
-        if (el.userMenuRole) el.userMenuRole.textContent = state.user.is_sudo ? "sudo" : "user";
+        if (el.userMenuRole) el.userMenuRole.textContent = state.user.is_sudo ? t("role.sudo") : t("role.user");
         if (el.userMenuAdminLink) {
           if (state.user.is_sudo) el.userMenuAdminLink.classList.remove("hidden"); else el.userMenuAdminLink.classList.add("hidden");
         }
@@ -2059,18 +3358,15 @@ export function renderApp(_appOrigin: string, page: AppPage): string {
         }
         if (el.topStatusChip) {
           if (!state.legalAccepted) {
-            el.topStatusChip.textContent = "待同意条款";
+            el.topStatusChip.textContent = t("topbar.status.waitLegal");
           } else if (!state.cookiesReady) {
-            el.topStatusChip.textContent = "待钉钉验证";
+            el.topStatusChip.textContent = t("topbar.status.waitCookie");
           } else {
-            el.topStatusChip.textContent = "钉钉验证已就绪";
+            el.topStatusChip.textContent = t("topbar.status.ready");
           }
         }
-        if (el.topJobsChip) {
-          el.topJobsChip.textContent = "🗂 " + (state.overviewJobs.length || 0);
-        }
-        if (el.topBalanceChip) {
-          el.topBalanceChip.textContent = "💵 " + (state.cookiesReady ? "$0.00" : "$-.--");
+        if (el.topPublicChip) {
+          el.topPublicChip.textContent = t("topbar.publicMode");
         }
         [
           [el.navOverview, PAGE === "overview"],
@@ -2085,7 +3381,7 @@ export function renderApp(_appOrigin: string, page: AppPage): string {
       }
 
       function renderMetricStrip(payload) {
-        if (el.statCookies) el.statCookies.textContent = state.cookiesReady ? "已就绪" : "未验证";
+        if (el.statCookies) el.statCookies.textContent = state.cookiesReady ? t("metric.cookies.ready") : t("metric.cookies.pending");
         if (el.statTotal) el.statTotal.textContent = String(payload.total_jobs || 0);
         if (el.statRunning) el.statRunning.textContent = String((payload.running_jobs || 0) + (payload.queued_jobs || 0));
         if (el.statSuccess) el.statSuccess.textContent = String(payload.succeeded_jobs || 0);
@@ -2108,18 +3404,18 @@ export function renderApp(_appOrigin: string, page: AppPage): string {
         if (!state.legalAccepted) {
           el.overviewGate.classList.remove("hidden");
           el.overviewDownloadForm.classList.add("hidden");
-          el.overviewGateTitle.textContent = "请先同意条款";
-          el.overviewGateCopy.textContent = "当前版本条款尚未确认，先去完成条款确认。";
-          el.overviewGateLink.textContent = "去同意条款";
+          el.overviewGateTitle.textContent = t("overview.gate.needLegalTitle");
+          el.overviewGateCopy.textContent = t("overview.gate.needLegalCopy");
+          el.overviewGateLink.textContent = t("overview.gate.needLegalAction");
           el.overviewGateLink.setAttribute("href", "/legal");
           return;
         }
         if (!state.cookiesReady) {
           el.overviewGate.classList.remove("hidden");
           el.overviewDownloadForm.classList.add("hidden");
-          el.overviewGateTitle.textContent = "请先完成钉钉验证";
-          el.overviewGateCopy.textContent = "当前仅支持二维码登录获取钉钉验证。";
-          el.overviewGateLink.textContent = "去钉钉验证";
+          el.overviewGateTitle.textContent = t("overview.gate.needScanTitle");
+          el.overviewGateCopy.textContent = t("overview.gate.needScanCopy");
+          el.overviewGateLink.textContent = t("overview.gate.needScanAction");
           el.overviewGateLink.setAttribute("href", "/scan");
           return;
         }
@@ -2129,18 +3425,18 @@ export function renderApp(_appOrigin: string, page: AppPage): string {
 
       function renderOverviewToolbar() {
         if (el.overviewRangeBtn) {
-          el.overviewRangeBtn.textContent = state.overviewRangeDays === 30 ? "近 30 天" : "近 7 天";
+          el.overviewRangeBtn.textContent = state.overviewRangeDays === 30 ? t("overview.range30") : t("overview.range7");
           el.overviewRangeBtn.classList.toggle("active", state.overviewRangeDays === 30);
         }
         if (el.overviewGranularityBtn) {
-          el.overviewGranularityBtn.textContent = state.overviewGranularity === "hour" ? "按小时" : "按天";
+          el.overviewGranularityBtn.textContent = state.overviewGranularity === "hour" ? t("overview.granularityHour") : t("overview.granularityDay");
           el.overviewGranularityBtn.classList.toggle("active", state.overviewGranularity === "hour");
         }
         if (el.overviewTrendTitle) {
           if (state.overviewGranularity === "hour") {
-            el.overviewTrendTitle.textContent = "近 24 小时任务趋势";
+            el.overviewTrendTitle.textContent = t("overview.trend24h");
           } else {
-            el.overviewTrendTitle.textContent = state.overviewRangeDays === 30 ? "近 30 天任务趋势" : "近 7 天任务趋势";
+            el.overviewTrendTitle.textContent = state.overviewRangeDays === 30 ? t("overview.trend30") : t("overview.trend7");
           }
         }
       }
@@ -2159,10 +3455,10 @@ export function renderApp(_appOrigin: string, page: AppPage): string {
         const runningPct = (counts.running / total) * 100;
         el.overviewDonut.style.background = "conic-gradient(var(--blue) 0 " + succeededPct + "%, var(--green) " + succeededPct + "% " + (succeededPct + runningPct) + "%, var(--red) " + (succeededPct + runningPct) + "% 100%)";
         el.overviewDonutTable.innerHTML = [
-          '<div class="mini-table-head"><div>状态</div><div>数量</div><div>占比</div><div>说明</div></div>',
-          '<div class="mini-table-row"><div>已完成</div><div>' + counts.succeeded + '</div><div>' + Math.round((counts.succeeded / total) * 100) + '%</div><div style="color:var(--green);">可下载</div></div>',
-          '<div class="mini-table-row"><div>进行中</div><div>' + counts.running + '</div><div>' + Math.round((counts.running / total) * 100) + '%</div><div style="color:var(--blue);">处理中</div></div>',
-          '<div class="mini-table-row"><div>失败</div><div>' + counts.failed + '</div><div>' + Math.round((counts.failed / total) * 100) + '%</div><div style="color:var(--red);">需重试</div></div>',
+          '<div class="mini-table-head"><div>' + escapeHTML(t("overview.table.status")) + '</div><div>' + escapeHTML(t("overview.table.count")) + '</div><div>' + escapeHTML(t("overview.table.percent")) + '</div><div>' + escapeHTML(t("overview.table.note")) + '</div></div>',
+          '<div class="mini-table-row"><div>' + escapeHTML(t("overview.table.success")) + '</div><div>' + counts.succeeded + '</div><div>' + Math.round((counts.succeeded / total) * 100) + '%</div><div style="color:var(--green);">' + escapeHTML(t("overview.table.readyNote")) + '</div></div>',
+          '<div class="mini-table-row"><div>' + escapeHTML(t("overview.table.running")) + '</div><div>' + counts.running + '</div><div>' + Math.round((counts.running / total) * 100) + '%</div><div style="color:var(--blue);">' + escapeHTML(t("overview.table.runningNote")) + '</div></div>',
+          '<div class="mini-table-row"><div>' + escapeHTML(t("overview.table.failed")) + '</div><div>' + counts.failed + '</div><div>' + Math.round((counts.failed / total) * 100) + '%</div><div style="color:var(--red);">' + escapeHTML(t("overview.table.failedNote")) + '</div></div>',
         ].join("");
 
         const timeline = [];
@@ -2199,7 +3495,7 @@ export function renderApp(_appOrigin: string, page: AppPage): string {
             const key = date.toISOString().slice(0, 10);
             timeline.push({
               key,
-              label: key.slice(5),
+              label: date.toLocaleDateString(localeTag(), { month: "numeric", day: "numeric" }),
               created: 0,
               done: 0,
               failed: 0,
@@ -2272,15 +3568,15 @@ export function renderApp(_appOrigin: string, page: AppPage): string {
         if (!el.recentRecords) return;
         const records = Array.isArray(jobs) ? jobs : [];
         if (records.length === 0) {
-          el.recentRecords.innerHTML = '<div class="empty">暂无记录</div>';
+          el.recentRecords.innerHTML = '<div class="empty">' + escapeHTML(t("common.noRecords")) + '</div>';
           return;
         }
         el.recentRecords.innerHTML = records.slice(0, 10).map((job) => {
-          const title = job.current_title || (Array.isArray(job.titles) && job.titles[0]) || "下载任务";
+          const title = job.current_title || (Array.isArray(job.titles) && job.titles[0]) || t("jobs.defaultTitle");
           const badgeClass = job.status === "succeeded" ? "ok" : (job.status === "failed" ? "warn" : "active");
           const amountText = job.status === "succeeded"
-            ? "已完成"
-            : (job.status === "failed" ? "失败" : "进行中");
+            ? t("jobs.status.finished")
+            : (job.status === "failed" ? t("jobs.status.failed") : t("jobs.status.running"));
           const subtitle = formatTime(job.updated_at || job.created_at);
           return [
             '<div class="recent-row">',
@@ -2296,7 +3592,7 @@ export function renderApp(_appOrigin: string, page: AppPage): string {
         if (!el.legalText) return;
         const source = String(text || "").trim();
         if (!source) {
-          el.legalText.innerHTML = '<div class="empty">暂无条款内容</div>';
+          el.legalText.innerHTML = '<div class="empty">' + escapeHTML(t("legal.empty")) + '</div>';
           return;
         }
         const blocks = source.split(/\\n\\s*\\n/g).map((block) => block.trim()).filter(Boolean);
@@ -2310,17 +3606,17 @@ export function renderApp(_appOrigin: string, page: AppPage): string {
 
       function renderLegalState() {
         if (!el.legalBadge || !el.legalState || !el.legalVersionMeta || !el.acceptLegalBtn || !el.legalConfirmCheck || !el.legalCheckboxRow) return;
-        el.legalVersionMeta.textContent = state.legalVersion ? ("当前版本：" + state.legalVersion) : "";
+        el.legalVersionMeta.textContent = state.legalVersion ? t("legal.versionCurrent", { version: state.legalVersion }) : "";
         if (state.legalAccepted) {
-          setBadge(el.legalBadge, "ok", "已完成");
-          el.legalState.textContent = "当前版本已同意";
+          setBadge(el.legalBadge, "ok", t("status.done"));
+          el.legalState.textContent = t("legal.stateAccepted");
           el.legalState.className = "notice ok";
           el.legalState.classList.remove("hidden");
           el.legalCheckboxRow.classList.add("hidden");
           el.acceptLegalBtn.classList.add("hidden");
         } else {
-          setBadge(el.legalBadge, "warn", "未完成");
-          el.legalState.textContent = "同意当前版本后，将自动进入钉钉验证";
+          setBadge(el.legalBadge, "warn", t("status.notDone"));
+          el.legalState.textContent = t("legal.statePending");
           el.legalState.className = "notice warn";
           el.legalState.classList.remove("hidden");
           el.legalCheckboxRow.classList.remove("hidden");
@@ -2340,19 +3636,19 @@ export function renderApp(_appOrigin: string, page: AppPage): string {
         if (!el.cookieBadge || !el.cookieState || !el.cookieMeta || !el.startLoginWorkflowBtn) return;
         const loginBusy = state.loginSessionStatus === "pending" || state.loginSessionStatus === "qr_ready";
         if (state.cookiesReady) {
-          setBadge(el.cookieBadge, "ok", "已完成");
-          el.cookieState.textContent = "钉钉验证已就绪";
+          setBadge(el.cookieBadge, "ok", t("status.done"));
+          el.cookieState.textContent = t("scan.ready");
           el.cookieState.className = "notice ok";
           el.cookieState.classList.remove("hidden");
-          el.cookieMeta.textContent = state.cookiesUpdatedAt ? ("最近更新时间：" + formatTime(state.cookiesUpdatedAt)) : "";
-          el.startLoginWorkflowBtn.textContent = "重新二维码登录";
+          el.cookieMeta.textContent = state.cookiesUpdatedAt ? t("scan.metaUpdated", { time: formatTime(state.cookiesUpdatedAt) }) : "";
+          el.startLoginWorkflowBtn.textContent = t("scan.restartAction");
         } else {
-          setBadge(el.cookieBadge, loginBusy ? "active" : "warn", loginBusy ? "进行中" : "未完成");
-          el.cookieState.textContent = "钉钉验证尚未就绪";
+          setBadge(el.cookieBadge, loginBusy ? "active" : "warn", loginBusy ? t("status.inProgress") : t("status.notDone"));
+          el.cookieState.textContent = t("scan.pending");
           el.cookieState.className = "notice warn";
           el.cookieState.classList.remove("hidden");
-          el.cookieMeta.textContent = "仅支持通过二维码登录获取钉钉验证";
-          el.startLoginWorkflowBtn.textContent = "启动二维码登录";
+          el.cookieMeta.textContent = t("scan.metaQrOnly");
+          el.startLoginWorkflowBtn.textContent = t("scan.startAction");
         }
         el.startLoginWorkflowBtn.disabled = !state.legalAccepted || loginBusy;
       }
@@ -2363,29 +3659,31 @@ export function renderApp(_appOrigin: string, page: AppPage): string {
         if (!session) {
           state.loginSessionId = "";
           state.loginSessionStatus = "";
+          state.lastLoginSession = null;
           el.loginBox.classList.add("hidden");
           el.loginQRImage.classList.add("hidden");
           return;
         }
         state.loginSessionId = session.id || "";
         state.loginSessionStatus = session.status || "";
+        state.lastLoginSession = session;
         el.loginBox.classList.remove("hidden");
         if (session.status === "pending") {
-          el.loginStatus.textContent = "正在生成二维码";
-          el.loginHint.textContent = "通常约 1 分钟内出现二维码，请保持页面开启。";
+          el.loginStatus.textContent = t("scan.generating");
+          el.loginHint.textContent = t("scan.generatingHint");
           el.loginQRImage.classList.add("hidden");
         } else if (session.status === "qr_ready") {
-          el.loginStatus.textContent = "请使用钉钉扫码登录";
-          el.loginHint.textContent = "扫码成功后，钉钉验证会自动绑定到当前账号。";
+          el.loginStatus.textContent = t("scan.readyTitle");
+          el.loginHint.textContent = t("scan.readyHint");
           el.loginQRImage.src = qrImageURL(session.qr_url || "");
           el.loginQRImage.classList.remove("hidden");
         } else if (session.status === "completed") {
-          el.loginStatus.textContent = "钉钉验证完成";
-          el.loginHint.textContent = "二维码登录成功，你现在可以返回下载页面，或随时重新扫码刷新验证态。";
+          el.loginStatus.textContent = t("scan.completedTitle");
+          el.loginHint.textContent = t("scan.completedHint");
           el.loginQRImage.classList.add("hidden");
         } else {
-          el.loginStatus.textContent = "登录失败";
-          el.loginHint.textContent = session.error_message || "登录失败，请重试。";
+          el.loginStatus.textContent = t("scan.failedTitle");
+          el.loginHint.textContent = session.error_message || t("scan.failedFallback");
           el.loginQRImage.classList.add("hidden");
         }
       }
@@ -2403,17 +3701,17 @@ export function renderApp(_appOrigin: string, page: AppPage): string {
           button.classList.toggle("active", Number(button.getAttribute("data-page-size") || 10) === state.jobsPageSize);
         });
         el.jobsPageIndicator.textContent = state.jobsPage + " / " + state.jobsTotalPages;
-        el.jobsPaginationSummary.textContent = "共 " + state.jobsTotal + " 条 · 每页 " + state.jobsPageSize + " 条";
+        el.jobsPaginationSummary.textContent = t("jobs.pageSummary", { total: state.jobsTotal, pageSize: state.jobsPageSize });
         el.jobsPrevBtn.disabled = state.jobsPage <= 1;
         el.jobsNextBtn.disabled = state.jobsPage >= state.jobsTotalPages;
 
         if (jobs.length === 0) {
-          el.jobsDetailList.innerHTML = '<div class="empty">暂无记录</div>';
+          el.jobsDetailList.innerHTML = '<div class="empty">' + escapeHTML(t("jobs.empty")) + '</div>';
           return;
         }
 
         el.jobsDetailList.innerHTML = jobs.map((job) => {
-          const title = job.current_title || (Array.isArray(job.titles) && job.titles[0]) || "下载任务";
+          const title = job.current_title || (Array.isArray(job.titles) && job.titles[0]) || t("jobs.defaultTitle");
           const badgeClass = job.status === "succeeded" ? "ok" : (job.status === "failed" ? "warn" : "active");
           const isExpanded = state.expandedJobId === job.id;
           const files = Array.isArray(job.files) ? job.files : [];
@@ -2428,12 +3726,12 @@ export function renderApp(_appOrigin: string, page: AppPage): string {
             '<span class="badge ' + badgeClass + '">' + escapeHTML(formatStage(job.stage)) + '</span>',
             '</div>',
             isExpanded ? '<div class="job-row-detail"><div class="job-row-detail-grid">' + [
-              '<div class="meta-line">任务 ID：' + escapeHTML(job.id) + '</div>',
-              '<div class="meta-line">创建时间：' + escapeHTML(formatTime(job.created_at)) + '</div>',
+              '<div class="meta-line">' + escapeHTML(t("jobs.jobId", { id: job.id })) + '</div>',
+              '<div class="meta-line">' + escapeHTML(t("jobs.createdAt", { time: formatTime(job.created_at) })) + '</div>',
               files.length ? '<div class="job-inline-files">' + files.map((file) => [
                 '<div class="job-inline-file">',
-                '<div class="file-name">' + escapeHTML(file.name || file.relative_path || "未命名文件") + '</div>',
-                file.download_url ? '<a class="mini-link" href="' + escapeHTML(file.download_url) + '" target="_blank" rel="noreferrer">下载文件</a>' : '<span class="muted">处理中</span>',
+                '<div class="file-name">' + escapeHTML(file.name || file.relative_path || t("jobs.noName")) + '</div>',
+                file.download_url ? '<a class="mini-link" href="' + escapeHTML(file.download_url) + '" target="_blank" rel="noreferrer">' + escapeHTML(t("jobs.downloadFile")) + '</a>' : '<span class="muted">' + escapeHTML(t("jobs.processing")) + '</span>',
                 '</div>',
               ].join("")).join("") + '</div>' : '',
               errors.length ? '<div class="job-inline-errors">' + errors.map(escapeHTML).join("<br/>") + '</div>' : '',
@@ -2460,14 +3758,14 @@ export function renderApp(_appOrigin: string, page: AppPage): string {
       function renderAccountState() {
         if (!el.accountSummary) return;
         if (!state.authenticated || !state.user) {
-          el.accountSummary.textContent = "请先登录。";
+          el.accountSummary.textContent = t("account.pleaseLogin");
           return;
         }
         const status = [];
-        if (!state.legalAccepted) status.push("待同意条款");
-        if (!state.cookiesReady) status.push("待钉钉验证");
-        if (status.length === 0) status.push("状态正常");
-        el.accountSummary.textContent = "当前用户：" + state.user.username + " · " + status.join(" · ");
+        if (!state.legalAccepted) status.push(t("account.statusNeedLegal"));
+        if (!state.cookiesReady) status.push(t("account.statusNeedScan"));
+        if (status.length === 0) status.push(t("account.statusNormal"));
+        el.accountSummary.textContent = t("account.currentUser", { username: state.user.username, status: status.join(" · ") });
       }
 
       function renderAdminUsers(users) {
@@ -2475,20 +3773,20 @@ export function renderApp(_appOrigin: string, page: AppPage): string {
         const records = Array.isArray(users) ? users : [];
         const needingAttention = records.filter((user) => !user.legal_accepted || !user.cookies_ready);
         const normalCount = records.length - needingAttention.length;
-        el.adminUserMeta.textContent = "需要处理 " + needingAttention.length + " 人 · 状态正常 " + normalCount + " 人";
+        el.adminUserMeta.textContent = t("admin.userSummary", { attention: needingAttention.length, normal: normalCount });
 
         if (needingAttention.length === 0) {
-          el.adminUsers.innerHTML = '<div class="empty">当前没有需要处理的用户</div>';
+          el.adminUsers.innerHTML = '<div class="empty">' + escapeHTML(t("admin.userEmpty")) + '</div>';
           return;
         }
 
         el.adminUsers.innerHTML = needingAttention.map((user) => [
           '<section class="admin-user">',
-          '<div class="admin-user-name">' + escapeHTML(user.username) + (user.is_sudo ? ' (sudo)' : '') + '</div>',
-          '<div class="meta-line">注册时间：' + escapeHTML(formatTime(user.created_at)) + '</div>',
-          (!user.legal_accepted ? '<div class="meta-line">待同意条款</div>' : ''),
-          (!user.cookies_ready ? '<div class="meta-line">待钉钉验证</div>' : ''),
-          '<div class="meta-line">任务数：' + escapeHTML(String(user.total_jobs || 0)) + '</div>',
+          '<div class="admin-user-name">' + escapeHTML(user.username) + (user.is_sudo ? escapeHTML(t("admin.userSudoSuffix")) : '') + '</div>',
+          '<div class="meta-line">' + escapeHTML(t("admin.userRegistered", { time: formatTime(user.created_at) })) + '</div>',
+          (!user.legal_accepted ? '<div class="meta-line">' + escapeHTML(t("admin.userNeedLegal")) + '</div>' : ''),
+          (!user.cookies_ready ? '<div class="meta-line">' + escapeHTML(t("admin.userNeedScan")) + '</div>' : ''),
+          '<div class="meta-line">' + escapeHTML(t("admin.userTasks", { count: String(user.total_jobs || 0) })) + '</div>',
           '</section>',
         ].join("")).join("");
       }
@@ -2498,7 +3796,7 @@ export function renderApp(_appOrigin: string, page: AppPage): string {
           el.adminLegalText.value = text || "";
         }
         if (el.adminLegalMeta) {
-          el.adminLegalMeta.textContent = version ? ("当前版本：" + version + "。保存后所有用户需要重新同意。") : "";
+          el.adminLegalMeta.textContent = version ? t("admin.legalVersion", { version }) : "";
         }
       }
 
@@ -2506,10 +3804,13 @@ export function renderApp(_appOrigin: string, page: AppPage): string {
         if (!el.adminStorageList || !el.adminStorageMeta) return;
         const items = Array.isArray(state.adminStorageItems) ? state.adminStorageItems : [];
         const prefix = String(state.adminStoragePrefix || "").trim();
-        el.adminStorageMeta.textContent = (prefix ? ("前缀：" + prefix + " · ") : "") + "当前已加载 " + items.length + " 个对象";
+        el.adminStorageMeta.textContent = t("admin.storageMeta", {
+          prefix: prefix ? t("admin.storagePrefixMeta", { prefix }) : "",
+          count: items.length,
+        });
 
         if (items.length === 0) {
-          el.adminStorageList.innerHTML = '<div class="empty">当前没有匹配的 R2 文件</div>';
+          el.adminStorageList.innerHTML = '<div class="empty">' + escapeHTML(t("admin.storageEmpty")) + '</div>';
         } else {
           el.adminStorageList.innerHTML = items.map((item) => {
             const names = Array.isArray(item.names) ? item.names : [];
@@ -2522,15 +3823,15 @@ export function renderApp(_appOrigin: string, page: AppPage): string {
               '<div class="storage-name">' + escapeHTML(names[0] || item.key) + '</div>',
               '<div class="storage-key">' + escapeHTML(item.key || "-") + '</div>',
               '</div>',
-              item.download_url ? '<a class="button-link primary" href="' + escapeHTML(item.download_url) + '" target="_blank" rel="noreferrer">下载文件</a>' : '',
+              item.download_url ? '<a class="button-link primary" href="' + escapeHTML(item.download_url) + '" target="_blank" rel="noreferrer">' + escapeHTML(t("admin.downloadFile")) + '</a>' : '',
               '</div>',
               '<div class="storage-meta-grid">',
-              '<span><strong>大小</strong> ' + escapeHTML(formatBytes(item.size)) + '</span>',
-              '<span><strong>上传时间</strong> ' + escapeHTML(formatTime(item.uploaded_at)) + '</span>',
-              '<span><strong>引用</strong> ' + escapeHTML(String(item.refs || 0)) + '</span>',
+              '<span><strong>' + escapeHTML(t("admin.storageSize")) + '</strong> ' + escapeHTML(formatBytes(item.size)) + '</span>',
+              '<span><strong>' + escapeHTML(t("admin.storageUploadedAt")) + '</strong> ' + escapeHTML(formatTime(item.uploaded_at)) + '</span>',
+              '<span><strong>' + escapeHTML(t("admin.storageRefs")) + '</strong> ' + escapeHTML(String(item.refs || 0)) + '</span>',
               '</div>',
               owners.length ? '<div class="storage-tags">' + owners.slice(0, 6).map((owner) => '<span class="storage-tag">' + escapeHTML(owner) + '</span>').join("") + '</div>' : '',
-              extraNames.length ? '<div class="meta-line">别名：' + extraNames.map(escapeHTML).join(" / ") + '</div>' : '',
+              extraNames.length ? '<div class="meta-line">' + escapeHTML(t("admin.storageAliases", { names: extraNames.join(" / ") })) + '</div>' : '',
               '</section>',
             ].join("");
           }).join("");
@@ -2562,7 +3863,7 @@ export function renderApp(_appOrigin: string, page: AppPage): string {
           }
 
           if (PAGE === "login" && el.registerCardHint) {
-            el.registerCardHint.textContent = state.registrationOpen ? "注册成功后将直接进入条款确认" : "当前未开放注册";
+            el.registerCardHint.textContent = state.registrationOpen ? t("auth.registerHintOpen") : t("auth.registerHintClosed");
           }
           if (PAGE === "login" && el.authTabRegister && el.registerFormPanel) {
             if (state.registrationOpen) {
@@ -2681,7 +3982,7 @@ export function renderApp(_appOrigin: string, page: AppPage): string {
         const password = (el.registerPassword ? el.registerPassword.value : "").trim();
         const confirmPassword = (el.registerPasswordConfirm ? el.registerPasswordConfirm.value : "").trim();
         if (password !== confirmPassword) {
-          return Promise.reject(new Error("两次输入的密码不一致"));
+          return Promise.reject(new Error(t("error.passwordMismatch")));
         }
         return request("/api/auth/register", {
           method: "POST",
@@ -2712,14 +4013,14 @@ export function renderApp(_appOrigin: string, page: AppPage): string {
         return request("/api/login-workflow", { method: "POST", body: JSON.stringify({}) }).then((payload) => {
           renderLoginSession(payload);
           renderScanState();
-          setNotice(payload.message || "二维码登录已启动。", "ok");
+          setNotice(payload.message || t("notice.loginWorkflowStarted"), "ok");
         });
       }
 
       function createJob() {
         const urls = (el.urls ? el.urls.value : "").split("\\n").map((item) => item.trim()).filter(Boolean);
         if (urls.length === 0) {
-          return Promise.reject(new Error("请先填入回放链接"));
+          return Promise.reject(new Error(t("error.needUrls")));
         }
         return urls.reduce((chain, url) => {
           return chain.then((jobIDs) => {
@@ -2732,7 +4033,7 @@ export function renderApp(_appOrigin: string, page: AppPage): string {
             });
           });
         }, Promise.resolve([])).then((jobIDs) => {
-          setNotice(jobIDs.length === 1 ? ("任务已创建：" + jobIDs[0]) : ("已创建 " + jobIDs.length + " 个任务。"), "ok");
+          setNotice(jobIDs.length === 1 ? t("notice.jobCreatedOne", { id: jobIDs[0] }) : t("notice.jobCreatedMany", { count: jobIDs.length }), "ok");
           return refreshOverviewData();
         });
       }
@@ -2742,7 +4043,7 @@ export function renderApp(_appOrigin: string, page: AppPage): string {
         const newPassword = (el.newPassword ? el.newPassword.value : "").trim();
         const confirmPassword = (el.confirmNewPassword ? el.confirmNewPassword.value : "").trim();
         if (newPassword !== confirmPassword) {
-          return Promise.reject(new Error("两次输入的新密码不一致"));
+          return Promise.reject(new Error(t("error.passwordMismatch")));
         }
         return request("/api/auth/password", {
           method: "POST",
@@ -2751,14 +4052,14 @@ export function renderApp(_appOrigin: string, page: AppPage): string {
           if (el.currentPassword) el.currentPassword.value = "";
           if (el.newPassword) el.newPassword.value = "";
           if (el.confirmNewPassword) el.confirmNewPassword.value = "";
-          setNotice(payload.message || "密码已更新。", "ok");
+          setNotice(payload.message || t("notice.passwordUpdated"), "ok");
         });
       }
 
       function saveAdminLegal() {
         const text = el.adminLegalText ? String(el.adminLegalText.value || "").trim() : "";
         if (!text) {
-          return Promise.reject(new Error("条款内容不能为空"));
+          return Promise.reject(new Error(t("error.legalEmpty")));
         }
         return request("/api/admin/legal", {
           method: "POST",
@@ -2766,13 +4067,15 @@ export function renderApp(_appOrigin: string, page: AppPage): string {
         }).then((payload) => {
           state.adminLegalDirty = false;
           renderAdminLegal(payload.version || "", payload.text || text, true);
-          setNotice("条款已更新，所有用户需要重新同意。", "ok");
+          setNotice(t("notice.legalUpdated"), "ok");
         });
       }
 
       function bindEvents() {
+        applyTranslations();
         setupSidebar();
         setupUserMenu();
+        setupLocaleMenu();
         setupPageTransitions();
         switchAuthTab("login");
 

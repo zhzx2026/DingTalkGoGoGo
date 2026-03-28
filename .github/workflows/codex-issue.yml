@@ -1,0 +1,166 @@
+name: Codex 处理 Issue
+
+on:
+  issues:
+    types:
+      - opened
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+  actions: write
+
+jobs:
+  codex-issue:
+    if: ${{ github.event.issue.user.type != 'Bot' && github.actor != 'github-actions[bot]' }}
+    runs-on: ubuntu-latest
+    env:
+      ISSUE_NUMBER: ${{ github.event.issue.number }}
+      ISSUE_TITLE: ${{ github.event.issue.title }}
+      ISSUE_BODY: ${{ github.event.issue.body }}
+      BASE_BRANCH: ${{ github.event.repository.default_branch }}
+    steps:
+      - name: 检出默认分支
+        uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+
+      - name: 生成分支名
+        id: branch
+        shell: bash
+        run: |
+          slug="$(printf '%s' "${ISSUE_TITLE}" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9]\+/-/g; s/^-//; s/-$//; s/-\{2,\}/-/g' | cut -c1-40)"
+          if [ -z "${slug}" ]; then
+            slug="issue"
+          fi
+          echo "branch=codex/issue-${ISSUE_NUMBER}-${slug}" >> "$GITHUB_OUTPUT"
+
+      - name: 运行 Codex 修改代码
+        id: codex
+        uses: openai/codex-action@v1
+        with:
+          openai-api-key: ${{ secrets.OPENAI_API_KEY }}
+          responses-api-endpoint: ${{ secrets.CODEX_RESPONSES_API_ENDPOINT }}
+          sandbox: workspace-write
+          prompt: |
+            你正在处理 GitHub Issue #${{ github.event.issue.number }}，仓库是 `${{ github.repository }}`。
+
+            Issue 标题：
+            ${{ github.event.issue.title }}
+
+            Issue 正文：
+            ${{ github.event.issue.body }}
+
+            任务要求：
+            1. 直接在仓库里实现 issue 描述对应的改动。
+            2. 尽量保持改动聚焦，不要顺手改无关内容。
+            3. 如果 issue 信息不完整，做最小且合理的假设。
+            4. 不要自己提交、推送或创建 PR，后续步骤会处理。
+            5. 最终输出简短总结，说明做了什么、是否有测试或未完成项。
+
+      - name: 判断是否有代码变更
+        id: changes
+        shell: bash
+        run: |
+          if [ -n "$(git status --porcelain)" ]; then
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: 无代码变更时回帖
+        if: ${{ steps.changes.outputs.changed != 'true' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          CODEX_RESULT: ${{ steps.codex.outputs.final-message }}
+        shell: bash
+        run: |
+          {
+            printf '%s\n' 'Codex 已处理这个 Issue，但没有生成需要提交的代码改动。'
+            printf '\n'
+            printf '%s\n' "${CODEX_RESULT}"
+          } > /tmp/codex-issue-no-change.md
+          gh issue comment "${ISSUE_NUMBER}" --repo "${GITHUB_REPOSITORY}" --body-file /tmp/codex-issue-no-change.md
+
+      - name: 配置 Git 提交身份
+        if: ${{ steps.changes.outputs.changed == 'true' }}
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: 提交并推送 Codex 改动
+        if: ${{ steps.changes.outputs.changed == 'true' }}
+        env:
+          BRANCH_NAME: ${{ steps.branch.outputs.branch }}
+        shell: bash
+        run: |
+          git switch -c "${BRANCH_NAME}"
+          git add -A
+          git commit -m "codex: resolve issue #${ISSUE_NUMBER}"
+          git push --set-upstream origin "${BRANCH_NAME}"
+
+      - name: 创建 PR
+        if: ${{ steps.changes.outputs.changed == 'true' }}
+        id: pr
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BRANCH_NAME: ${{ steps.branch.outputs.branch }}
+          CODEX_RESULT: ${{ steps.codex.outputs.final-message }}
+        shell: bash
+        run: |
+          {
+            printf '%s\n' "自动根据 Issue #${ISSUE_NUMBER} 生成的改动。"
+            printf '\n'
+            printf '%s\n' '原始 Issue 标题：'
+            printf '%s\n' "${ISSUE_TITLE}"
+            printf '\n'
+            printf '%s\n' 'Codex 摘要：'
+            printf '%s\n' "${CODEX_RESULT}"
+          } > /tmp/codex-pr-body.md
+
+          pr_url="$(gh pr create \
+            --repo "${GITHUB_REPOSITORY}" \
+            --base "${BASE_BRANCH}" \
+            --head "${BRANCH_NAME}" \
+            --title "Codex: #${ISSUE_NUMBER} ${ISSUE_TITLE}" \
+            --body-file /tmp/codex-pr-body.md)"
+
+          pr_number="$(gh pr view "${BRANCH_NAME}" --repo "${GITHUB_REPOSITORY}" --json number --jq '.number')"
+
+          echo "url=${pr_url}" >> "$GITHUB_OUTPUT"
+          echo "number=${pr_number}" >> "$GITHUB_OUTPUT"
+
+      - name: 触发独立 PR 审核 Workflow
+        if: ${{ steps.changes.outputs.changed == 'true' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ steps.pr.outputs.number }}
+        shell: bash
+        run: |
+          gh api \
+            --method POST \
+            "repos/${GITHUB_REPOSITORY}/actions/workflows/codex-pr-review.yml/dispatches" \
+            -f ref="${BASE_BRANCH}" \
+            -f inputs[pull_request_number]="${PR_NUMBER}"
+
+      - name: 回帖说明 PR 已创建
+        if: ${{ steps.changes.outputs.changed == 'true' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_URL: ${{ steps.pr.outputs.url }}
+          PR_NUMBER: ${{ steps.pr.outputs.number }}
+          CODEX_RESULT: ${{ steps.codex.outputs.final-message }}
+        shell: bash
+        run: |
+          {
+            printf '%s\n' "Codex 已根据这个 Issue 完成改动并创建 PR：${PR_URL}"
+            printf '\n'
+            printf '%s\n' "- PR 编号: #${PR_NUMBER}"
+            printf '%s\n' '- 后续会由独立的 Codex PR 审核 Workflow 继续检查'
+            printf '\n'
+            printf '%s\n' 'Codex 摘要：'
+            printf '%s\n' "${CODEX_RESULT}"
+          } > /tmp/codex-issue-success.md
+          gh issue comment "${ISSUE_NUMBER}" --repo "${GITHUB_REPOSITORY}" --body-file /tmp/codex-issue-success.md
