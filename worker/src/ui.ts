@@ -271,15 +271,52 @@ function renderOverviewPage(): string {
           </div>
         </section>
 
-        <aside class="card">
-          <div class="section-head">
-            <div>
-              <div class="eyebrow">Recent</div>
-              <h2>近 10 条记录</h2>
+        <aside class="overview-side-stack">
+          <section class="card">
+            <div class="section-head">
+              <div>
+                <div class="eyebrow">Recent</div>
+                <h2>近 10 条记录</h2>
+              </div>
+              <a data-page-link href="/jobs" class="mini-link">详细记录</a>
             </div>
-            <a data-page-link href="/jobs" class="mini-link">详细记录</a>
-          </div>
-          <div id="recent-records" class="recent-list"><div class="empty">暂无记录</div></div>
+            <div id="recent-records" class="recent-list"><div class="empty">暂无记录</div></div>
+          </section>
+
+          <section class="card quick-actions-card">
+            <div class="section-head">
+              <div>
+                <div class="eyebrow">Quick Actions</div>
+                <h2>快捷操作</h2>
+              </div>
+            </div>
+            <div class="quick-actions-list">
+              <a data-page-link href="/scan" class="quick-action-item">
+                <span class="quick-action-icon">⌁</span>
+                <span class="quick-action-copy">
+                  <strong>钉钉验证</strong>
+                  <small>重新扫码刷新验证状态</small>
+                </span>
+                <span class="quick-action-arrow">›</span>
+              </a>
+              <a data-page-link href="/jobs" class="quick-action-item">
+                <span class="quick-action-icon">☷</span>
+                <span class="quick-action-copy">
+                  <strong>查看记录</strong>
+                  <small>进入详细任务列表</small>
+                </span>
+                <span class="quick-action-arrow">›</span>
+              </a>
+              <a data-page-link href="/account" class="quick-action-item">
+                <span class="quick-action-icon">◌</span>
+                <span class="quick-action-copy">
+                  <strong>账号设置</strong>
+                  <small>修改密码与退出登录</small>
+                </span>
+                <span class="quick-action-arrow">›</span>
+              </a>
+            </div>
+          </section>
         </aside>
       </section>`;
 }
@@ -524,13 +561,13 @@ export function renderApp(_appOrigin: string, page: AppPage): string {
     <title>GoDingtalk</title>
     <style>
       :root {
-        --bg: #f6f8fb;
+        --bg: #f9fafb;
         --sidebar-bg: #ffffff;
         --surface: #ffffff;
-        --surface-soft: #f9fbfe;
-        --line: #e4e9f0;
-        --line-strong: #ccd6e3;
-        --text: #101828;
+        --surface-soft: #f8fafc;
+        --line: #e5e7eb;
+        --line-strong: #d1d5db;
+        --text: #111827;
         --muted: #6b7280;
         --accent: #12a594;
         --accent-strong: #0e8b7d;
@@ -546,8 +583,8 @@ export function renderApp(_appOrigin: string, page: AppPage): string {
         --radius-lg: 16px;
         --radius-md: 12px;
         --radius-sm: 10px;
-        --sidebar-width: 252px;
-        --sidebar-collapsed-width: 74px;
+        --sidebar-width: 256px;
+        --sidebar-collapsed-width: 72px;
       }
       * { box-sizing: border-box; }
       html, body {
@@ -586,8 +623,8 @@ export function renderApp(_appOrigin: string, page: AppPage): string {
         display: flex;
         align-items: center;
         min-height: 64px;
-        padding: 0 16px;
-        border-bottom: 1px solid #f0f3f8;
+        padding: 0 18px;
+        border-bottom: 1px solid #f3f4f6;
       }
       .sidebar-brand {
         display: flex;
@@ -619,7 +656,7 @@ export function renderApp(_appOrigin: string, page: AppPage): string {
         display: block;
         margin-top: 4px;
         color: var(--muted);
-        font-size: 11px;
+        font-size: 10px;
         letter-spacing: 0.04em;
         text-transform: uppercase;
       }
@@ -632,10 +669,10 @@ export function renderApp(_appOrigin: string, page: AppPage): string {
         display: grid;
         gap: 6px;
         align-content: start;
-        padding: 10px;
+        padding: 12px;
       }
       .nav-item {
-        min-height: 44px;
+        min-height: 42px;
         border-radius: 12px;
         display: grid;
         grid-template-columns: 22px minmax(0, 1fr);
@@ -643,8 +680,8 @@ export function renderApp(_appOrigin: string, page: AppPage): string {
         gap: 10px;
         padding: 0 12px;
         color: #374151;
-        font-size: 15px;
-        font-weight: 700;
+        font-size: 14px;
+        font-weight: 600;
         text-decoration: none;
         border: 1px solid transparent;
         transition: background 140ms ease, border-color 140ms ease, color 140ms ease;
@@ -686,8 +723,8 @@ export function renderApp(_appOrigin: string, page: AppPage): string {
       .sidebar-foot {
         display: grid;
         gap: 8px;
-        border-top: 1px solid #f0f3f8;
-        padding: 12px 10px 14px;
+        border-top: 1px solid #f3f4f6;
+        padding: 12px 12px 14px;
       }
       .sidebar-ghost {
         min-height: 38px;
@@ -729,9 +766,10 @@ export function renderApp(_appOrigin: string, page: AppPage): string {
         align-items: center;
         justify-content: space-between;
         gap: 18px;
-        margin: -18px -20px 14px;
+        margin: -18px -20px 16px;
         padding: 12px 20px;
-        border-bottom: 1px solid #e5eaf1;
+        min-height: 64px;
+        border-bottom: 1px solid #e5e7eb;
         background: rgba(255, 255, 255, 0.84);
         backdrop-filter: blur(8px);
       }
@@ -740,14 +778,15 @@ export function renderApp(_appOrigin: string, page: AppPage): string {
       }
       .topbar-copy h1 {
         margin: 0;
-        font-size: 28px;
-        line-height: 1.18;
+        font-size: 18px;
+        line-height: 1.22;
         letter-spacing: -0.02em;
+        font-weight: 600;
       }
       .topbar-copy p {
-        margin: 2px 0 0;
+        margin: 3px 0 0;
         color: var(--muted);
-        font-size: 12px;
+        font-size: 11px;
         line-height: 1.35;
       }
       .topbar-actions {
@@ -895,25 +934,25 @@ export function renderApp(_appOrigin: string, page: AppPage): string {
       .metric-grid {
         display: grid;
         grid-template-columns: repeat(4, minmax(0, 1fr));
-        gap: 12px;
+        gap: 14px;
         margin-top: 14px;
       }
       .metric-card {
         background: var(--surface);
         border: 1px solid var(--line);
-        border-radius: 14px;
+        border-radius: 16px;
         box-shadow: 0 1px 2px rgba(15, 23, 42, 0.03);
-        padding: 12px 14px;
+        padding: 14px 16px;
         display: grid;
-        grid-template-columns: 42px minmax(0, 1fr);
-        gap: 10px;
+        grid-template-columns: 44px minmax(0, 1fr);
+        gap: 12px;
         align-items: center;
-        min-height: 88px;
+        min-height: 96px;
       }
       .metric-icon {
-        width: 36px;
-        height: 36px;
-        border-radius: 10px;
+        width: 38px;
+        height: 38px;
+        border-radius: 12px;
         display: inline-flex;
         align-items: center;
         justify-content: center;
@@ -932,7 +971,7 @@ export function renderApp(_appOrigin: string, page: AppPage): string {
       .metric-copy strong {
         display: block;
         margin-top: 3px;
-        font-size: 22px;
+        font-size: 27px;
         line-height: 1.1;
       }
       .metric-copy small {
@@ -950,7 +989,7 @@ export function renderApp(_appOrigin: string, page: AppPage): string {
         margin-top: 14px;
         background: var(--surface);
         border: 1px solid var(--line);
-        border-radius: 14px;
+        border-radius: 16px;
         box-shadow: 0 1px 2px rgba(15, 23, 42, 0.03);
       }
       .toolbar-group {
@@ -1014,7 +1053,7 @@ export function renderApp(_appOrigin: string, page: AppPage): string {
       .records-card {
         background: var(--surface);
         border: 1px solid var(--line);
-        border-radius: 14px;
+        border-radius: 16px;
         box-shadow: 0 1px 2px rgba(15, 23, 42, 0.03);
         padding: 16px;
       }
@@ -1128,12 +1167,16 @@ export function renderApp(_appOrigin: string, page: AppPage): string {
         gap: 14px;
         margin-top: 14px;
       }
+      .overview-side-stack {
+        display: grid;
+        gap: 14px;
+      }
       .work-card,
       .scan-main-card,
       .scan-side-card {
         background: var(--surface);
         border: 1px solid var(--line);
-        border-radius: 14px;
+        border-radius: 16px;
         box-shadow: 0 1px 2px rgba(15, 23, 42, 0.03);
         padding: 16px;
       }
@@ -1189,7 +1232,7 @@ export function renderApp(_appOrigin: string, page: AppPage): string {
         gap: 10px;
         align-items: center;
         padding: 0 14px;
-        border-radius: 12px;
+        border-radius: 14px;
         background: #f8fafc;
         border: 1px solid var(--line);
         transition: background 120ms ease, border-color 120ms ease;
@@ -1201,7 +1244,7 @@ export function renderApp(_appOrigin: string, page: AppPage): string {
       .recent-icon {
         width: 36px;
         height: 36px;
-        border-radius: 10px;
+        border-radius: 12px;
         display: inline-flex;
         align-items: center;
         justify-content: center;
@@ -1217,7 +1260,7 @@ export function renderApp(_appOrigin: string, page: AppPage): string {
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
-        font-size: 15px;
+        font-size: 14px;
         font-weight: 700;
       }
       .recent-subtitle {
@@ -1355,9 +1398,65 @@ export function renderApp(_appOrigin: string, page: AppPage): string {
         margin-top: 16px;
         background: var(--surface);
         border: 1px solid var(--line);
-        border-radius: 14px;
+        border-radius: 16px;
         box-shadow: 0 1px 2px rgba(15, 23, 42, 0.03);
         padding: 16px;
+      }
+      .quick-actions-card {
+        padding: 14px;
+      }
+      .quick-actions-list {
+        margin-top: 8px;
+        display: grid;
+        gap: 8px;
+      }
+      .quick-action-item {
+        min-height: 72px;
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        background: #f8fafc;
+        display: grid;
+        grid-template-columns: 38px minmax(0, 1fr) 18px;
+        align-items: center;
+        gap: 10px;
+        padding: 0 12px;
+        text-decoration: none;
+        transition: background 120ms ease, border-color 120ms ease;
+      }
+      .quick-action-item:hover {
+        background: #ffffff;
+        border-color: var(--line-strong);
+      }
+      .quick-action-icon {
+        width: 34px;
+        height: 34px;
+        border-radius: 12px;
+        background: rgba(18,165,148,0.14);
+        color: var(--accent);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 14px;
+        font-weight: 900;
+      }
+      .quick-action-copy {
+        min-width: 0;
+        display: grid;
+        gap: 2px;
+      }
+      .quick-action-copy strong {
+        font-size: 14px;
+        line-height: 1.2;
+      }
+      .quick-action-copy small {
+        color: var(--muted);
+        font-size: 11px;
+        line-height: 1.3;
+      }
+      .quick-action-arrow {
+        color: #98a2b3;
+        font-size: 18px;
+        font-weight: 700;
       }
       .records-toolbar,
       .records-footer {
