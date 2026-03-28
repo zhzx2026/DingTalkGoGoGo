@@ -994,8 +994,14 @@ export function renderApp(_appOrigin: string, page: AppPage): string {
       }
       .button-link:disabled,
       .size-chip:disabled {
-        opacity: 0.62;
-        cursor: wait;
+        opacity: 0.55;
+        cursor: not-allowed;
+        box-shadow: none;
+      }
+      .select-chip.active {
+        border-color: rgba(18,165,148,0.35);
+        background: rgba(18,165,148,0.08);
+        color: var(--accent-strong);
       }
       .analytics-grid {
         display: grid;
@@ -1349,9 +1355,9 @@ export function renderApp(_appOrigin: string, page: AppPage): string {
         margin-top: 16px;
         background: var(--surface);
         border: 1px solid var(--line);
-        border-radius: 24px;
-        box-shadow: var(--shadow);
-        padding: 18px;
+        border-radius: 14px;
+        box-shadow: 0 1px 2px rgba(15, 23, 42, 0.03);
+        padding: 16px;
       }
       .records-toolbar,
       .records-footer {
@@ -1545,9 +1551,6 @@ export function renderApp(_appOrigin: string, page: AppPage): string {
         }
       }
       @media (max-width: 980px) {
-        .app {
-          grid-template-columns: 1fr;
-        }
         .sidebar {
           grid-template-rows: auto;
         }
@@ -1568,8 +1571,7 @@ export function renderApp(_appOrigin: string, page: AppPage): string {
         .sidebar-nav {
           grid-template-columns: 1fr;
         }
-        .main,
-        .sidebar {
+        .main {
           padding-left: 14px;
           padding-right: 14px;
         }
@@ -2029,9 +2031,11 @@ export function renderApp(_appOrigin: string, page: AppPage): string {
       function renderOverviewToolbar() {
         if (el.overviewRangeBtn) {
           el.overviewRangeBtn.textContent = state.overviewRangeDays === 30 ? "近 30 天" : "近 7 天";
+          el.overviewRangeBtn.classList.toggle("active", state.overviewRangeDays === 30);
         }
         if (el.overviewGranularityBtn) {
           el.overviewGranularityBtn.textContent = state.overviewGranularity === "hour" ? "按小时" : "按天";
+          el.overviewGranularityBtn.classList.toggle("active", state.overviewGranularity === "hour");
         }
         if (el.overviewTrendTitle) {
           if (state.overviewGranularity === "hour") {
