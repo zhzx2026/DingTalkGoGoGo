@@ -25,6 +25,37 @@ jobs:
       final_message: ${{ steps.codex.outputs.final-message }}
       pr_number: ${{ steps.meta.outputs.pr_number }}
     steps:
+      - name: 检查 Codex Secret
+        shell: bash
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        run: |
+          if [ -z "${OPENAI_API_KEY}" ]; then
+            echo "::error::缺少 OPENAI_API_KEY secret，无法启动 Codex。"
+            exit 1
+          fi
+
+      - name: 解析 Codex Responses 端点
+        id: codex_endpoint
+        shell: bash
+        env:
+          RAW_ENDPOINT: ${{ secrets.CODEX_RESPONSES_API_ENDPOINT }}
+        run: |
+          endpoint="$(printf '%s' "${RAW_ENDPOINT}" | tr -d '[:space:]')"
+          if [ -z "${endpoint}" ]; then
+            echo "endpoint=" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          endpoint="${endpoint%/}"
+          case "${endpoint}" in
+            */v1/responses) ;;
+            */v1) endpoint="${endpoint}/responses" ;;
+            *) endpoint="${endpoint}/v1/responses" ;;
+          esac
+
+          echo "endpoint=${endpoint}" >> "$GITHUB_OUTPUT"
+
       - name: 解析 PR 元数据
         id: meta
         env:
@@ -71,10 +102,12 @@ jobs:
         uses: openai/codex-action@v1
         with:
           openai-api-key: ${{ secrets.OPENAI_API_KEY }}
-          responses-api-endpoint: ${{ secrets.CODEX_RESPONSES_API_ENDPOINT }}
+          responses-api-endpoint: ${{ steps.codex_endpoint.outputs.endpoint }}
           sandbox: read-only
           safety-strategy: read-only
           allow-bots: true
+          model: gpt-5.4
+          effort: xhigh
           prompt: |
             你正在审核 GitHub Pull Request #${{ steps.meta.outputs.pr_number }}，仓库是 `${{ github.repository }}`。
 

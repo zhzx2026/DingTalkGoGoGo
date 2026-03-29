@@ -4,6 +4,12 @@ on:
   issues:
     types:
       - opened
+  workflow_dispatch:
+    inputs:
+      issue_number:
+        description: 需要处理的 Issue 编号
+        required: true
+        type: string
 
 permissions:
   contents: write
@@ -13,18 +19,82 @@ permissions:
 
 jobs:
   codex-issue:
-    if: ${{ github.event.issue.user.type != 'Bot' && github.actor != 'github-actions[bot]' }}
+    if: ${{ github.event_name != 'issues' || (github.event.issue.user.type != 'Bot' && github.actor != 'github-actions[bot]') }}
     runs-on: ubuntu-latest
     env:
-      ISSUE_NUMBER: ${{ github.event.issue.number }}
-      ISSUE_TITLE: ${{ github.event.issue.title }}
-      ISSUE_BODY: ${{ github.event.issue.body }}
       BASE_BRANCH: ${{ github.event.repository.default_branch }}
     steps:
+      - name: 解析 Issue 元数据
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          INPUT_ISSUE_NUMBER: ${{ inputs.issue_number }}
+          EVENT_ISSUE_NUMBER: ${{ github.event.issue.number }}
+          EVENT_ISSUE_TITLE: ${{ github.event.issue.title }}
+          EVENT_ISSUE_BODY: ${{ github.event.issue.body }}
+        run: |
+          if [ "${GITHUB_EVENT_NAME}" = "issues" ]; then
+            issue_number="${EVENT_ISSUE_NUMBER}"
+            issue_title="${EVENT_ISSUE_TITLE}"
+            issue_body="${EVENT_ISSUE_BODY}"
+          else
+            issue_number="${INPUT_ISSUE_NUMBER}"
+            gh api "repos/${GITHUB_REPOSITORY}/issues/${issue_number}" > /tmp/issue.json
+            issue_title="$(jq -r '.title' /tmp/issue.json)"
+            issue_body="$(jq -r '.body // ""' /tmp/issue.json)"
+            issue_user_type="$(jq -r '.user.type' /tmp/issue.json)"
+            issue_user_login="$(jq -r '.user.login' /tmp/issue.json)"
+            if [ "${issue_user_type}" = "Bot" ] || [ "${issue_user_login}" = "github-actions[bot]" ]; then
+              echo "::error::不允许手动处理 bot issue。"
+              exit 1
+            fi
+          fi
+
+          {
+            echo "ISSUE_NUMBER=${issue_number}"
+            echo "ISSUE_TITLE<<EOF"
+            printf '%s\n' "${issue_title}"
+            echo "EOF"
+            echo "ISSUE_BODY<<EOF"
+            printf '%s\n' "${issue_body}"
+            echo "EOF"
+          } >> "$GITHUB_ENV"
+
       - name: 检出默认分支
         uses: actions/checkout@v5
         with:
           ref: ${{ github.event.repository.default_branch }}
+
+      - name: 检查 Codex Secret
+        shell: bash
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        run: |
+          if [ -z "${OPENAI_API_KEY}" ]; then
+            echo "::error::缺少 OPENAI_API_KEY secret，无法启动 Codex。"
+            exit 1
+          fi
+
+      - name: 解析 Codex Responses 端点
+        id: codex_endpoint
+        shell: bash
+        env:
+          RAW_ENDPOINT: ${{ secrets.CODEX_RESPONSES_API_ENDPOINT }}
+        run: |
+          endpoint="$(printf '%s' "${RAW_ENDPOINT}" | tr -d '[:space:]')"
+          if [ -z "${endpoint}" ]; then
+            echo "endpoint=" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          endpoint="${endpoint%/}"
+          case "${endpoint}" in
+            */v1/responses) ;;
+            */v1) endpoint="${endpoint}/responses" ;;
+            *) endpoint="${endpoint}/v1/responses" ;;
+          esac
+
+          echo "endpoint=${endpoint}" >> "$GITHUB_OUTPUT"
 
       - name: 生成分支名
         id: branch
@@ -41,8 +111,10 @@ jobs:
         uses: openai/codex-action@v1
         with:
           openai-api-key: ${{ secrets.OPENAI_API_KEY }}
-          responses-api-endpoint: ${{ secrets.CODEX_RESPONSES_API_ENDPOINT }}
+          responses-api-endpoint: ${{ steps.codex_endpoint.outputs.endpoint }}
           sandbox: workspace-write
+          model: gpt-5.4
+          effort: xhigh
           prompt: |
             你正在处理 GitHub Issue #${{ github.event.issue.number }}，仓库是 `${{ github.repository }}`。
 
