@@ -69,32 +69,61 @@ jobs:
         shell: bash
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          CODEX_ENDPOINT: ${{ secrets.CODEX_RESPONSES_API_ENDPOINT }}
         run: |
           if [ -z "${OPENAI_API_KEY}" ]; then
             echo "::error::缺少 OPENAI_API_KEY secret，无法启动 Codex。"
             exit 1
           fi
-
-      - name: 解析 Codex Responses 端点
-        id: codex_endpoint
-        shell: bash
-        env:
-          RAW_ENDPOINT: ${{ secrets.CODEX_RESPONSES_API_ENDPOINT }}
-        run: |
-          endpoint="$(printf '%s' "${RAW_ENDPOINT}" | tr -d '[:space:]')"
-          if [ -z "${endpoint}" ]; then
-            echo "endpoint=" >> "$GITHUB_OUTPUT"
-            exit 0
+          if [ -z "${CODEX_ENDPOINT}" ]; then
+            echo "::error::缺少 CODEX_RESPONSES_API_ENDPOINT secret，无法连接自定义 Codex 端点。"
+            exit 1
           fi
 
-          endpoint="${endpoint%/}"
-          case "${endpoint}" in
-            */v1/responses) ;;
-            */v1) endpoint="${endpoint}/responses" ;;
-            *) endpoint="${endpoint}/v1/responses" ;;
-          esac
+      - name: 配置 Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
 
-          echo "endpoint=${endpoint}" >> "$GITHUB_OUTPUT"
+      - name: 安装 Codex CLI
+        shell: bash
+        run: npm install -g @openai/codex
+
+      - name: 生成 Codex 配置
+        shell: bash
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          RAW_ENDPOINT: ${{ secrets.CODEX_RESPONSES_API_ENDPOINT }}
+        run: |
+          base_url="$(printf '%s' "${RAW_ENDPOINT}" | tr -d '[:space:]')"
+          base_url="${base_url%/}"
+
+          export CODEX_HOME_DIR="${RUNNER_TEMP}/codex-home"
+          mkdir -p "${CODEX_HOME_DIR}"
+
+          cat > "${CODEX_HOME_DIR}/config.toml" <<EOF
+          model_provider = "OpenAI"
+          model = "gpt-5.4"
+          review_model = "gpt-5.4"
+          model_reasoning_effort = "xhigh"
+          disable_response_storage = true
+          network_access = "enabled"
+          model_context_window = 1000000
+          model_auto_compact_token_limit = 900000
+
+          [model_providers.OpenAI]
+          name = "OpenAI"
+          base_url = "${base_url}"
+          wire_api = "responses"
+          requires_openai_auth = true
+          EOF
+
+          cat > "${CODEX_HOME_DIR}/auth.json" <<EOF
+          {"OPENAI_API_KEY":"${OPENAI_API_KEY}"}
+          EOF
+
+          chmod 600 "${CODEX_HOME_DIR}/auth.json"
+          echo "CODEX_HOME=${CODEX_HOME_DIR}" >> "$GITHUB_ENV"
 
       - name: 生成分支名
         id: branch
@@ -106,30 +135,46 @@ jobs:
           fi
           echo "branch=codex/issue-${ISSUE_NUMBER}-${slug}" >> "$GITHUB_OUTPUT"
 
+      - name: 生成 Codex Prompt 文件
+        shell: bash
+        run: |
+          mkdir -p .codex-tmp
+          {
+            printf '%s\n' "你正在处理 GitHub Issue #${ISSUE_NUMBER}，仓库是 \`${GITHUB_REPOSITORY}\`。"
+            printf '\n'
+            printf '%s\n' 'Issue 标题：'
+            printf '%s\n' "${ISSUE_TITLE}"
+            printf '\n'
+            printf '%s\n' 'Issue 正文：'
+            printf '%s\n' "${ISSUE_BODY}"
+            printf '\n'
+            printf '%s\n' '任务要求：'
+            printf '%s\n' '1. 直接在仓库里实现 issue 描述对应的改动。'
+            printf '%s\n' '2. 尽量保持改动聚焦，不要顺手改无关内容。'
+            printf '%s\n' '3. 如果 issue 信息不完整，做最小且合理的假设。'
+            printf '%s\n' '4. 不要自己提交、推送或创建 PR，后续步骤会处理。'
+            printf '%s\n' '5. 最终输出简短总结，说明做了什么、是否有测试或未完成项。'
+          } > .codex-tmp/issue-prompt.md
+
       - name: 运行 Codex 修改代码
         id: codex
-        uses: openai/codex-action@v1
-        with:
-          openai-api-key: ${{ secrets.OPENAI_API_KEY }}
-          responses-api-endpoint: ${{ steps.codex_endpoint.outputs.endpoint }}
-          sandbox: workspace-write
-          model: gpt-5.4
-          effort: xhigh
-          prompt: |
-            你正在处理 GitHub Issue #${{ github.event.issue.number }}，仓库是 `${{ github.repository }}`。
+        shell: bash
+        run: |
+          output_file="${RUNNER_TEMP}/codex-issue-output.md"
+          codex exec \
+            --skip-git-repo-check \
+            --cd "${GITHUB_WORKSPACE}" \
+            --sandbox workspace-write \
+            --model gpt-5.4 \
+            --config 'model_reasoning_effort="xhigh"' \
+            --output-last-message "${output_file}" \
+            < .codex-tmp/issue-prompt.md
 
-            Issue 标题：
-            ${{ github.event.issue.title }}
-
-            Issue 正文：
-            ${{ github.event.issue.body }}
-
-            任务要求：
-            1. 直接在仓库里实现 issue 描述对应的改动。
-            2. 尽量保持改动聚焦，不要顺手改无关内容。
-            3. 如果 issue 信息不完整，做最小且合理的假设。
-            4. 不要自己提交、推送或创建 PR，后续步骤会处理。
-            5. 最终输出简短总结，说明做了什么、是否有测试或未完成项。
+          {
+            echo "final-message<<EOF"
+            cat "${output_file}"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
 
       - name: 判断是否有代码变更
         id: changes
